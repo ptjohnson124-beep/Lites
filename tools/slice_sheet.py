@@ -170,6 +170,43 @@ def cut_frames(sheet, mask, alpha, rects, transparent, pad):
     return frames, offsets
 
 
+def refine_alignment(frames, offsets, limit=12):
+    """Fine-register every frame to the first by FFT cross-correlation of alpha.
+
+    The feet anchor gets frames roughly in register, but it moves whenever a
+    boot does, which reads as a one- or two-pixel twitch of the whole body
+    during playback. Matching whole silhouettes instead holds the character
+    still. Everything is registered against frame 0 rather than against its
+    predecessor, so small errors cannot accumulate into a drift over the loop.
+    """
+    ref = np.fft.rfft2(np.array(frames[0])[:, :, 3].astype(np.float32))
+    shifts = [(0, 0)]
+    for frame in frames[1:]:
+        cur = np.array(frame)[:, :, 3].astype(np.float32)
+        corr = np.fft.irfft2(ref * np.conj(np.fft.rfft2(cur)), cur.shape)
+        # Only trust small corrections; a far-off peak means a pose change, not a shift.
+        window = np.full(corr.shape, -np.inf)
+        for sy in range(-limit, limit + 1):
+            for sx in range(-limit, limit + 1):
+                window[sy, sx] = corr[sy, sx]
+        dy, dx = np.unravel_index(np.argmax(window), corr.shape)
+        dy = dy - corr.shape[0] if dy > limit else dy
+        dx = dx - corr.shape[1] if dx > limit else dx
+        shifts.append((int(dx), int(dy)))
+
+    mx = max(abs(d[0]) for d in shifts)
+    my = max(abs(d[1]) for d in shifts)
+    w, h = frames[0].size
+    out, moved = [], []
+    for frame, (ox, oy), (dx, dy) in zip(frames, offsets, shifts):
+        canvas = Image.new("RGBA", (w + 2 * mx, h + 2 * my), (0, 0, 0, 0))
+        canvas.paste(frame, (mx + dx, my + dy))
+        out.append(canvas)
+        # Keep the manifest describing the frames we actually wrote.
+        moved.append((ox + mx + dx, oy + my + dy))
+    return out, moved
+
+
 def save_animation(frames, path, fps, bg=None):
     dur = max(20, int(round(1000 / fps)))
     if path.endswith(".gif"):
@@ -190,6 +227,10 @@ def main():
     ap.add_argument("--cols", type=int, help="force N equal columns per row instead of detecting them")
     ap.add_argument("--fps", type=float, default=10.0)
     ap.add_argument("--names", help="comma-separated name per row, e.g. idle,attack,walk")
+    ap.add_argument("--single", metavar="NAME",
+                    help="treat every frame on the sheet as one animation, in reading order")
+    ap.add_argument("--align", choices=("feet", "silhouette"), default="feet",
+                    help="feet: anchor on the lowest ink. silhouette: also fine-register whole frames")
     ap.add_argument("--tol", type=int, default=24, help="background colour tolerance (0-255)")
     ap.add_argument("--pad", type=int, default=4)
     ap.add_argument("--min-gap", type=int, default=4, help="smallest background gap that splits frames")
@@ -217,11 +258,17 @@ def main():
                 "background": [int(c) for c in bg], "fps": args.fps,
                 "keyed_sheet": "sheet_keyed.png", "rows": []}
 
+    if args.single:
+        rows = [[rect for row in rows for rect in row]]
+
     names = args.names.split(",") if args.names else []
+    names = [args.single] if args.single else names
     names += [f"row{i}" for i in range(len(names) + 1, len(rows) + 1)]
 
     for ri, (name, rects) in enumerate(zip(names, rows), 1):
         frames, offsets = cut_frames(sheet, mask, alpha, rects, not args.opaque, args.pad)
+        if args.align == "silhouette":
+            frames, offsets = refine_alignment(frames, offsets)
         for fi, frame in enumerate(frames, 1):
             frame.save(os.path.join(args.outdir, "frames", f"{name}_{fi:02d}.png"))
         save_animation(frames, os.path.join(args.outdir, f"{name}.gif"), args.fps, bg)
@@ -229,6 +276,7 @@ def main():
         manifest["rows"].append({
             "name": name,
             "canvas": list(frames[0].size),
+            "align": args.align,
             # dx/dy place the rect inside `canvas` so every frame lands on the same feet anchor.
             "frames": [{"x": r[0], "y": r[1], "w": r[2] - r[0], "h": r[3] - r[1], "dx": d[0], "dy": d[1]}
                        for r, d in zip(rects, offsets)],

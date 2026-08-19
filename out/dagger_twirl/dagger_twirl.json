@@ -1,0 +1,16 @@
+{
+  "name": "dagger_twirl",
+  "source_poses": 12,
+  "steps": 5,
+  "paced": true,
+  "frames": 73,
+  "fps": 25.0,
+  "loop_seconds": 2.92,
+  "size": [
+    253,
+    337
+  ],
+  "strip": "dagger_twirl_strip.png",
+  "cols": 8,
+  "strip_rows": 10
+}

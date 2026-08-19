@@ -25,6 +25,7 @@
 
 <div class="panel">
   <label>Animation <select id="rowSel"></select></label>
+  <div id="meta" style="font-size:12px;color:var(--dim)"></div>
   <label>Speed <span class="val" id="fpsVal"></span>
     <input id="fps" type="range" min="1" max="30" step="1"></label>
   <label>Zoom <span class="val" id="zoomVal"></span>
@@ -61,7 +62,7 @@ function draw() {
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, cv.width, cv.height);
   const f = row.frames[i];
-  const src = $('cutbg').checked ? sheet.keyed : sheet.raw;
+  const src = row.image || ($('cutbg').checked ? sheet.keyed : sheet.raw);
   ctx.drawImage(src, f.x, f.y, f.w, f.h, f.dx * z, f.dy * z, f.w * z, f.h * z);
   $('frameVal').textContent = `${i + 1} / ${row.frames.length}`;
   $('frame').value = i;
@@ -80,6 +81,8 @@ function tick(t) {
 
 function selectRow(n) {
   row = man.rows[n]; i = 0;
+  $('meta').textContent = row.note || '';
+  $('cutbg').parentElement.style.display = row.image ? 'none' : '';
   $('frame').max = row.frames.length - 1;
   draw();
 }
@@ -97,15 +100,32 @@ $('prev').onclick = () => step(-1);
 $('next').onclick = () => step(1);
 
 try {
-  man = await (await fetch('../out/frames.json')).json();
+  const src = new URLSearchParams(location.search).get('m') || '../out/frames.json';
+  man = await (await fetch(src)).json();
+
+  // A smoothing manifest describes one animation packed into a sprite strip;
+  // a slicing manifest describes rows blitted out of the original sheet.
+  if (man.strip) {
+    const base = src.slice(0, src.lastIndexOf('/') + 1);
+    const [w, h] = man.size;
+    const image = await loadImage(base + man.strip);
+    man = { fps: man.fps, rows: [{
+      name: man.name, canvas: man.size, image,
+      note: `${man.source_poses} drawn poses → ${man.frames} frames, `
+          + `${man.loop_seconds}s loop${man.paced ? ', distance-paced' : ''}`,
+      frames: Array.from({ length: man.frames }, (_, k) => ({
+        x: (k % man.cols) * w, y: Math.floor(k / man.cols) * h, w, h, dx: 0, dy: 0 })),
+    }] };
+  } else {
   // The slicer already keyed the background out with an edge flood fill, which
   // a per-pixel colour test here could not match: mid-grey shading inside the
   // character would be punched through.
   const [raw, keyed] = await Promise.all([
-    loadImage('../assets/' + man.sheet),
-    loadImage('../out/' + man.keyed_sheet),
-  ]);
-  sheet = { raw, keyed };
+      loadImage('../assets/' + man.sheet),
+      loadImage('../out/' + man.keyed_sheet),
+    ]);
+    sheet = { raw, keyed };
+  }
   $('rowSel').innerHTML = man.rows
     .map((r, n) => `<option value="${n}">${r.name} — ${r.frames.length} frames</option>`).join('');
   $('fps').value = man.fps; $('fpsVal').textContent = man.fps + ' fps';
