@@ -1,0 +1,125 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Sprite sheet player</title>
+<style>
+  :root { color-scheme: dark; --bg:#14141a; --panel:#1e1e27; --line:#33333f; --ink:#e9e9f0; --dim:#9a9aab; }
+  body { margin:0; font:14px/1.5 system-ui,sans-serif; background:var(--bg); color:var(--ink);
+         display:flex; flex-wrap:wrap; gap:24px; padding:24px; }
+  #stage { background:#2a2a33; border:1px solid var(--line); border-radius:10px; padding:16px;
+           display:flex; align-items:center; justify-content:center; min-width:320px; min-height:320px; }
+  canvas { image-rendering:pixelated; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px 18px;
+           min-width:270px; display:flex; flex-direction:column; gap:14px; }
+  label { display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--dim);
+          text-transform:uppercase; letter-spacing:.06em; }
+  input[type=range] { width:100%; }
+  select, button { background:#2a2a36; color:var(--ink); border:1px solid var(--line);
+                   border-radius:6px; padding:7px 10px; font:inherit; }
+  button { cursor:pointer; } button:hover { background:#343442; }
+  .row { display:flex; gap:8px; } .row > * { flex:1; }
+  .val { color:var(--ink); font-variant-numeric:tabular-nums; text-transform:none; letter-spacing:0; }
+  #err { color:#ff8f8f; max-width:40ch; }
+</style>
+
+<div id="stage"><canvas id="view" width="320" height="320"></canvas></div>
+
+<div class="panel">
+  <label>Animation <select id="rowSel"></select></label>
+  <label>Speed <span class="val" id="fpsVal"></span>
+    <input id="fps" type="range" min="1" max="30" step="1"></label>
+  <label>Zoom <span class="val" id="zoomVal"></span>
+    <input id="zoom" type="range" min="1" max="6" step="1" value="2"></label>
+  <label>Frame <span class="val" id="frameVal"></span>
+    <input id="frame" type="range" min="0" step="1"></label>
+  <div class="row">
+    <button id="play">Pause</button>
+    <button id="prev">◀</button>
+    <button id="next">▶</button>
+  </div>
+  <label style="flex-direction:row;align-items:center;gap:8px;text-transform:none">
+    <input id="cutbg" type="checkbox" checked style="flex:0"> cut out sheet background</label>
+  <div id="err"></div>
+</div>
+
+<script type="module">
+const $ = id => document.getElementById(id);
+const err = msg => { $('err').textContent = msg; };
+
+let man, sheet, row, i = 0, playing = true, acc = 0, last = 0;
+
+// The sheet is drawn once with its flat background keyed out, so frames can be
+// blitted from it directly instead of shipping a second set of cut-out PNGs.
+function keyOut(img, bg, tol = 24) {
+  const c = document.createElement('canvas');
+  c.width = img.width; c.height = img.height;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0);
+  const d = ctx.getImageData(0, 0, c.width, c.height), p = d.data;
+  for (let k = 0; k < p.length; k += 4) {
+    if (Math.max(Math.abs(p[k] - bg[0]), Math.abs(p[k+1] - bg[1]), Math.abs(p[k+2] - bg[2])) <= tol) p[k+3] = 0;
+  }
+  ctx.putImageData(d, 0, 0);
+  return c;
+}
+
+function draw() {
+  const cv = $('view'), ctx = cv.getContext('2d');
+  const z = +$('zoom').value, [cw, ch] = row.canvas;
+  cv.width = cw * z; cv.height = ch * z;
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  const f = row.frames[i];
+  const src = $('cutbg').checked ? sheet.keyed : sheet.raw;
+  ctx.drawImage(src, f.x, f.y, f.w, f.h, f.dx * z, f.dy * z, f.w * z, f.h * z);
+  $('frameVal').textContent = `${i + 1} / ${row.frames.length}`;
+  $('frame').value = i;
+}
+
+function tick(t) {
+  if (playing) {
+    acc += t - (last || t);
+    const step = 1000 / +$('fps').value;
+    while (acc >= step) { acc -= step; i = (i + 1) % row.frames.length; }
+  }
+  last = t;
+  draw();
+  requestAnimationFrame(tick);
+}
+
+function selectRow(n) {
+  row = man.rows[n]; i = 0;
+  $('frame').max = row.frames.length - 1;
+  draw();
+}
+
+const step = d => { playing = false; $('play').textContent = 'Play';
+                    i = (i + d + row.frames.length) % row.frames.length; draw(); };
+
+$('rowSel').onchange = e => selectRow(+e.target.value);
+$('fps').oninput = e => $('fpsVal').textContent = e.target.value + ' fps';
+$('zoom').oninput = e => { $('zoomVal').textContent = e.target.value + '×'; draw(); };
+$('frame').oninput = e => { playing = false; $('play').textContent = 'Play'; i = +e.target.value; draw(); };
+$('cutbg').onchange = draw;
+$('play').onclick = () => { playing = !playing; $('play').textContent = playing ? 'Pause' : 'Play'; };
+$('prev').onclick = () => step(-1);
+$('next').onclick = () => step(1);
+
+try {
+  man = await (await fetch('../out/frames.json')).json();
+  sheet = { raw: await new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = () => rej(new Error('could not load ../assets/' + man.sheet));
+    im.src = '../assets/' + man.sheet;
+  }) };
+  sheet.keyed = keyOut(sheet.raw, man.background);
+  $('rowSel').innerHTML = man.rows
+    .map((r, n) => `<option value="${n}">${r.name} — ${r.frames.length} frames</option>`).join('');
+  $('fps').value = man.fps; $('fpsVal').textContent = man.fps + ' fps';
+  $('zoomVal').textContent = $('zoom').value + '×';
+  selectRow(0);
+  requestAnimationFrame(tick);
+} catch (e) {
+  err(e.message + ' — run tools/slice_sheet.py first, then serve the repo root with: python3 -m http.server');
+}
+</script>
