@@ -47,20 +47,12 @@ const err = msg => { $('err').textContent = msg; };
 
 let man, sheet, row, i = 0, playing = true, acc = 0, last = 0;
 
-// The sheet is drawn once with its flat background keyed out, so frames can be
-// blitted from it directly instead of shipping a second set of cut-out PNGs.
-function keyOut(img, bg, tol = 24) {
-  const c = document.createElement('canvas');
-  c.width = img.width; c.height = img.height;
-  const ctx = c.getContext('2d', { willReadFrequently: true });
-  ctx.drawImage(img, 0, 0);
-  const d = ctx.getImageData(0, 0, c.width, c.height), p = d.data;
-  for (let k = 0; k < p.length; k += 4) {
-    if (Math.max(Math.abs(p[k] - bg[0]), Math.abs(p[k+1] - bg[1]), Math.abs(p[k+2] - bg[2])) <= tol) p[k+3] = 0;
-  }
-  ctx.putImageData(d, 0, 0);
-  return c;
-}
+const loadImage = src => new Promise((res, rej) => {
+  const im = new Image();
+  im.onload = () => res(im);
+  im.onerror = () => rej(new Error('could not load ' + src));
+  im.src = src;
+});
 
 function draw() {
   const cv = $('view'), ctx = cv.getContext('2d');
@@ -106,13 +98,14 @@ $('next').onclick = () => step(1);
 
 try {
   man = await (await fetch('../out/frames.json')).json();
-  sheet = { raw: await new Promise((res, rej) => {
-    const im = new Image();
-    im.onload = () => res(im);
-    im.onerror = () => rej(new Error('could not load ../assets/' + man.sheet));
-    im.src = '../assets/' + man.sheet;
-  }) };
-  sheet.keyed = keyOut(sheet.raw, man.background);
+  // The slicer already keyed the background out with an edge flood fill, which
+  // a per-pixel colour test here could not match: mid-grey shading inside the
+  // character would be punched through.
+  const [raw, keyed] = await Promise.all([
+    loadImage('../assets/' + man.sheet),
+    loadImage('../out/' + man.keyed_sheet),
+  ]);
+  sheet = { raw, keyed };
   $('rowSel').innerHTML = man.rows
     .map((r, n) => `<option value="${n}">${r.name} — ${r.frames.length} frames</option>`).join('');
   $('fps').value = man.fps; $('fpsVal').textContent = man.fps + ' fps';

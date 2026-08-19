@@ -43,6 +43,41 @@ def foreground_mask(rgb, bg, tol):
     return np.abs(rgb.astype(np.int16) - bg).max(axis=2) > tol
 
 
+def outside(free):
+    """Background pixels reachable from the sheet edge, 4-connected.
+
+    A plain colour key is not enough: mid-grey shading on the face and hoodie
+    sits within tolerance of the background, so keying by colour alone punches
+    holes through the character. Only background that connects to the sheet
+    edge is really background.
+
+    Propagation runs a run at a time — every same-colour run in a scanline is
+    reached at once — alternating rows and columns until nothing new is found.
+    """
+    h, w = free.shape
+    reach = np.zeros_like(free)
+    reach[0, :] = reach[-1, :] = reach[:, 0] = reach[:, -1] = True
+    reach &= free
+
+    def sweep(free_ax, reach_ax):
+        # Runs of free pixels along each row share an id, so a single bincount
+        # tells us which runs contain an already-reached pixel — the whole run
+        # is then reached at once.
+        ids = np.cumsum(~free_ax, axis=1)
+        ids = ids + (np.arange(ids.shape[0])[:, None] * (int(ids.max()) + 1))
+        hit = np.bincount(ids[free_ax], weights=reach_ax[free_ax],
+                          minlength=int(ids.max()) + 1) > 0
+        return free_ax & hit[ids]
+
+    for _ in range(64):
+        grown = sweep(free, reach)
+        grown = sweep(free.T, grown.T).T
+        if grown.sum() == reach.sum():
+            break
+        reach = grown
+    return reach
+
+
 def bands(occupied, min_size, min_gap):
     """Split a 1-D occupancy profile into runs of True, merging short gaps."""
     runs, start = [], None
@@ -109,7 +144,7 @@ def feet_anchor(mask, rect):
     return float(xs.mean()), float(hgt)
 
 
-def cut_frames(sheet, mask, rects, transparent, pad):
+def cut_frames(sheet, mask, alpha, rects, transparent, pad):
     """Crop each rect onto a shared canvas, registered on the feet anchor."""
     anchors = [feet_anchor(mask, r) for r in rects]
     widths = [r[2] - r[0] for r in rects]
@@ -125,9 +160,8 @@ def cut_frames(sheet, mask, rects, transparent, pad):
         crop = sheet.crop(rect)
         if transparent:
             crop = crop.copy()
-            sub = mask[rect[1]:rect[3], rect[0]:rect[2]]
-            alpha = Image.fromarray((sub * 255).astype(np.uint8), "L")
-            crop.putalpha(alpha)
+            sub = alpha[rect[1]:rect[3], rect[0]:rect[2]]
+            crop.putalpha(Image.fromarray((sub * 255).astype(np.uint8), "L"))
         dx, dy = int(round(left - ax)) + pad, int(ch - pad - ay)
         canvas = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
         canvas.paste(crop, (dx, dy), crop)
@@ -155,6 +189,7 @@ def main():
     ap.add_argument("--rows", type=int, help="force N equal rows instead of detecting them")
     ap.add_argument("--cols", type=int, help="force N equal columns per row instead of detecting them")
     ap.add_argument("--fps", type=float, default=10.0)
+    ap.add_argument("--names", help="comma-separated name per row, e.g. idle,attack,walk")
     ap.add_argument("--tol", type=int, default=24, help="background colour tolerance (0-255)")
     ap.add_argument("--pad", type=int, default=4)
     ap.add_argument("--min-gap", type=int, default=4, help="smallest background gap that splits frames")
@@ -167,28 +202,38 @@ def main():
     bg = background_color(rgb)
     mask = foreground_mask(rgb, bg, args.tol)
 
+    alpha = ~outside(~mask)
+
     rows = find_frames(mask, args.rows, args.cols, args.min_gap, args.min_size)
     if not rows:
         raise SystemExit("no frames found — try a larger --tol or pass --rows/--cols")
 
     os.makedirs(os.path.join(args.outdir, "frames"), exist_ok=True)
-    manifest = {"sheet": os.path.basename(args.sheet), "size": list(sheet.size),
-                "background": [int(c) for c in bg], "fps": args.fps, "rows": []}
 
-    for ri, rects in enumerate(rows, 1):
-        frames, offsets = cut_frames(sheet, mask, rects, not args.opaque, args.pad)
+    keyed = sheet.copy()
+    keyed.putalpha(Image.fromarray((alpha * 255).astype(np.uint8), "L"))
+    keyed.save(os.path.join(args.outdir, "sheet_keyed.png"))
+    manifest = {"sheet": os.path.basename(args.sheet), "size": list(sheet.size),
+                "background": [int(c) for c in bg], "fps": args.fps,
+                "keyed_sheet": "sheet_keyed.png", "rows": []}
+
+    names = args.names.split(",") if args.names else []
+    names += [f"row{i}" for i in range(len(names) + 1, len(rows) + 1)]
+
+    for ri, (name, rects) in enumerate(zip(names, rows), 1):
+        frames, offsets = cut_frames(sheet, mask, alpha, rects, not args.opaque, args.pad)
         for fi, frame in enumerate(frames, 1):
-            frame.save(os.path.join(args.outdir, "frames", f"row{ri}_{fi:02d}.png"))
-        save_animation(frames, os.path.join(args.outdir, f"row{ri}.gif"), args.fps, bg)
-        save_animation(frames, os.path.join(args.outdir, f"row{ri}.webp"), args.fps)
+            frame.save(os.path.join(args.outdir, "frames", f"{name}_{fi:02d}.png"))
+        save_animation(frames, os.path.join(args.outdir, f"{name}.gif"), args.fps, bg)
+        save_animation(frames, os.path.join(args.outdir, f"{name}.webp"), args.fps)
         manifest["rows"].append({
-            "name": f"row{ri}",
+            "name": name,
             "canvas": list(frames[0].size),
             # dx/dy place the rect inside `canvas` so every frame lands on the same feet anchor.
             "frames": [{"x": r[0], "y": r[1], "w": r[2] - r[0], "h": r[3] - r[1], "dx": d[0], "dy": d[1]}
                        for r, d in zip(rects, offsets)],
         })
-        print(f"row{ri}: {len(rects)} frames -> {args.outdir}/row{ri}.gif")
+        print(f"{name}: {len(rects)} frames -> {args.outdir}/{name}.gif")
 
     with open(os.path.join(args.outdir, "frames.json"), "w") as fh:
         json.dump(manifest, fh, indent=2)
