@@ -1,16 +1,41 @@
 {
   "name": "dagger_twirl",
-  "source_poses": 12,
-  "steps": 5,
-  "paced": true,
-  "frames": 73,
-  "fps": 25.0,
-  "loop_seconds": 2.92,
+  "poses": [
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "played": [
+    3,
+    3,
+    3,
+    3,
+    3,
+    4,
+    4,
+    5,
+    6,
+    7,
+    7,
+    7,
+    6,
+    5,
+    4,
+    4
+  ],
+  "frames": 16,
+  "fps": 12.0,
+  "loop_seconds": 1.333,
+  "pingpong": true,
+  "bob": 2,
+  "stabilize": "core",
   "size": [
-    253,
-    337
+    233,
+    314
   ],
   "strip": "dagger_twirl_strip.png",
   "cols": 8,
-  "strip_rows": 10
+  "strip_rows": 2
 }
