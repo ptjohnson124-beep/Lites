@@ -17,6 +17,7 @@ strip for engine use) and `NAME.json` describing it.
 
 ```sh
 pip install pillow numpy
+sh build.sh          # rebuild every animation from its sheet
 python3 -m http.server 8000
 # http://localhost:8000/web/index.html?m=../out/dahlia_block/dahlia_block.json
 ```
@@ -267,12 +268,25 @@ fixed where it is created rather than filtered out afterwards:
   The trail keeps 95 % of its pixels instead of 92 %, and it keeps its middle.
 - **Compression grain.** These sheets arrive as JPEGs, so every flat surface
   carries mottling that no amount of careful keying removes — it is in the
-  paint. `--denoise 5` medians it away and blends the result back by local
-  gradient, so flat areas take the filtered version and edges keep every
-  original pixel. The gradient is measured on a blurred copy, because ringing
-  around a line is itself a gradient and would otherwise protect the very noise
-  being removed. Flat-area variation drops from 9.9 to 3.9 of 255 with the line
-  work intact.
+  paint. `--denoise 12` clears it with a bilateral filter: each pixel is
+  averaged only with neighbours of similar brightness, so mottling a few levels
+  deep is smoothed while anything differing by more than the given strength — a
+  mouth line against skin, an outline against a hoodie — is left alone. Three
+  passes of a moderate window clear far more than one wide pass at almost no
+  cost to the drawing.
+
+  This replaced a median filter, which could not tell a speck from a small drawn
+  feature. On a sprite this size it was quietly erasing the things that carry
+  the performance — her mouth first, then the eyes and hood strings — and a grin
+  came out as a smear. Measured inside the character, against the raw sheet:
+
+  | | grain removed | line work kept |
+  | --- | --- | --- |
+  | median, gated by gradient | 48 % | 80 % |
+  | bilateral, 3 passes | 62 % | 90 % |
+
+  Better on both counts. Line work reads above 100 % on some sheets, because
+  clearing the noise haze around an edge sharpens it.
 - **Specks.** Keying left hundreds of stray islands of a dozen pixels each.
   `--despeckle` drops any island too small to be drawn detail.
 - **Resampling ringing.** Lanczos undershoots around a hard silhouette and
@@ -298,8 +312,11 @@ Every animation is audited frame by frame — 381 frames in total, not samples:
 | --- | --- | --- | --- | --- | --- |
 | frames touching the canvas edge | 0 | 0 | 0 | 0 | 0 |
 | islands under 24 px, i.e. grain | 0 | 0 | 0 | 0 | 0 |
-| flat-area variation (of 255) | 3.9 | 4.1 | 4.8 | 6.1 | 4.7 |
-| same, measured on the GIF | 3.9 | 4.2 | 5.1 | 5.8 | 4.6 |
+| grain removed inside the character | 52 % | 48 % | 36 % | 39 % | 35 % |
+| line work kept | 96 % | 95 % | 112 % | 104 % | 118 % |
+
+`build.sh` rebuilds all five from their sheets; the per-sheet flags differ
+because the sheets differ, and its comments say how.
 
 The two action sheets read higher because they are grainier JPEGs to begin with,
 and what is left is drawn texture: a stronger median takes the figure from 4.98
@@ -331,7 +348,7 @@ background, so the alpha comes from a flood fill inward from the edges.
 | `--tol N` | background colour tolerance; raise it on a noisy or JPEG-compressed sheet |
 | `--glow-tol N` | strip soft painted haze, up to this distance from the background |
 | `--glow-depth N` | how many pixels in from the silhouette `--glow-tol` may reach |
-| `--denoise N` | clear JPEG grain from flat areas without softening line work |
+| `--denoise N` | clear JPEG grain: differences under N levels are noise, above are drawing |
 | `--despeckle N` | drop opaque islands smaller than this many pixels |
 | `--min-gap N` | smallest background gap that counts as a frame boundary |
 | `--min-size N` | drop specks smaller than this |

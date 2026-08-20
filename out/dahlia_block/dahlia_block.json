@@ -93,10 +93,12 @@
   "breathe": 1.2,
   "breathe_cycles": 2.0,
   "shake": "4:5,6:3",
+  "offset": null,
+  "travel": null,
   "stabilize": "core",
   "size": [
-    206,
-    324
+    207,
+    323
   ],
   "strip": "dahlia_block_strip.png",
   "cols": 8,

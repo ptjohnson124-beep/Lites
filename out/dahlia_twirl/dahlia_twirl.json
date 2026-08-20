@@ -173,10 +173,12 @@
   "breathe": 1.2,
   "breathe_cycles": 3.0,
   "shake": null,
+  "offset": null,
+  "travel": null,
   "stabilize": "core",
   "size": [
     236,
-    320
+    319
   ],
   "strip": "dahlia_twirl_strip.png",
   "cols": 8,
