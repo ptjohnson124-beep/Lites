@@ -1,5 +1,5 @@
 {
-  "name": "dahlia_dodge",
+  "name": "dahlia_counter",
   "poses": [
     1,
     2,
@@ -12,8 +12,7 @@
     9,
     10,
     11,
-    12,
-    13
+    12
   ],
   "played": [
     1,
@@ -32,10 +31,16 @@
     4,
     5,
     5,
+    5,
+    6,
+    6,
+    6,
+    6,
     6,
     6,
     7,
     7,
+    7,
     8,
     8,
     8,
@@ -45,6 +50,7 @@
     10,
     10,
     10,
+    10,
     11,
     11,
     11,
@@ -53,32 +59,28 @@
     12,
     12,
     12,
-    13,
-    13,
-    13,
-    13,
-    13,
-    13,
-    13,
-    13
+    12,
+    12,
+    12,
+    12
   ],
-  "frames": 45,
+  "frames": 48,
   "fps": 20.0,
-  "loop_seconds": 2.25,
+  "loop_seconds": 2.4,
   "pingpong": false,
   "bob": 2,
   "sway": 2,
   "breathe": 1.2,
   "breathe_cycles": 2.0,
-  "shake": null,
+  "shake": "6:6,7:3",
   "offset": null,
-  "travel": "1:0,2:0,3:-8,4:-18,5:-28,6:-34,7:-30,8:-20,9:-12,10:-6,11:-2,12:0,13:0",
+  "travel": "1:0,2:0,3:10,4:20,5:14,6:6,7:2,8:0,9:0,10:0,11:0,12:0",
   "stabilize": "core",
   "size": [
-    297,
-    273
+    285,
+    259
   ],
-  "strip": "dahlia_dodge_strip.png",
+  "strip": "dahlia_counter_strip.png",
   "cols": 8,
   "strip_rows": 6
 }

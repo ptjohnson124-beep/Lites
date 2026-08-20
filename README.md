@@ -15,8 +15,9 @@ sheet lands, at which point the same two commands rebuild them.
 | **idle** (canonical) | `assets/dahlia_idle_sheet.png`, 6 drawings | `out/dahlia_idle/` — 61 frames, 3.05 s |
 | **attack** (new style) | `assets/dahlia_attack_b_sheet.png`, 8 drawings | `out/dahlia_attack/` — 33 frames, 1.65 s |
 | **spin combo** (new style) | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
-| **dodge** | `assets/dahlia_dodge_sheet.png`, 20 drawings | `out/dahlia_dodge/` — 49 frames, 2.45 s |
-| **taunt** | `assets/dahlia_taunt_sheet.png`, 15 drawings | `out/dahlia_taunt/` — 59 frames, 2.95 s |
+| **evasion** (new style) | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 45 frames, 2.25 s |
+| **counter** (new style) | `assets/dahlia_counter_sheet.png`, 12 drawings | `out/dahlia_counter/` — 48 frames, 2.4 s |
+| **taunt** (new style) | `assets/dahlia_taunt_v2_sheet.png`, 12 drawings | `out/dahlia_taunt/` — 68 frames, 3.4 s |
 | **going insane** | `assets/dahlia_insane_b_sheet.png`, 16 drawings | `out/dahlia_insane/` — 68 frames, 3.4 s |
 | **insanity transformation** | `assets/dahlia_insanity_sheet.png`, 16 drawings | `out/dahlia_insanity/` — 79 frames, 3.95 s |
 | **cyberpsychosis** | `assets/dahlia_cyberpsychosis_sheet.png`, 16 drawings | `out/dahlia_cyberpsychosis/` — 93 frames, 4.65 s |
@@ -67,43 +68,27 @@ Both open and close on near-identical ready poses, so both loop without a
 ping-pong: the combo's seam measures 8.3 against a mean step of 19.3, the
 cleanest seam of any animation here.
 
-## The dodge
+## Evasion, counter and taunt
 
-```sh
-python3 tools/slice_sheet.py assets/dahlia_dodge_sheet.png -o out/dahlia_dodge \
-  --components --tol 18 --glow-tol 0 --fill-holes 3 --despeckle 24 --denoise 5 \
-  --single dahlia_dodge --align silhouette
-python3 tools/assemble.py out/dahlia_dodge/frames -o out/dahlia_dodge -n dahlia_dodge \
-  --poses 1,3,4,7,9,8,10,6,12,11 --holds 12,3,3,2,2,3,5,4,5,10 \
-  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
-  --shake 10:3 --travel 1:0,3:0,4:-6,7:-20,9:-30,8:-22,10:-12,6:-6,12:-2,11:0
-```
+Three more remade in the new style, replacing their old builds at the same
+output paths.
 
-The drawings turn out to describe a spin, not a sidestep, so that is what this
-plays:
+**`dahlia_dodge`** — thirteen drawings, not twelve: the top row of that sheet
+holds five, which the segmenter found on its own. She gives 34 px of ground at
+the furthest point of the evade and walks it back over the recovery.
 
-| | pose | time | ground | |
-| --- | --- | --- | --- | --- |
-| ready | 1 | 0.60 s | 0 | knife at her side |
-| | 3 | 0.15 s | 0 | eyes close — she has read it |
-| **push off** | 4 | 0.15 s | −6 | gold flares at her feet |
-| **dash** | 7 | 0.10 s | −20 | drawn motion blur |
-| **spin** | 9 | 0.10 s | −30 | back to the camera, furthest out |
-| | 8 | 0.15 s | −22 | coming back around, knife up |
-| **land** | 10 | 0.25 s | −12 | crouched, small jolt |
-| recovery | 6, 12 | 0.45 s | −6 → −2 | rising, settling |
-| | 11 | 0.50 s | 0 | back to ready |
+**`dahlia_counter`** — she closes 20 px, the counter lands with a 6 px jolt, and
+the gold-aura frame holds 0.3 s at the peak. Its sheet needed a new tool: see
+below.
 
-Half a second from push-off to landing, of which the two blurred drawings hold
-0.1 s each. Poses 9 and 8 are played in that order rather than the order they
-sit on the sheet: 7 faces left, 9 has her back turned, 8 brings her round to
-face the camera again, which is one continuous rotation instead of a spin that
-skips and resets.
+**`dahlia_taunt`** — a flame lit in her free hand. Poses 5 and 6 are the same
+flame at two sizes, so alternating them makes it gutter instead of sitting
+still, the same trick the old taunt used. One thing to know: pose 6 is drawn
+with olive trousers where every other frame has black, an inconsistency in the
+sheet rather than the pipeline. It is the peak flame frame, so it is held
+briefly and alternated out of rather than sat on.
 
-This is the first animation where the ground she covers is the whole point, and
-it is also where `--offset` stopped being good enough — see below.
-
-## Getting hit
+## Getting hit## Getting hit
 
 Third animation in the new style, replacing the old-style hit at the same
 output path. This sheet came labelled — a caption under every cell — and the
@@ -369,6 +354,31 @@ a genuinely smooth loop with no other changes.
 Five separate things put grain, haze or holes on these animations, and each is
 fixed where it is created rather than filtered out afterwards:
 
+- **A checkerboard for a background.** The counter sheet was exported with
+  transparency and then saved as JPEG, so the editor's checkerboard arrived
+  baked into the pixels — two grey tones, 76 and 116, in an 11 px grid. Against
+  two tones the keying reads half the backdrop as ink. `--checker` takes both
+  tones from the colour histogram and repaints the background flat, but only
+  where it is reachable from the sheet edge through those tones, so a dark boot
+  that happens to sit near one of them is never touched. Repainting rather than
+  masking keeps the sprite's antialiased fringe meaningful: it still shades off
+  toward a background, just a single one now.
+- **A pose that came apart.** On that same sheet the dash frame's motion blur
+  broke the figure into two islands, and her legs arrived as a thirteenth pose.
+  Pieces of one figure sit almost on top of each other horizontally — 0.84
+  overlap — where genuinely neighbouring poses overlap 0.00, so that identifies
+  them. Horizontal overlap alone is not enough to act on, though, since poses
+  stacked in the same column of a grid overlap just as heavily; what separates
+  the cases is the size of the result. Two pieces of one figure union to about
+  one pose, two whole poses to twice that, so the merge is capped at 1.35× the
+  median pose. Verified against every sheet that uses `--components`: all still
+  segment to the same counts.
+- **Captions under the art.** A labelled reference sheet puts a line of text
+  below each pose, which is ink like anything else and rides into the animation.
+  `--strip-captions` finds, within each row of cells, the quietest scanline in
+  the bottom third — the gap between her boots and the text — and paints out
+  everything below it. On a sheet with no captions the quietest line is already
+  below her feet and nothing is lost.
 - **Poses that overlap.** Gap splitting fails as soon as two poses overlap once
   flattened onto an axis — on the attack sheet one pose's hair reaches into the
   next one's column and a whole row of four collapsed into a single frame.
@@ -513,6 +523,8 @@ background, so the alpha comes from a flood fill inward from the edges.
 | flag | why |
 | --- | --- |
 | `--components` | split poses by connected ink instead of by gaps; use when poses overlap |
+| `--checker` | the background is a transparency checkerboard baked into the image |
+| `--strip-captions` | blank the text written under each pose on a labelled sheet |
 | `--component-min N` | smallest island counted as a pose rather than a stray scrap |
 | `--panels` | the sheet boxes each pose in a drawn frame; paint the grid out first |
 | `--fill-holes N` | seal and fill holes the flood punched through blurred poses |

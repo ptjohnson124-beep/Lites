@@ -81,6 +81,46 @@ def strip_captions(rgb, bg, rows, darkness=90, coverage=0.8):
     return out, cut
 
 
+def flatten_checker(rgb, tol=40):
+    """Flatten a transparency checkerboard into one background colour.
+
+    A sheet exported with transparency and then saved as JPEG arrives with the
+    editor's checkerboard baked in as pixels: two grey tones in a regular grid.
+    Everything downstream assumes one flat background, and against two tones it
+    reads half the backdrop as ink.
+
+    The two tones are taken from the colour histogram, and only background
+    actually reachable from the sheet edge through them is repainted — so a dark
+    boot that happens to sit near one of the tones is never touched. Repainting
+    rather than masking keeps the sprite's antialiased fringe meaningful: it
+    still shades off toward a background, just a single one now.
+    """
+    px = rgb.reshape(-1, 3).astype(np.uint32)
+    packed = (px[:, 0] << 16) | (px[:, 1] << 8) | px[:, 2]
+    vals, counts = np.unique(packed, return_counts=True)
+
+    tones, order = [], np.argsort(counts)[::-1]
+    for i in order[:400]:
+        v = int(vals[i])
+        colour = np.array([(v >> 16) & 255, (v >> 8) & 255, v & 255], dtype=np.int16)
+        if colour.max() - colour.min() > 12:          # a tone, not artwork
+            continue
+        if all(np.abs(colour - t).max() > 24 for t in tones):
+            tones.append(colour)
+        if len(tones) == 2:
+            break
+    if len(tones) < 2:
+        return rgb, None
+
+    near = np.minimum(*[np.abs(rgb.astype(np.int16) - t).max(axis=2) for t in tones]) < tol
+    field = outside(near)
+    flat = np.round(np.mean(tones, axis=0)).astype(np.int16)
+
+    out = rgb.copy()
+    out[field] = flat
+    return out, flat
+
+
 def load_sheet(path):
     return Image.open(path).convert("RGBA")
 
@@ -368,6 +408,37 @@ def frames_from_components(mask, min_px):
     if not poses:
         raise SystemExit("--components found no islands; lower --component-min")
 
+    # A pose drawn with motion blur can come apart into stacked pieces — on the
+    # counter sheet the dash frame's legs separate from her body and arrive as a
+    # thirteenth pose. Pieces of one figure sit almost on top of each other
+    # horizontally, where genuinely neighbouring poses do not overlap at all.
+    # Horizontal overlap alone is not enough to act on, though: poses stacked in
+    # the same column of a grid overlap just as heavily. What separates the two
+    # cases is the size of the result — two pieces of one figure union to about
+    # one pose, two whole poses to twice that.
+    heights = sorted(p[3] - p[1] for p in poses)
+    widths = sorted(p[2] - p[0] for p in poses)
+    tall, wide = heights[len(heights) // 2] * 1.35, widths[len(widths) // 2] * 1.35
+
+    merged = True
+    while merged and len(poses) > 1:
+        merged = False
+        for i in range(len(poses)):
+            for k in range(i + 1, len(poses)):
+                a, b = poses[i], poses[k]
+                span = max(0, min(a[2], b[2]) - max(a[0], b[0]))
+                if span < 0.5 * min(a[2] - a[0], b[2] - b[0]):
+                    continue
+                union = [min(a[0], b[0]), min(a[1], b[1]), max(a[2], b[2]), max(a[3], b[3])]
+                if union[3] - union[1] > tall or union[2] - union[0] > wide:
+                    continue
+                poses[i] = union
+                poses.pop(k)
+                merged = True
+                break
+            if merged:
+                break
+
     for b, n in zip(box, sizes):
         if n >= min_px:
             continue
@@ -527,6 +598,8 @@ def main():
     ap.add_argument("--tol", type=int, default=24, help="background colour tolerance (0-255)")
     ap.add_argument("--glow-tol", type=int, default=0,
                     help="strip soft haze around the character up to this distance from the background")
+    ap.add_argument("--checker", action="store_true",
+                    help="the sheet's background is a transparency checkerboard baked into the image")
     ap.add_argument("--strip-captions", action="store_true",
                     help="blank the text written under each pose on a labelled reference sheet")
     ap.add_argument("--components", action="store_true",
@@ -557,6 +630,12 @@ def main():
 
     sheet = load_sheet(args.sheet)
     rgb = np.array(sheet)[:, :, :3]
+    forced_bg = None
+    if args.checker:
+        rgb, forced_bg = flatten_checker(rgb)
+        print("flattened checkerboard background" if forced_bg is not None
+              else "no checkerboard found; leaving the background as it is")
+
     if args.panels:
         rows_, cols_ = panel_border_lines(rgb)
         bg = background_color(rgb, skip_rows=rows_, skip_cols=cols_)
@@ -569,6 +648,8 @@ def main():
             print(f"stripped captions under {n} row(s) of cells")
     else:
         bg = background_color(rgb)
+    if forced_bg is not None:
+        bg = forced_bg
     mask = foreground_mask(rgb, bg, args.tol)
 
     alpha = ~outside(~mask)

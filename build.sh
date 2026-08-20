@@ -19,26 +19,6 @@ $BUILD out/dahlia_twirl/frames -o out/dahlia_twirl -n dahlia_twirl \
   --poses 3,4,3,4,5,6,7,6,5,4 --holds 28,24,32,16,2,2,28,4,4,10 \
   --fps 20 --breathe 1.2 --breathe-cycles 3 --breathe-levels 12 --sway 2
 
-# Taunt: panelled like the block sheet, and its poses overlap once flattened,
-# so it needs both the grid painted out and splitting by connected ink.
-$SLICE assets/dahlia_taunt_sheet.png -o out/dahlia_taunt \
-  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_taunt
-$BUILD out/dahlia_taunt/frames -o out/dahlia_taunt -n dahlia_taunt \
-  --poses 14,1,2,3,4,6,5,6,9,6,5,9,11,12,8,7,13 \
-  --holds 10,3,3,2,2,3,2,2,2,3,2,3,3,2,6,3,8 \
-  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 3:4
-
-# The remaining old-style action sheets: poses overlap once flattened, so they
-# are split by connected ink. Each draws a motion-blurred frame that shades into
-# the background, so holes punched through it get filled back in.
-ACTION="--components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN"
-
-$SLICE assets/dahlia_dodge_sheet.png -o out/dahlia_dodge $ACTION --single dahlia_dodge
-$BUILD out/dahlia_dodge/frames -o out/dahlia_dodge -n dahlia_dodge \
-  --poses 1,3,4,7,9,8,10,6,12,11 --holds 12,3,3,2,2,3,5,4,5,10 \
-  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
-  --shake 10:3 --travel 1:0,3:0,4:-6,7:-20,9:-30,8:-22,10:-12,6:-6,12:-2,11:0
-
 # Going insane. Sheet A is panelled and holds her corrupted idle, the aura
 # guttering between gold and red; sheet B is the transformation itself.
 $SLICE assets/dahlia_insane_a_sheet.png -o out/dahlia_insane_idle \
@@ -144,3 +124,33 @@ $BUILD out/dahlia_attack_spin/frames -o out/dahlia_attack_spin -n dahlia_attack_
   --poses 1,2,3,4,5,6,7,8,9,10,11,12 --holds 6,3,2,5,3,2,2,6,3,3,4,8 \
   --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
   --shake 4:5,8:4 --travel 1:0,2:0,3:0,4:0,5:0,6:4,7:10,8:16,9:14,10:8,11:3,12:0
+
+# Evasion, counter and taunt in the new style, replacing their old-style builds
+# at the same output paths.
+#
+# Evasion: thirteen drawings, not twelve — the top row of this sheet holds five.
+# She gives 34px of ground at the furthest point and walks it back.
+$SLICE assets/dahlia_dodge_v2_sheet.png -o out/dahlia_dodge \
+  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_dodge
+$BUILD out/dahlia_dodge/frames -o out/dahlia_dodge -n dahlia_dodge \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13 --holds 7,3,2,2,2,2,2,3,3,3,4,4,8 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --travel 1:0,2:0,3:-8,4:-18,5:-28,6:-34,7:-30,8:-20,9:-12,10:-6,11:-2,12:0,13:0
+
+# Counter: exported with transparency and saved as JPEG, so the editor's
+# checkerboard is baked into the pixels — --checker flattens it back to one
+# background. She closes 20px, then the counter lands with a 6px jolt.
+$SLICE assets/dahlia_counter_sheet.png -o out/dahlia_counter \
+  --checker --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_counter
+$BUILD out/dahlia_counter/frames -o out/dahlia_counter -n dahlia_counter \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12 --holds 7,3,2,2,3,6,3,3,3,4,4,8 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 6:6,7:3 --travel 1:0,2:0,3:10,4:20,5:14,6:6,7:2,8:0,9:0,10:0,11:0,12:0
+
+# Taunt: a flame lit in her free hand. Poses 5 and 6 are the same flame at two
+# sizes, so they alternate to make it gutter rather than sit still.
+$SLICE assets/dahlia_taunt_v2_sheet.png -o out/dahlia_taunt \
+  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_taunt
+$BUILD out/dahlia_taunt/frames -o out/dahlia_taunt -n dahlia_taunt \
+  --poses 1,2,3,4,5,6,5,6,7,8,9,10,11,12 --holds 10,4,3,4,4,5,3,6,4,4,4,4,5,8 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 4:2
