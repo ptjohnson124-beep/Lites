@@ -76,8 +76,8 @@
   "travel": "1:0,3:0,4:-6,7:-20,9:-30,8:-22,10:-12,6:-6,12:-2,11:0",
   "stabilize": "core",
   "size": [
-    243,
-    254
+    242,
+    245
   ],
   "strip": "dahlia_dodge_strip.png",
   "cols": 8,

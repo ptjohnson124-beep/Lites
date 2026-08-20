@@ -9,6 +9,8 @@ browser player for previewing the result.
 | **attack** | `assets/dahlia_attack_sheet.png`, 20 drawings | `out/dahlia_attack/` — 57 frames, 2.85 s |
 | **dodge** | `assets/dahlia_dodge_sheet.png`, 20 drawings | `out/dahlia_dodge/` — 49 frames, 2.45 s |
 | **taunt** | `assets/dahlia_taunt_sheet.png`, 15 drawings | `out/dahlia_taunt/` — 59 frames, 2.95 s |
+| **going insane** | `assets/dahlia_insane_b_sheet.png`, 16 drawings | `out/dahlia_insane/` — 68 frames, 3.4 s |
+| **corrupted idle** | `assets/dahlia_insane_a_sheet.png`, 16 drawings | `out/dahlia_insane_idle/` — 47 frames, 2.35 s |
 | **getting hit** | `assets/dahlia_hit_sheet.png`, 20 drawings | `out/dahlia_hit/` — 55 frames, 2.75 s |
 | **block** | `assets/dahlia_block_sheet.png`, 12 drawings | `out/dahlia_block/` — 70 frames, 3.5 s |
 | **dagger twirl idle** | `assets/twirl_sheet.png`, 12 drawings | `out/dahlia_twirl/` — 150 frames, 7.5 s |
@@ -60,6 +62,32 @@ out, back, further out, and back again — a stumble rather than a dash.
 own footing from the desaturated pixels of its lower body — hair being the most
 mobile thing on the character, it gets no vote on where her feet are — and
 works out the shift from there. All three travelling animations use it.
+
+## Going insane
+
+Two sheets arrived for this, and they are not two takes on one animation —
+they are two different animations.
+
+**`dahlia_insane`** is the transformation, and it has a whole arc drawn into it:
+she is standing normally, she grabs her head, she fights it, the drawing itself
+starts glitching, then one frame of full corruption with the lightning and the
+red — and then she comes down, hunched and panting, until she is upright again.
+3.4 s, and the peak holds for four tenths of a second under the biggest jolt in
+the whole set, 10 px.
+
+**`dahlia_insane_idle`** is what she is like once she is there. That sheet
+draws the same stance over and over with the aura guttering between gold and
+red and her eyes lit white, so the loop plays it as exactly that: an unstable
+idle whose colour will not settle. Breathing runs faster here — three cycles to
+the loop rather than two.
+
+```sh
+python3 tools/assemble.py out/dahlia_insane/frames -o out/dahlia_insane -n dahlia_insane \
+  --poses 2,1,3,4,5,6,7,8,9,10,11,12,13,15,16 \
+  --holds 8,3,6,3,3,2,8,3,4,4,3,5,4,4,8 \
+  --fps 20 --breathe 1.5 --breathe-cycles 3 --breathe-levels 12 --sway 2 \
+  --shake 3:5,5:3,7:10,8:5 --travel 6:10,7:2,8:-4
+```
 
 ## The taunt
 
@@ -286,6 +314,25 @@ fixed where it is created rather than filtered out afterwards:
   them to swallow their antialiased edges (one pixel left standing walls the
   background flood out of a cell), measures the background with those rows and
   columns excluded, and paints the grid out in it.
+- **The aura had grey baked into it.** Her glow is painted *over* the sheet's
+  grey at partial opacity, so every pixel of it is a mix of gold and grey. Keyed
+  out faithfully and lifted onto a transparent background, that reads as
+  grey-tan mud rather than as fire — the aura on the taunt sheet averages
+  (178, 137, 104) in the source. `--unmatte` reads each glow pixel as
+  P = a·C + (1−a)·grey, takes the coverage from its distance off the grey, and
+  solves for the colour. The glow comes out genuinely semi-transparent, coloured
+  as painted, and fading out smoothly rather than ending on a keyed edge.
+
+  Where it may reach is the whole problem. Her hair sits 54 levels off the
+  background and her skin 74, so a reach that passes either turns the character
+  herself translucent — at 90 the entire figure washed out to a ghost. Two
+  things keep it honest: the band is capped a fixed distance in from the keyed
+  edge, and it is allowed to run further through pixels *brighter* than the
+  background than through darker ones. Glow emits, so it is always brighter than
+  what it was painted over; her hair is darker. That one asymmetry lets the band
+  run through an entire flame — where most of the baked-in grey actually is —
+  while her hair still stops it dead. Verified after every build: hoodie and
+  hair come out at alpha 255 and 250.
 - **The aura is not haze — it is Dahlia.** The warm glow around her is part of
   her design, so no sheet strips it: `--glow-tol` stays at 0 everywhere. The
   flag remains for sheets whose background genuinely shades off, along with
@@ -350,14 +397,12 @@ Frames are also cropped with a small margin rather than flush to the union of
 the loop, so no pixel sits on the canvas edge where a renderer that scales or
 offsets the sprite would shave it off.
 
-Every animation is audited frame by frame — 440 frames in total, not samples:
+Every animation is audited frame by frame — 555 frames in total, not samples.
 
-| | twirl | block | attack | hit | dodge | taunt |
-| --- | --- | --- | --- | --- | --- | --- |
-| frames touching the canvas edge | 0 | 0 | 0 | 0 | 0 | 0 |
-| islands under 24 px, i.e. grain | 0 | 0 | 0 | 0 | 0 | 0 |
-| aura kept | 96 % | 97 % | 96 % | 94 % | 95 % | 98 % |
-| line work vs the raw sheet | 119 % | 106 % | 126 % | 117 % | 131 % | 121 % |
+Across all eight: no frame touches a canvas edge, no island under 24 px
+anywhere, 94–98 % of the aura survives, and line work measures 106–131 % of the
+raw sheet — sharper than the source, because clearing the noise haze around an
+edge sharpens it.
 
 `build.sh` rebuilds all five from their sheets; the per-sheet flags differ
 because the sheets differ, and its comments say how.

@@ -7,11 +7,12 @@ set -e
 
 SLICE="python3 tools/slice_sheet.py"
 BUILD="python3 tools/assemble.py"
-CLEAN="--despeckle 24 --denoise 8 --align silhouette"
+CLEAN="--despeckle 24 --denoise 8 --unmatte 45 --align silhouette"
 
 # The warm aura around Dahlia is part of her design, so no sheet strips it:
-# --glow-tol stays at 0 everywhere. (The flag still exists for sheets whose
-# background really does shade off into haze.)
+# --glow-tol stays at 0 everywhere. --unmatte goes further and recovers the
+# colour it was painted in: the glow is laid over the sheet's grey at partial
+# opacity, so grey is baked into it, and lifted off as-is it reads tan.
 $SLICE assets/twirl_sheet.png -o out/dahlia_twirl \
   --tol 14 --glow-tol 0 $CLEAN --single dahlia_twirl
 $BUILD out/dahlia_twirl/frames -o out/dahlia_twirl -n dahlia_twirl \
@@ -57,3 +58,19 @@ $BUILD out/dahlia_dodge/frames -o out/dahlia_dodge -n dahlia_dodge \
   --poses 1,3,4,7,9,8,10,6,12,11 --holds 12,3,3,2,2,3,5,4,5,10 \
   --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
   --shake 10:3 --travel 1:0,3:0,4:-6,7:-20,9:-30,8:-22,10:-12,6:-6,12:-2,11:0
+
+# Going insane. Sheet A is panelled and holds her corrupted idle, the aura
+# guttering between gold and red; sheet B is the transformation itself.
+$SLICE assets/dahlia_insane_a_sheet.png -o out/dahlia_insane_idle \
+  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_insane_idle
+$BUILD out/dahlia_insane_idle/frames -o out/dahlia_insane_idle -n dahlia_insane_idle \
+  --poses 3,4,5,8,9,10,11,12,6,16 --holds 6,4,4,3,4,5,4,5,4,8 \
+  --fps 20 --breathe 1.4 --breathe-cycles 3 --breathe-levels 12 --sway 2
+
+$SLICE assets/dahlia_insane_b_sheet.png -o out/dahlia_insane \
+  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_insane
+$BUILD out/dahlia_insane/frames -o out/dahlia_insane -n dahlia_insane \
+  --poses 2,1,3,4,5,6,7,8,9,10,11,12,13,15,16 \
+  --holds 8,3,6,3,3,2,8,3,4,4,3,5,4,4,8 \
+  --fps 20 --breathe 1.5 --breathe-cycles 3 --breathe-levels 12 --sway 2 \
+  --shake 3:5,5:3,7:10,8:5 --travel 6:10,7:2,8:-4

@@ -212,6 +212,53 @@ def fill_holes(alpha, radius):
     return alpha | enclosed
 
 
+def unmatte(rgb, bg, alpha, tol, reach, depth):
+    """Recover the aura's real colour and give it real transparency.
+
+    Her glow is painted *over* the sheet's grey at partial opacity, so grey is
+    baked into every pixel of it: on this sheet the aura averages a muddy tan,
+    and keying it out faithfully keeps the mud. Lifted onto a transparent
+    background it then reads grey-tan rather than gold.
+
+    Each glow pixel is a mix, P = a*C + (1-a)*grey. Its distance from the grey
+    gives the coverage a, and the colour C follows. The result is a glow that is
+    genuinely semi-transparent, coloured as it was painted, and fading out
+    smoothly instead of ending on a keyed edge.
+
+    Only glow is treated, and the limits matter. Her hair sits 54 levels off the
+    background and her skin 74, so a reach that passes either turns the
+    character herself translucent — at 90 the whole figure washes out. Reach
+    stays below the hair, and the band is additionally capped a fixed distance
+    in from the keyed edge, so nothing deep inside her is ever a candidate.
+    """
+    d = np.abs(rgb.astype(np.int16) - bg).max(axis=2)
+
+    # Glow emits, so it is always brighter than the background it was painted
+    # over; her hair is darker than it. That separates the two far better than
+    # distance alone, and lets the band run through a whole flame — which is
+    # where most of the baked-in grey actually is — while her hair still stops
+    # it dead. The white hoodie is brighter still, and too far off to admit.
+    lum = rgb.astype(np.float32).mean(axis=2)
+    brighter = lum > float(bg.mean()) + 4
+    span = np.where(brighter, reach * 2.5, reach)
+    soft = d < span
+
+    near_edge = ~alpha
+    for _ in range(depth):
+        near_edge |= (np.roll(near_edge, 1, 0) | np.roll(near_edge, -1, 0) |
+                      np.roll(near_edge, 1, 1) | np.roll(near_edge, -1, 1))
+    band = outside(soft) & alpha & near_edge
+
+    a = np.clip((d.astype(np.float32) - tol) / np.maximum(span - tol, 1), 0, 1)
+    a = np.where(band, a, 1.0) * alpha
+
+    lifted = rgb.astype(np.float32)
+    safe = np.maximum(a, 1e-3)[:, :, None]
+    lifted = (lifted - (1 - a)[:, :, None] * bg.astype(np.float32)) / safe
+    out = np.where((band & (a > 0))[:, :, None], np.clip(lifted, 0, 255), rgb)
+    return out.astype(np.uint8), (a * 255).astype(np.uint8)
+
+
 def despeckle(alpha, min_size):
     """Drop specks: islands of opaque pixels too small to be drawn detail."""
     if min_size < 2:
@@ -340,7 +387,7 @@ def feet_anchor(mask, rect):
     return float(xs.mean()), float(hgt)
 
 
-def cut_frames(sheet, mask, alpha, rects, transparent, pad):
+def cut_frames(sheet, mask, alpha, rects, transparent, pad, soft=None):
     """Crop each rect onto a shared canvas, registered on the feet anchor."""
     anchors = [feet_anchor(mask, r) for r in rects]
     widths = [r[2] - r[0] for r in rects]
@@ -356,8 +403,11 @@ def cut_frames(sheet, mask, alpha, rects, transparent, pad):
         crop = sheet.crop(rect)
         if transparent:
             crop = crop.copy()
-            sub = alpha[rect[1]:rect[3], rect[0]:rect[2]]
-            crop.putalpha(Image.fromarray((sub * 255).astype(np.uint8), "L"))
+            if soft is not None:
+                sub = soft[rect[1]:rect[3], rect[0]:rect[2]]
+            else:
+                sub = (alpha[rect[1]:rect[3], rect[0]:rect[2]] * 255).astype(np.uint8)
+            crop.putalpha(Image.fromarray(sub, "L"))
         dx, dy = int(round(left - ax)) + pad, int(ch - pad - ay)
         canvas = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
         canvas.paste(crop, (dx, dy), crop)
@@ -438,6 +488,10 @@ def main():
                     help="the sheet boxes each pose in a drawn frame; paint the grid out first")
     ap.add_argument("--glow-depth", type=int, default=3,
                     help="how many pixels in from the silhouette --glow-tol may reach")
+    ap.add_argument("--unmatte", type=int, default=0, metavar="REACH",
+                    help="recover the aura's colour and softness from the grey it was painted over (try 45)")
+    ap.add_argument("--unmatte-depth", type=int, default=24,
+                    help="how far in from the keyed edge --unmatte may reach")
     ap.add_argument("--denoise-passes", type=int, default=1,
                     help="repeat the denoise; more clears more grain and costs more sharpness")
     ap.add_argument("--fill-holes", type=int, default=0, metavar="RADIUS",
@@ -502,8 +556,15 @@ def main():
 
     os.makedirs(os.path.join(args.outdir, "frames"), exist_ok=True)
 
+    soft_alpha = None
+    if args.unmatte:
+        rgb_lifted, soft_alpha = unmatte(rgb, bg, alpha, args.tol, args.unmatte,
+                                         args.unmatte_depth)
+        sheet = Image.fromarray(np.dstack([rgb_lifted, np.array(sheet)[:, :, 3]]))
+
     keyed = sheet.copy()
-    keyed.putalpha(Image.fromarray((alpha * 255).astype(np.uint8), "L"))
+    keyed.putalpha(Image.fromarray(soft_alpha if soft_alpha is not None
+                                   else (alpha * 255).astype(np.uint8), "L"))
     keyed.save(os.path.join(args.outdir, "sheet_keyed.png"))
     manifest = {"sheet": os.path.basename(args.sheet), "size": list(sheet.size),
                 "background": [int(c) for c in bg], "fps": args.fps,
@@ -517,7 +578,8 @@ def main():
     names += [f"row{i}" for i in range(len(names) + 1, len(rows) + 1)]
 
     for ri, (name, rects) in enumerate(zip(names, rows), 1):
-        frames, offsets = cut_frames(sheet, mask, alpha, rects, not args.opaque, args.pad)
+        frames, offsets = cut_frames(sheet, mask, alpha, rects, not args.opaque, args.pad,
+                                     soft_alpha)
         if args.align == "silhouette":
             frames, offsets = refine_alignment(frames, offsets)
         for fi, frame in enumerate(frames, 1):
