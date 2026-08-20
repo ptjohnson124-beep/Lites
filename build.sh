@@ -33,12 +33,6 @@ $BUILD out/dahlia_taunt/frames -o out/dahlia_taunt -n dahlia_taunt \
 # the background, so holes punched through it get filled back in.
 ACTION="--components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN"
 
-$SLICE assets/dahlia_attack_sheet.png -o out/dahlia_attack $ACTION --single dahlia_attack
-$BUILD out/dahlia_attack/frames -o out/dahlia_attack -n dahlia_attack \
-  --poses 1,3,6,7,8,9,10,11,13,15,16 --holds 12,8,3,2,2,6,3,3,3,5,10 \
-  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
-  --shake 9:4 --travel 1:0,3:0,6:6,7:18,8:28,9:32,10:28,11:18,13:8,15:2,16:0
-
 $SLICE assets/dahlia_dodge_sheet.png -o out/dahlia_dodge $ACTION --single dahlia_dodge
 $BUILD out/dahlia_dodge/frames -o out/dahlia_dodge -n dahlia_dodge \
   --poses 1,3,4,7,9,8,10,6,12,11 --holds 12,3,3,2,2,3,5,4,5,10 \
@@ -128,3 +122,25 @@ $BUILD out/dahlia_hit/frames -o out/dahlia_hit -n dahlia_hit \
   --poses 1,2,3,4,5,6,7,8,7,8 --holds 8,2,2,3,4,4,6,8,6,8 \
   --fps 20 --breathe 1.3 --breathe-cycles 3 --breathe-levels 12 --sway 2 \
   --shake 3:9,4:6,5:3 --travel 1:0,2:0,3:-3,4:-9,5:-15,6:-11,7:-7,8:-6
+
+# Attacking, in the new style: two of them.
+#
+# The lunging slash is the primary attack --- wind up, leap in, one big arc,
+# recover --- and travels 22px forward across the leap. Replaces the old-style
+# attack at the same output path.
+$SLICE assets/dahlia_attack_b_sheet.png -o out/dahlia_attack \
+  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_attack
+$BUILD out/dahlia_attack/frames -o out/dahlia_attack -n dahlia_attack \
+  --poses 1,2,3,4,5,6,7,8 --holds 6,3,2,4,3,3,4,8 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 4:5 --travel 1:0,2:0,3:12,4:22,5:18,6:12,7:6,8:0
+
+# The spin combo is two attacks in one sheet: a stationary spin slash, then a
+# thrust that carries her 16px forward. Travel stays at zero through the spin
+# and only starts at the thrust, so the two halves read as separate beats.
+$SLICE assets/dahlia_attack_a_sheet.png -o out/dahlia_attack_spin \
+  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_attack_spin
+$BUILD out/dahlia_attack_spin/frames -o out/dahlia_attack_spin -n dahlia_attack_spin \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12 --holds 6,3,2,5,3,2,2,6,3,3,4,8 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 4:5,8:4 --travel 1:0,2:0,3:0,4:0,5:0,6:4,7:10,8:16,9:14,10:8,11:3,12:0

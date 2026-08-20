@@ -1,5 +1,5 @@
 {
-  "name": "dahlia_attack",
+  "name": "dahlia_attack_spin",
   "poses": [
     1,
     2,
@@ -8,7 +8,11 @@
     5,
     6,
     7,
-    8
+    8,
+    9,
+    10,
+    11,
+    12
   ],
   "played": [
     1,
@@ -26,14 +30,12 @@
     4,
     4,
     4,
+    4,
     5,
     5,
     5,
     6,
     6,
-    6,
-    7,
-    7,
     7,
     7,
     8,
@@ -42,26 +44,42 @@
     8,
     8,
     8,
-    8,
-    8
+    9,
+    9,
+    9,
+    10,
+    10,
+    10,
+    11,
+    11,
+    11,
+    11,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12
   ],
-  "frames": 33,
+  "frames": 47,
   "fps": 20.0,
-  "loop_seconds": 1.65,
+  "loop_seconds": 2.35,
   "pingpong": false,
   "bob": 2,
   "sway": 2,
   "breathe": 1.2,
   "breathe_cycles": 2.0,
-  "shake": "4:5",
+  "shake": "4:5,8:4",
   "offset": null,
-  "travel": "1:0,2:0,3:12,4:22,5:18,6:12,7:6,8:0",
+  "travel": "1:0,2:0,3:0,4:0,5:0,6:4,7:10,8:16,9:14,10:8,11:3,12:0",
   "stabilize": "core",
   "size": [
-    414,
-    359
+    369,
+    251
   ],
-  "strip": "dahlia_attack_strip.png",
+  "strip": "dahlia_attack_spin_strip.png",
   "cols": 8,
-  "strip_rows": 5
+  "strip_rows": 6
 }

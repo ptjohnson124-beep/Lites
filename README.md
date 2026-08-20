@@ -13,7 +13,8 @@ sheet lands, at which point the same two commands rebuild them.
 | animation | source | result |
 | --- | --- | --- |
 | **idle** (canonical) | `assets/dahlia_idle_sheet.png`, 6 drawings | `out/dahlia_idle/` — 61 frames, 3.05 s |
-| **attack** | `assets/dahlia_attack_sheet.png`, 20 drawings | `out/dahlia_attack/` — 57 frames, 2.85 s |
+| **attack** (new style) | `assets/dahlia_attack_b_sheet.png`, 8 drawings | `out/dahlia_attack/` — 33 frames, 1.65 s |
+| **spin combo** (new style) | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
 | **dodge** | `assets/dahlia_dodge_sheet.png`, 20 drawings | `out/dahlia_dodge/` — 49 frames, 2.45 s |
 | **taunt** | `assets/dahlia_taunt_sheet.png`, 15 drawings | `out/dahlia_taunt/` — 59 frames, 2.95 s |
 | **going insane** | `assets/dahlia_insane_b_sheet.png`, 16 drawings | `out/dahlia_insane/` — 68 frames, 3.4 s |
@@ -35,177 +36,36 @@ python3 -m http.server 8000
 # http://localhost:8000/web/index.html?m=../out/dahlia_block/dahlia_block.json
 ```
 
-## The attack
+## Attacking
 
-```sh
-python3 tools/slice_sheet.py assets/dahlia_attack_sheet.png -o out/dahlia_attack \
-  --components --tol 18 --glow-tol 0 --fill-holes 3 --despeckle 24 --denoise 5 \
-  --single dahlia_attack --align silhouette
-python3 tools/assemble.py out/dahlia_attack/frames -o out/dahlia_attack -n dahlia_attack \
-  --poses 1,3,6,7,8,9,10,11,13,15,16 --holds 12,8,3,2,2,6,3,3,3,5,10 \
-  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
-  --shake 9:4 --offset 7:16,8:24,9:26,10:24,11:16,13:8
-```
+Two attacks arrived on two sheets, and they are different moves rather than two
+takes on one.
 
-| | pose | time | |
-| --- | --- | --- | --- |
-| ready | 1, 3 | 1.00 s | stance, weight shifts |
-| **coil** | 6 | 0.15 s | arm back, about to go |
-| **dash** | 7 | 0.10 s | the drawn motion blur, 16 px forward |
-| | 8 | 0.10 s | blade out, 24 px forward |
-| **strike** | 9 | 0.30 s | thrust at full extension, jolt of 4 px |
-| | 10 | 0.15 s | follow through |
-| recovery | 11, 13 | 0.30 s | pulling back |
-| | 15, 16 | 0.75 s | settles, back to ready |
+**`dahlia_attack`** is the lunging slash — wind up, leap in, one big arc, and
+out. 33 frames, 1.65 s, the shortest animation in the set, which is right for a
+basic attack. She travels 22 px forward across the leap and walks it back over
+the recovery.
 
-Half a second covers coil, dash and strike, with the sprite carried 32 px
-forward across the lunge and walked back over the recovery.
+**`dahlia_attack_spin`** is a combo: a stationary spin slash into a thrust.
+47 frames, 2.35 s. Travel stays at zero through the spin and only starts at the
+thrust, which is what keeps the two halves reading as separate beats rather than
+one long lurch forward — the spin is a pivot on the spot, the thrust is the part
+that closes distance.
 
-Registration holds a character still on purpose, so a loop cannot drift — right
-for an idle, wrong for an attack, and neither alignment mode recovers the ground
-she covers, because the drawings disagree about where she is standing. So travel
-is authored. Asking for a raw shift per pose (`--offset`) does not survive
-contact with the drawings, though: each already sits at its own spot once
-registered, so equal shifts produce an uneven path, and the dodge came out going
-out, back, further out, and back again — a stumble rather than a dash.
-`--travel` takes where she should be *standing* instead, measures each pose's
-own footing from the desaturated pixels of its lower body — hair being the most
-mobile thing on the character, it gets no vote on where her feet are — and
-works out the shift from there. All three travelling animations use it.
+| | pose | time | ground | |
+| --- | --- | --- | --- | --- |
+| ready | 1, 2 | 0.45 s | 0 | wind up |
+| | 3 | 0.10 s | 0 | swing down |
+| **spin** | 4 | 0.25 s | 0 | the teal ring, 5 px jolt |
+| | 5 | 0.15 s | 0 | out of the spin |
+| | 6, 7 | 0.20 s | 4 → 10 | thrust winds out |
+| **thrust** | 8 | 0.30 s | 16 | full extension, gold aura, 4 px jolt |
+| | 9, 10, 11 | 0.50 s | 14 → 3 | pulling back |
+| ready | 12 | 0.40 s | 0 | back to stance |
 
-## The idle
-
-Six drawings, and the loop breathes between the flourishes, which is what an
-idle needs to do:
-
-| | pose | time | |
-| --- | --- | --- | --- |
-| **breath** | 1 | 0.90 s | empty-handed stance, breathing |
-| deploy | 2 | 0.15 s | the dagger flicks out |
-| **flourish** | 3 | 0.15 s | spun flat across her chest |
-| | 4 | 0.35 s | spinning at her side, eyes closed grin |
-| **breath** | 5, 6, 5 | 1.40 s | held level, breathing — the two drawings alternate as the micro-variation |
-| retract | 2 | 0.10 s | and back to empty hands |
-
-The dagger deploying and retracting is the sheet's own design, so the loop can
-return to an empty-handed breath without a prop popping in and out — the seam
-transition measures smaller than the deploy itself.
-
-## The dagger-flip idle
-
-The strongest idle source of the set: all fifteen drawings are phases of one
-action — she tosses the dagger, watches it spin overhead through its drawn gold
-swirl, catches it with a flourish and returns to her stance — and the ornate
-teal dagger is identical in every drawing. Nothing had to be dropped, the cycle
-ends on the pose it starts from (no ping-pong needed), and the airborne dagger
-gives the loop real secondary motion instead of relying on holds and breathing
-to stay alive. 59 frames, 2.95 s; the toss itself takes 1.2 s, book-ended by
-breathing holds.
-
-This supersedes `dahlia_twirl` as the recommended idle. The twirl sheet only had
-five usable drawings (the knife teleported in the rest), so that loop is five
-seconds of stare with a two-frame flourish — better kept as an occasional
-second idle, the way games fire a rare variant after the main idle has looped a
-few times. Both stay built.
-
-## Cyberpsychosis
-
-A different failure mode from the insanity sheets: digital rather than demonic.
-Her eyes go red, an afterimage splits off her, red static crawls up her chest,
-and she tears into two copies of herself before it peaks and lets her go. The
-episode plays start to finish in 4.65 s:
-
-| | pose | time | |
-| --- | --- | --- | --- |
-| normal | 1, 2 | 0.70 s | stance, gold aura |
-| onset | 3 | 0.25 s | eyes go red, first artefacts |
-| | 4 | 0.30 s | an afterimage splits off, small jolt |
-| | 5 | 0.20 s | static in her chest |
-| **the tear** | 6, 7, 6, 7 | 0.45 s | ripped into two, the two drawings flickered against each other |
-| **peak** | 8 | 0.60 s | full aura, grinning, the loop's biggest jolt |
-| | 9 | 0.15 s | one dark flash — the deepest point, gone as fast as it came |
-| comedown | 12, 11, 10 | 0.70 s | red-eyed, steadying |
-| | 13, 14 | 0.50 s | flushed, catching her breath |
-| back | 15, 16 | 0.80 s | herself again |
-
-The two tear drawings are the same trick as the taunt's flame: flickering
-between them animates the glitch instead of holding a static rip. The dark
-pose 9 gets a single 0.15 s flash — held any longer it reads as a costume
-change; flashed, it reads as something underneath showing through.
-
-The audit's flat-area noise reads high on this sheet (11.4 against 4–6
-elsewhere) and that is correct behaviour: the red static *is* noise, drawn on
-purpose, and the denoiser's edge threshold protects it the same way it protects
-line work.
-
-## The insanity transformation
-
-The heaviest sheet: bloodied hoodie, the drawing itself glitching apart, and two
-frames of full corruption wrapped in lightning. The clip is the descent — hand
-to her head, the glitch escalating, a burst, shaking, a second burst, then she
-comes down head-bowed and ends standing, bloodied and still sparking. 3.95 s,
-with 8 px and 6 px jolts on the two bursts.
-
-The sheet also draws a corrupted lunge (poses 6–8) — that is an attack she does
-in this state, not part of the transformation, so it is left out of this clip
-and available for an insane-attack animation later.
-
-## Going insane
-
-Two sheets arrived for this, and they are not two takes on one animation —
-they are two different animations.
-
-**`dahlia_insane`** is the transformation, and it has a whole arc drawn into it:
-she is standing normally, she grabs her head, she fights it, the drawing itself
-starts glitching, then one frame of full corruption with the lightning and the
-red — and then she comes down, hunched and panting, until she is upright again.
-3.4 s, and the peak holds for four tenths of a second under the biggest jolt in
-the whole set, 10 px.
-
-**`dahlia_insane_idle`** is what she is like once she is there. That sheet
-draws the same stance over and over with the aura guttering between gold and
-red and her eyes lit white, so the loop plays it as exactly that: an unstable
-idle whose colour will not settle. Breathing runs faster here — three cycles to
-the loop rather than two.
-
-```sh
-python3 tools/assemble.py out/dahlia_insane/frames -o out/dahlia_insane -n dahlia_insane \
-  --poses 2,1,3,4,5,6,7,8,9,10,11,12,13,15,16 \
-  --holds 8,3,6,3,3,2,8,3,4,4,3,5,4,4,8 \
-  --fps 20 --breathe 1.5 --breathe-cycles 3 --breathe-levels 12 --sway 2 \
-  --shake 3:5,5:3,7:10,8:5 --travel 6:10,7:2,8:-4
-```
-
-## The taunt
-
-She snaps a flame alight in her palm, shows it off, and gives a smug little
-gesture. Built from 13 of the 15 drawings.
-
-| | pose | time | |
-| --- | --- | --- | --- |
-| ready | 14 | 0.50 s | standing, knife at her hip |
-| wind up | 1, 2 | 0.30 s | hand comes up, fingers spread |
-| **spark** | 3 | 0.10 s | ignition flash, 4 px pop |
-| | 4 | 0.10 s | it catches |
-| **the flame** | 6, 5, 6, 9, 6, 5 | 0.70 s | held up, flickering |
-| | 9, 11 | 0.30 s | lowered, burning down |
-| | 12 | 0.10 s | out |
-| **the taunt** | 8, 7 | 0.45 s | hand to her chin, smug |
-| | 13 | 0.40 s | back to ready |
-
-**The flame is the reason this sheet is worth more than its 15 drawings.** Four
-of them — 4, 5, 6 and 9 — are the same held flame at different heights and
-shapes, which makes them frames of a fire rather than four separate poses.
-Cycling them two frames at a time through the hold gives a flame that dances
-for three quarters of a second, where holding any single drawing that long
-would have given a candle painted on her hand. Her arm rides slightly with it,
-because the drawings put the flame at slightly different heights, and that
-reads as the weight of holding something alive.
-
-The knife stays at her hip in all 15 drawings, so nothing had to be dropped for
-prop continuity. Poses 7 and 8 have no flame in them, so they are played after
-it burns out rather than during — the smug beat lands on an empty hand, which
-is the better read anyway.
+Both open and close on near-identical ready poses, so both loop without a
+ping-pong: the combo's seam measures 8.3 against a mean step of 19.3, the
+cleanest seam of any animation here.
 
 ## The dodge
 
