@@ -16,6 +16,7 @@ sheet lands, at which point the same two commands rebuild them.
 | **attack** (new style) | `assets/dahlia_attack_b_sheet.png`, 8 drawings | `out/dahlia_attack/` — 33 frames, 1.65 s |
 | **spin combo** (new style) | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
 | **evasion** (new style) | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 56 frames, 2.8 s |
+| **skill / special** | `assets/dahlia_skill_sheet.png`, 15 drawings | `out/dahlia_skill/` — 83 frames, 4.15 s |
 | **counter** (v2) (new style) | `assets/dahlia_counter_sheet.png`, 12 drawings | `out/dahlia_counter/` — 56 frames, 2.8 s |
 | **taunt** (new style) | `assets/dahlia_taunt_v2_sheet.png`, 12 drawings | `out/dahlia_taunt/` — 75 frames, 3.75 s |
 | **going insane** | `assets/dahlia_insane_b_sheet.png`, 16 drawings | `out/dahlia_insane/` — 68 frames, 3.4 s |
@@ -396,6 +397,17 @@ fixed where it is created rather than filtered out afterwards:
   the bottom third — the gap between her boots and the text — and paints out
   everything below it. On a sheet with no captions the quietest line is already
   below her feet and nothing is lost.
+- **Two poses joined by a wisp.** On the skill sheet the last two drawings' hair
+  touches across the cell border, so they came back as one island twice the
+  width of its neighbours. Width alone cannot judge this — that sheet also has a
+  burst which legitimately overflows its cell and is just as wide. The ink
+  profile across the island separates them: two figures bridged by a wisp show a
+  deep valley between them (29 against a median of 130), where a continuous
+  effect never thins out (76 at its lowest). Splitting on the valley alone
+  over-split working poses, so both halves must also carry a figure's worth of
+  ink, judged against the typical island on the sheet — a raised arm thins the
+  profile inside a single figure too. Verified against the five other sheets
+  that use `--components`: all still segment to the same counts.
 - **Poses that overlap.** Gap splitting fails as soon as two poses overlap once
   flattened onto an axis — on the attack sheet one pose's hair reaches into the
   next one's column and a whole row of four collapsed into a single frame.

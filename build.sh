@@ -142,7 +142,7 @@ $SLICE assets/dahlia_counter_v2_sheet.png -o out/dahlia_counter \
 # with the dagger retracted, so the deploy lands mid-loop rather than on the
 # seam, the same reason the block opens where it does.
 $BUILD out/dahlia_counter/frames -o out/dahlia_counter -n dahlia_counter \
-  --poses 7,8,1,2,3,4,5,6,9,10 --holds 10,5,5,3,2,7,4,4,4,6 \
+  --poses 7,8,1,2,3,4,5,6,9,10 --holds 12,6,6,4,2,12,5,7,5,8 \
   --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
   --shake 4:5 --travel 7:0,8:0,1:0,2:-4,3:14,4:20,5:16,6:10,9:4,10:0
 
@@ -174,3 +174,16 @@ $BUILD out/dahlia_fully_insane_idle/frames -o out/dahlia_fully_insane_idle -n da
   --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48 \
   --holds 1,2,1,6,1,2,2,1,1,4,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,4,2,1,1,1,2,1,1,1,4,2,1,2,2,1,1,6,2,1 \
   --fps 20 --breathe 0 --sway 0 --despeckle 24
+
+# Special / skill. A charge-and-release: she winds up for half a second while
+# the blade charges, dashes and spins through two smear frames at 0.1s each,
+# bursts, then holds the beam 0.6s --- the longest single beat in the set,
+# which is what a special is for. Travels 30px forward and walks it back.
+$SLICE assets/dahlia_skill_sheet.png -o out/dahlia_skill \
+  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_skill
+$BUILD out/dahlia_skill/frames -o out/dahlia_skill -n dahlia_skill \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 \
+  --holds 8,4,6,10,2,2,3,6,12,5,4,4,4,5,8 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 4:2,8:8,9:5 \
+  --travel 1:0,2:0,3:0,4:0,5:14,6:22,7:24,8:26,9:30,10:22,11:14,12:8,13:4,14:2,15:0

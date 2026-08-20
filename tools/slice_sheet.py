@@ -455,6 +455,40 @@ def frames_from_components(mask, min_px):
         near[0] = min(near[0], int(b[0])); near[1] = min(near[1], int(b[1]))
         near[2] = max(near[2], int(b[2])); near[3] = max(near[3], int(b[3]))
 
+    # Two poses whose hair happens to touch come back as one island twice the
+    # width of its neighbours. A wide effect — a burst overflowing its cell —
+    # looks the same by width alone, so the test is the ink profile across the
+    # island: two figures bridged by a wisp show a deep valley between them,
+    # where a continuous effect never thins out. Split on the valley only.
+    typical = float(np.median([n for n in sizes if n >= min_px]))
+    split = []
+    for x0, y0, x1, y1 in [tuple(p) for p in poses]:
+        prof = mask[y0:y1, x0:x1].sum(axis=0).astype(float)
+        margin = 30
+        nonzero = prof[prof > 0]
+        if len(prof) < 2 * margin + 10 or not len(nonzero):
+            split.append([x0, y0, x1, y1])
+            continue
+        interior = prof[margin:-margin]
+        cut = int(np.argmin(interior)) + margin
+
+        # A valley alone is not enough: a raised arm or a sweep of hair thins
+        # the profile inside a single figure too. Both sides also have to carry
+        # a figure's worth of ink, judged against the typical island on the
+        # sheet, or a pose gets chopped into a pose and a fragment.
+        halves = []
+        for a, b in ((x0, x0 + cut), (x0 + cut, x1)):
+            ys_, xs_ = np.nonzero(mask[y0:y1, a:b])
+            halves.append((len(xs_), a, b, ys_, xs_))
+        if (prof[cut] < np.median(nonzero) * 0.35
+                and all(n > typical * 0.5 for n, *_ in halves)):
+            for n, a, b, ys_, xs_ in halves:
+                split.append([a + int(xs_.min()), y0 + int(ys_.min()),
+                              a + int(xs_.max()) + 1, y0 + int(ys_.max()) + 1])
+        else:
+            split.append([x0, y0, x1, y1])
+    poses = split
+
     # Reading order: group into rows by vertical position, then left to right.
     heights = sorted(p[3] - p[1] for p in poses)
     tol = heights[len(heights) // 2] / 2
