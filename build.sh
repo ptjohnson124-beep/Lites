@@ -168,8 +168,8 @@ $BUILD out/dahlia_fully_insane_idle/frames -o out/dahlia_fully_insane_idle -n da
 # the blade charges, dashes and spins through two smear frames at 0.1s each,
 # bursts, then holds the beam 0.6s --- the longest single beat in the set,
 # which is what a special is for. Travels 30px forward and walks it back.
-$SLICE assets/dahlia_skill_sheet.png -o out/dahlia_skill \
-  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_skill
+$SLICE assets/dahlia_skill_v2_sheet.png -o out/dahlia_skill \
+  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_skill
 $BUILD out/dahlia_skill/frames -o out/dahlia_skill -n dahlia_skill \
   --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 \
   --holds 10,6,8,14,2,3,4,8,16,7,5,5,5,6,10 \
@@ -181,11 +181,11 @@ $BUILD out/dahlia_skill/frames -o out/dahlia_skill -n dahlia_skill \
 # whatever plays it, and baking the ground into the loop would have her dash out
 # and slide back every cycle. The sheet gives one leap, one stride and one dash
 # smear; the rest are stances, so two of those close the loop.
-# Moving is not built: see README — the supplied export is too small to
-# segment reliably (about 200x105 per sprite against ~350x370 elsewhere).
-
-$SLICE assets/dahlia_ranged_sheet.png -o out/dahlia_ranged \
-  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_ranged
+# Forced 3x4 grid, not --components: the lunge pose and the muzzle-blast
+# pose overlap into one island, and clustering them apart leaves one frame
+# empty and the other holding two figures. Checked for clipping: none.
+$SLICE assets/dahlia_ranged_v2_sheet.png -o out/dahlia_ranged \
+  --checker --rows 3 --cols 4 --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_ranged
 $BUILD out/dahlia_ranged/frames -o out/dahlia_ranged -n dahlia_ranged \
   --poses 1,2,3,4,5,7,8,6 --holds 9,3,6,5,5,8,6,6 \
   --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
@@ -210,3 +210,14 @@ $BUILD out/dahlia_soul/frames -o out/dahlia_soul -n dahlia_soul \
   --holds 8,4,4,4,4,8,4,4,3,10,5,3,4,4,4,7 \
   --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
   --shake 6:3,10:8,11:4 --travel 9:12,10:16,11:10,12:6,13:2
+
+# Moving: a 36-frame run cycle, the densest sheet in the set. Uniform one-frame
+# holds and no breathing or sway — the drawings already carry every bit of the
+# motion, and a cycle wants even spacing where an action wants beats. Built in
+# place; whatever plays it supplies the ground speed.
+$SLICE assets/dahlia_move_v3_sheet.png -o out/dahlia_move \
+  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_move
+$BUILD out/dahlia_move/frames -o out/dahlia_move -n dahlia_move \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36 \
+  --holds 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 \
+  --fps 25 --breathe 0 --sway 0

@@ -578,7 +578,29 @@ in the burst frames. Raising the threshold to the same 24 the rest of the set
 uses costs 0.41 % of the most disintegrated frame, so the drawn debris survives
 and the artefacts do not.
 
+## Ownership when boxes overlap
+
+A frame is cropped from a rect, but a rect is only a bounding box, so a crop can
+pick up whatever else falls inside it. Each island is therefore assigned to one
+pose and everything else masked out — and *how* that assignment is made turned
+out to matter twice.
+
+Assigning by rect order let whichever rect was listed first claim shared ink,
+leaving a neighbour visible in about half the overlaps. Assigning by "the rect
+containing the island's centre" fixed that and broke something subtler: where a
+wide pose's box overlaps a neighbour's, the neighbour's figure sits inside both,
+the wide one swallowed it, and one frame came out empty while another held two
+characters. The rule is now the *smallest* containing rect, which is always the
+one the figure belongs to.
+
+Where two poses genuinely fuse into one island — the ranged sheet's lunge and
+its muzzle blast — no ownership rule helps, because there is only one island.
+That sheet is cut on a forced 3x4 grid instead, verified to clip nothing.
+
 ## The one sheet that does not build
+
+*(Resolved: `dahlia_move_v3_sheet.png` supersedes it and builds — 36 frames.
+The note below is kept because the diagnosis holds for any future export.)*
 
 `assets/dahlia_move_v2_sheet.png` is not in `build.sh`. It holds a genuine run
 cycle — seventeen drawings, the best locomotion art in the set — but it was

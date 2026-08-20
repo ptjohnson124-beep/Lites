@@ -73,8 +73,8 @@
   "travel": "1:0,2:8,3:12,4:6,5:2,7:0,8:0,6:0",
   "stabilize": "core",
   "size": [
-    351,
-    307
+    331,
+    301
   ],
   "strip": "dahlia_ranged_strip.png",
   "cols": 8,

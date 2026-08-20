@@ -520,14 +520,28 @@ def frames_from_components(mask, min_px, gap=10):
     # first, which left a neighbour visible in about half the cases. Each
     # island instead goes to the pose whose rect contains its centre, so a
     # figure travels with its own effects and nothing else comes along.
+    # Ownership comes from the clustering, not from re-deriving it afterwards.
+    # Testing which rect contains an island's centre looks equivalent and is
+    # not: where a wide pose's box overlaps its neighbour's, the neighbour's
+    # figure lands inside the wrong rect and one frame comes out empty while
+    # another holds two characters.
+    # Each island goes to the *smallest* rect that contains its centre. Simply
+    # taking the first containing rect is not equivalent: where a wide pose's
+    # box overlaps a neighbour's, the neighbour's figure falls inside both, and
+    # the wide one swallowed it — leaving one frame empty and another holding
+    # two characters. The smaller box is always the one the figure belongs to.
     flat_rects = [r for row in ordered for r in row]
     owner = np.zeros(mask.shape, np.int32)
     for lbl, (bx, by, bx1, by1) in zip(np.unique(labels), box):
         cx, cy = (bx + bx1) / 2, (by + by1) / 2
+        best, best_area = 0, None
         for n, (x0, y0, x1, y1) in enumerate(flat_rects, 1):
             if x0 <= cx < x1 and y0 <= cy < y1:
-                owner[lab == lbl] = n
-                break
+                area = (x1 - x0) * (y1 - y0)
+                if best_area is None or area < best_area:
+                    best, best_area = n, area
+        if best:
+            owner[lab == lbl] = best
     return ordered, owner
 
 
