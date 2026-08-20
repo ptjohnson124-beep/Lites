@@ -97,3 +97,12 @@ $BUILD out/dahlia_cyberpsychosis/frames -o out/dahlia_cyberpsychosis -n dahlia_c
   --holds 8,6,5,6,4,2,2,2,3,12,3,4,5,5,5,5,6,10 \
   --fps 20 --breathe 1.4 --breathe-cycles 3 --breathe-levels 12 --sway 2 \
   --shake 4:3,6:4,7:4,8:6,9:5
+
+# The dagger-flip idle: one coherent toss cycle across all 15 drawings, the
+# ornate teal dagger consistent in every one. Ends where it starts, so it
+# cycles without ping-pong. Poses 12, 14, 15 are spares.
+$SLICE assets/dahlia_flip_idle_sheet.png -o out/dahlia_flip_idle \
+  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_flip_idle
+$BUILD out/dahlia_flip_idle/frames -o out/dahlia_flip_idle -n dahlia_flip_idle \
+  --poses 1,2,3,4,5,6,7,8,9,10,11 --holds 14,4,2,3,6,4,3,2,6,5,10 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 7:2

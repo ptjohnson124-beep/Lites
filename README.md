@@ -16,6 +16,7 @@ browser player for previewing the result.
 | **getting hit** | `assets/dahlia_hit_sheet.png`, 20 drawings | `out/dahlia_hit/` — 55 frames, 2.75 s |
 | **block** | `assets/dahlia_block_sheet.png`, 12 drawings | `out/dahlia_block/` — 70 frames, 3.5 s |
 | **dagger twirl idle** | `assets/twirl_sheet.png`, 12 drawings | `out/dahlia_twirl/` — 150 frames, 7.5 s |
+| **dagger-flip idle** | `assets/dahlia_flip_idle_sheet.png`, 15 drawings | `out/dahlia_flip_idle/` — 59 frames, 2.95 s |
 
 Each output directory holds `NAME.gif`, `NAME.webp`, `NAME_strip.png` (a sprite
 strip for engine use) and `NAME.json` describing it.
@@ -64,6 +65,23 @@ out, back, further out, and back again — a stumble rather than a dash.
 own footing from the desaturated pixels of its lower body — hair being the most
 mobile thing on the character, it gets no vote on where her feet are — and
 works out the shift from there. All three travelling animations use it.
+
+## The dagger-flip idle
+
+The strongest idle source of the set: all fifteen drawings are phases of one
+action — she tosses the dagger, watches it spin overhead through its drawn gold
+swirl, catches it with a flourish and returns to her stance — and the ornate
+teal dagger is identical in every drawing. Nothing had to be dropped, the cycle
+ends on the pose it starts from (no ping-pong needed), and the airborne dagger
+gives the loop real secondary motion instead of relying on holds and breathing
+to stay alive. 59 frames, 2.95 s; the toss itself takes 1.2 s, book-ended by
+breathing holds.
+
+This supersedes `dahlia_twirl` as the recommended idle. The twirl sheet only had
+five usable drawings (the knife teleported in the rest), so that loop is five
+seconds of stare with a two-frame flourish — better kept as an occasional
+second idle, the way games fire a rare variant after the main idle has looped a
+few times. Both stay built.
 
 ## Cyberpsychosis
 
@@ -449,7 +467,7 @@ Frames are also cropped with a small margin rather than flush to the union of
 the loop, so no pixel sits on the canvas edge where a renderer that scales or
 offsets the sprite would shave it off.
 
-Every animation is audited frame by frame — 727 frames in total, not samples.
+Every animation is audited frame by frame — 786 frames in total, not samples.
 
 Across all eight: no frame touches a canvas edge, no island under 24 px
 anywhere, 94–98 % of the aura survives, and line work measures 106–131 % of the
