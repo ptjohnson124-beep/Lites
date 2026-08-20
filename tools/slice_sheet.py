@@ -78,6 +78,48 @@ def outside(free):
     return reach
 
 
+def label_components(mask):
+    """Connected-component labels for a boolean mask, 4-connected.
+
+    Same run-at-a-time propagation as the background flood: every run in a
+    scanline takes the highest label it contains, alternating rows and columns
+    until the labels stop changing.
+    """
+    h, w = mask.shape
+    lab = np.where(mask, np.arange(mask.size).reshape(h, w), -1)
+
+    def sweep(lab, mask):
+        flat_m, flat_l = mask.ravel(), lab.ravel()
+        if not flat_m.any():
+            return lab
+        prev = np.concatenate(([False], flat_m[:-1]))
+        row_start = (np.arange(flat_m.size) % mask.shape[1]) == 0
+        starts = np.flatnonzero(flat_m & (~prev | row_start))
+        seg_max = np.maximum.reduceat(flat_l, starts)
+        seg_of = np.searchsorted(starts, np.arange(flat_m.size), "right") - 1
+        return np.where(flat_m, seg_max[np.maximum(seg_of, 0)], -1).reshape(mask.shape)
+
+    for _ in range(64):
+        grown = sweep(lab, mask)
+        grown = sweep(np.ascontiguousarray(grown.T), np.ascontiguousarray(mask.T)).T
+        if np.array_equal(grown, lab):
+            break
+        lab = grown
+    return lab
+
+
+def despeckle(alpha, min_size):
+    """Drop specks: islands of opaque pixels too small to be drawn detail."""
+    if min_size < 2:
+        return alpha
+    lab = label_components(alpha)
+    ids, counts = np.unique(lab[alpha], return_counts=True)
+    doomed = set(ids[counts < min_size].tolist())
+    if not doomed:
+        return alpha
+    return alpha & ~np.isin(lab, list(doomed))
+
+
 def bands(occupied, min_size, min_gap):
     """Split a 1-D occupancy profile into runs of True, merging short gaps."""
     runs, start = [], None
@@ -232,6 +274,10 @@ def main():
     ap.add_argument("--align", choices=("feet", "silhouette"), default="feet",
                     help="feet: anchor on the lowest ink. silhouette: also fine-register whole frames")
     ap.add_argument("--tol", type=int, default=24, help="background colour tolerance (0-255)")
+    ap.add_argument("--glow-tol", type=int, default=0,
+                    help="strip soft haze around the character up to this distance from the background")
+    ap.add_argument("--despeckle", type=int, default=24,
+                    help="drop opaque islands smaller than this many pixels")
     ap.add_argument("--pad", type=int, default=4)
     ap.add_argument("--min-gap", type=int, default=4, help="smallest background gap that splits frames")
     ap.add_argument("--min-size", type=int, default=16, help="smallest accepted frame width/height")
@@ -244,6 +290,17 @@ def main():
     mask = foreground_mask(rgb, bg, args.tol)
 
     alpha = ~outside(~mask)
+
+    if args.glow_tol:
+        # The sheet paints a soft warm aura around the character. It is real
+        # ink, so the keying tolerance leaves it in place, where it reads as a
+        # blurred halo tracing the whole silhouette. A second flood inward at a
+        # much looser tolerance eats haze that shades off into the background
+        # while genuine line work, hair and the blade trail stop it.
+        haze = np.abs(rgb.astype(np.int16) - bg).max(axis=2) < args.glow_tol
+        alpha &= ~outside(haze)
+
+    alpha = despeckle(alpha, args.despeckle)
 
     rows = find_frames(mask, args.rows, args.cols, args.min_gap, args.min_size)
     if not rows:

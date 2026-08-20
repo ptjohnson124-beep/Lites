@@ -107,6 +107,28 @@ def timeline(order, holds, pingpong):
     return [i for i, c in zip(seq, counts) for _ in range(c)]
 
 
+def resize_premultiplied(frame, size):
+    """Resize without dragging transparent pixels into the edges.
+
+    Resampling straight RGBA blends the colour of fully transparent pixels into
+    everything next to them, which fringes the whole silhouette. Scaling in
+    premultiplied form and dividing the alpha back out afterwards keeps edges
+    as sharp as the drawing.
+    """
+    a = np.array(frame).astype(np.float32)
+    a[:, :, :3] *= a[:, :, 3:4] / 255.0
+    out = np.array(Image.fromarray(a.astype(np.uint8)).resize(size, Image.LANCZOS)).astype(np.float32)
+    # Lanczos undershoots around a hard silhouette and leaves a dusting of
+    # alpha-3-to-8 pixels in what was clean transparency. On screen that is
+    # grain, and in a GIF's one-bit alpha some of it turns fully opaque, so it
+    # goes before anything else sees it.
+    out[:, :, 3][out[:, :, 3] < 12] = 0
+    alpha = out[:, :, 3]
+    scale = np.divide(255.0, alpha, out=np.zeros_like(alpha), where=alpha > 0.5)
+    out[:, :, :3] = np.clip(out[:, :, :3] * scale[:, :, None], 0, 255)
+    return Image.fromarray(out.astype(np.uint8))
+
+
 def breathe(frames, percent, cycles, levels=6):
     """Rise and fall on the breath: a slight vertical stretch, planted at the feet.
 
@@ -128,7 +150,7 @@ def breathe(frames, percent, cycles, levels=6):
         key = (id(frame), level)
         if key not in cache:
             factor = 1 + (percent / 100.0) * (level / (levels - 1))
-            cache[key] = frame.resize((w, int(round(h * factor))), Image.LANCZOS)
+            cache[key] = resize_premultiplied(frame, (w, int(round(h * factor))))
         scaled.append(cache[key])
 
     top = max(f.height for f in scaled)
@@ -169,14 +191,41 @@ def trim(frames):
     return [f.crop((x0, y0, x1, y1)) for f in frames]
 
 
+def gif_frames(frames):
+    """Quantise to one shared palette, keeping alpha as a reserved index.
+
+    Three things ruin a GIF of art like this. Dithering stipples every flat
+    surface; a palette rebuilt per frame makes those surfaces crawl between
+    frames even where the drawing has not changed; and RGBA handed straight to
+    the encoder loses transparency altogether and lands the character on a
+    black card. One palette for the whole loop, no dithering, and index 255
+    held back for transparent pixels avoids all three.
+    """
+    w, h = frames[0].size
+    montage = Image.new("RGB", (w, h * len(frames)), (0, 0, 0))
+    for i, f in enumerate(frames):
+        montage.paste(f.convert("RGB"), (0, i * h))
+    shared = montage.quantize(colors=255, method=Image.Quantize.MEDIANCUT,
+                              dither=Image.Dither.NONE)
+
+    out = []
+    for f in frames:
+        p = f.convert("RGB").quantize(palette=shared, dither=Image.Dither.NONE)
+        p.paste(255, f.getchannel("A").point(lambda a: 255 if a < 128 else 0))
+        p.info["transparency"] = 255
+        out.append(p)
+    return out
+
+
 def save(frames, path, fps, quality=92):
     dur = 1000.0 / fps
     if path.endswith(".gif"):
         # GIF delays are stored in hundredths of a second, so anything finer is
         # rounded off by players; the WebP keeps the exact rate.
-        frames[0].save(path, save_all=True, append_images=frames[1:],
-                       duration=max(20, int(round(dur / 10) * 10)), loop=0,
-                       disposal=2, transparency=0)
+        g = gif_frames(frames)
+        g[0].save(path, save_all=True, append_images=g[1:],
+                  duration=max(20, int(round(dur / 10) * 10)), loop=0,
+                  disposal=2, transparency=255)
     else:
         frames[0].save(path, save_all=True, append_images=frames[1:],
                        duration=int(round(dur)), loop=0, quality=quality, method=4)
@@ -196,6 +245,8 @@ def main():
     ap.add_argument("--breathe", type=float, default=0.0,
                     help="breathing stretch as a percent of height, e.g. 1.5")
     ap.add_argument("--breathe-cycles", type=float, default=3.0, help="breaths per loop")
+    ap.add_argument("--breathe-levels", type=int, default=6,
+                    help="distinct breathing scales; more means finer steps at higher frame rates")
     ap.add_argument("--bob", type=int, default=2, help="vertical idle float in pixels (0 disables)")
     ap.add_argument("--sway", type=int, default=0, help="horizontal idle drift in pixels")
     ap.add_argument("--bob-cycles", type=float, default=1.0, help="float cycles per loop")
@@ -212,7 +263,8 @@ def main():
     order = parse_range(args.poses, len(poses)) if args.poses else list(range(len(poses)))
     poses = stabilize(poses, args.stabilize)
     played = timeline(order, args.holds, args.pingpong)
-    played_frames = breathe([poses[i] for i in played], args.breathe, args.breathe_cycles)
+    played_frames = breathe([poses[i] for i in played], args.breathe,
+                            args.breathe_cycles, args.breathe_levels)
     frames = trim(float_motion(played_frames, args.bob, args.sway, args.bob_cycles))
 
     # Rebuild the directory rather than write into it: a shorter run would

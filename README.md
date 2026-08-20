@@ -13,7 +13,7 @@ twelve teleports the weapon between hand and hip twice per loop. The idle is
 built from poses 3–7 alone, which form a clean arc: blade low, wound out,
 swept with its trail, up, settled.
 
-`out/dagger_twirl/` holds the result — **75 frames, 7.5 s, looping** — as
+`out/dagger_twirl/` holds the result — **150 frames, 7.5 s, looping** — as
 `dagger_twirl.gif`, `dagger_twirl.webp`, and `dagger_twirl_strip.png` with
 `dagger_twirl.json` describing it.
 
@@ -21,10 +21,10 @@ swept with its trail, up, settled.
 pip install pillow numpy
 
 python3 tools/slice_sheet.py assets/twirl_sheet.png -o out/dagger_twirl \
-  --tol 28 --single dagger_twirl --align silhouette
+  --tol 28 --glow-tol 62 --despeckle 24 --single dagger_twirl --align silhouette
 python3 tools/assemble.py out/dagger_twirl/frames -o out/dagger_twirl \
-  -n dagger_twirl --poses 3,4,3,4,5,6,7,6,5,4 --holds 14,12,16,8,1,1,14,2,2,5 \
-  --fps 10 --breathe 1.2 --breathe-cycles 3 --sway 2
+  -n dagger_twirl --poses 3,4,3,4,5,6,7,6,5,4 --holds 28,24,32,16,2,2,28,4,4,10 \
+  --fps 20 --breathe 1.2 --breathe-cycles 3 --breathe-levels 12 --sway 2
 ```
 
 Preview it in the player:
@@ -75,7 +75,7 @@ lossless — every pixel shipped is a pixel that was drawn:
   height, planted at the feet, three breaths to the loop. Chest expansion is the
   one part of breathing a single drawing can fake, and at this size it moves her
   head three or four pixels while the boots stay put. Scales are quantised to
-  six levels and cached, so a pose held for a second and a half resamples to
+  twelve levels and cached, so a pose held for a second and a half resamples to
   pixel-identical images at each level instead of shimmering as the scale
   creeps — each hold gets exactly one inhale and one exhale.
 - **Float.** `--sway` drifts the sprite sideways once per loop, a rigid
@@ -102,6 +102,33 @@ consistent between them — phases of one twirl rather than twelve separate
 illustrations of a character holding a knife. Given that, this same command
 produces a genuinely smooth loop with no other changes.
 
+## Keeping it clean
+
+Four separate things put grain and haze on this animation, and all four are
+fixed at the point they are created rather than filtered out afterwards:
+
+- **The painted aura.** The sheet paints a soft warm glow around the character.
+  It is real ink, so the keying tolerance kept it, and it read as a blurred halo
+  tracing the whole silhouette. `--glow-tol 62` floods inward from the sheet
+  edge a second time at a much looser tolerance, eating haze that shades off
+  into the background while line work, hair and the blade trail stop it — the
+  trail keeps 92 % of its pixels.
+- **Specks.** Keying left 241 stray islands of a dozen pixels each floating
+  around her. `--despeckle 24` drops any island too small to be drawn detail.
+- **Resampling ringing.** Lanczos undershoots around a hard silhouette and
+  leaves a dusting of alpha-3-to-8 pixels in what was clean transparency — grain
+  again, and in a GIF's one-bit alpha some of it turns fully opaque. Alpha below
+  12 is cleared straight after the resize, and the resize itself runs in
+  premultiplied form so transparent pixels are not blended into the edges.
+- **GIF encoding.** Handing RGBA to the encoder lost transparency altogether and
+  put the character on a black card; dithering stippled every flat surface; and
+  a palette rebuilt per frame made those surfaces crawl between frames even
+  where the drawing had not changed. The loop now shares one palette built from
+  every frame, with no dithering and index 255 reserved for transparency.
+
+Every frame of the finished loop is a single connected shape with no stray
+pixels, against 232 islands before.
+
 ## Slicing a sheet
 
 `tools/slice_sheet.py` takes the sheet apart. It does not assume a uniform grid —
@@ -121,6 +148,8 @@ fill inward from the edges.
 | `--align silhouette` | fine-register frames to each other instead of anchoring on the feet |
 | `--rows N` / `--cols N` | force a uniform grid instead of detecting one |
 | `--tol N` | background colour tolerance; raise it on a noisy or JPEG-compressed sheet |
+| `--glow-tol N` | strip soft painted haze around the character, up to this distance from the background |
+| `--despeckle N` | drop opaque islands smaller than this many pixels |
 | `--min-gap N` | smallest background gap that counts as a frame boundary — raise it if one sprite splits in two, lower it if two merge |
 | `--min-size N` | drop specks smaller than this |
 | `--pad N` | transparent margin around each frame |
