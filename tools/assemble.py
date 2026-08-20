@@ -11,7 +11,7 @@ extremes longer than the passing frames, and keep the body from wandering.
   --poses      which drawings take part, and in what order
   --pingpong   play the sequence out and back, so a non-cyclic set still loops
   --holds      frames each pose is held for; the shape of the timing
-  --bob        gentle rigid float, the one motion safe to add to a still drawing
+  --bob/--sway gentle rigid drift, the one motion safe to add to a still drawing
   --stabilize  register poses on the body, ignoring the hair
 """
 
@@ -106,16 +106,23 @@ def timeline(order, holds, pingpong):
     return [i for i, c in zip(seq, counts) for _ in range(c)]
 
 
-def bob(frames, amplitude, cycles):
-    """Float the whole sprite up and down — rigid, so nothing distorts."""
-    if not amplitude:
+def float_motion(frames, rise, sway, cycles):
+    """Drift the whole sprite on a slow ellipse — rigid, so nothing distorts.
+
+    This is what keeps a long hold from reading as a frozen still. A quarter-turn
+    of phase between the vertical and horizontal drift traces an ellipse rather
+    than a straight bounce, which reads as weight shifting instead of a hop.
+    """
+    if not rise and not sway:
         return frames
     w, h = frames[0].size
     out = []
     for i, frame in enumerate(frames):
-        dy = int(round(amplitude * np.sin(2 * np.pi * cycles * i / len(frames))))
-        canvas = Image.new("RGBA", (w, h + 2 * amplitude), (0, 0, 0, 0))
-        canvas.paste(frame, (0, amplitude + dy))
+        phase = 2 * np.pi * cycles * i / len(frames)
+        dy = int(round(rise * np.sin(phase)))
+        dx = int(round(sway * np.sin(phase + np.pi / 2)))
+        canvas = Image.new("RGBA", (w + 2 * max(sway, 1), h + 2 * max(rise, 1)), (0, 0, 0, 0))
+        canvas.paste(frame, (max(sway, 1) + dx, max(rise, 1) + dy))
         out.append(canvas)
     return out
 
@@ -152,7 +159,8 @@ def main():
     ap.add_argument("--holds", help="frames per pose, comma separated, one per played pose")
     ap.add_argument("--fps", type=float, default=12.0,
                     help="playback rate; multiples of 10ms stay exact in GIF")
-    ap.add_argument("--bob", type=int, default=2, help="idle float in pixels (0 disables)")
+    ap.add_argument("--bob", type=int, default=2, help="vertical idle float in pixels (0 disables)")
+    ap.add_argument("--sway", type=int, default=0, help="horizontal idle drift in pixels")
     ap.add_argument("--bob-cycles", type=float, default=1.0, help="float cycles per loop")
     ap.add_argument("--stabilize", choices=("core", "silhouette", "none"), default="core",
                     help="core: match on hoodie and trousers, ignoring hair")
@@ -167,7 +175,8 @@ def main():
     order = parse_range(args.poses, len(poses)) if args.poses else list(range(len(poses)))
     poses = stabilize(poses, args.stabilize)
     played = timeline(order, args.holds, args.pingpong)
-    frames = trim(bob([poses[i] for i in played], args.bob, args.bob_cycles))
+    frames = trim(float_motion([poses[i] for i in played],
+                               args.bob, args.sway, args.bob_cycles))
 
     # Rebuild the directory rather than write into it: a shorter run would
     # otherwise leave the tail of a longer one behind, and the strip and any
@@ -192,7 +201,8 @@ def main():
         json.dump({"name": args.name, "poses": [i + 1 for i in order],
                    "played": [i + 1 for i in played], "frames": len(frames),
                    "fps": args.fps, "loop_seconds": round(len(frames) / args.fps, 3),
-                   "pingpong": args.pingpong, "bob": args.bob, "stabilize": args.stabilize,
+                   "pingpong": args.pingpong, "bob": args.bob, "sway": args.sway,
+                   "stabilize": args.stabilize,
                    "size": [fw, fh], "strip": f"{args.name}_strip.png",
                    "cols": cols, "strip_rows": rows}, fh_, indent=2)
 

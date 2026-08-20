@@ -13,7 +13,7 @@ twelve teleports the weapon between hand and hip twice per loop. The idle is
 built from poses 3–7 alone, which form a clean arc: blade low, wound out,
 swept with its trail, up, settled.
 
-`out/dagger_twirl/` holds the result — **16 frames, 1.33 s, looping** — as
+`out/dagger_twirl/` holds the result — **36 frames, 3.6 s, looping** — as
 `dagger_twirl.gif`, `dagger_twirl.webp`, and `dagger_twirl_strip.png` with
 `dagger_twirl.json` describing it.
 
@@ -23,7 +23,8 @@ pip install pillow numpy
 python3 tools/slice_sheet.py assets/twirl_sheet.png -o out/dagger_twirl \
   --tol 28 --single dagger_twirl --align silhouette
 python3 tools/assemble.py out/dagger_twirl/frames -o out/dagger_twirl \
-  -n dagger_twirl --poses 3-7 --pingpong --fps 12 --holds 5,2,1,1,3,1,1,2 --bob 2
+  -n dagger_twirl --poses 3-7 --pingpong --fps 10 \
+  --holds 10,2,1,1,14,2,2,4 --bob 3 --sway 2
 ```
 
 Preview it in the player:
@@ -48,12 +49,28 @@ lossless — every pixel shipped is a pixel that was drawn:
 - **Selection.** Only poses holding the same prop belong in one loop.
 - **Ping-pong.** Five poses that rise are not a cycle; played out and back they
   are, with no pop at the seam.
-- **Holds.** `--holds` sets how long each pose stays on screen. The rest pose is
-  held five frames, the swing passes in one frame each, the top settles for
-  three. Fast through the action and slow at the extremes is what makes a short
-  loop read as movement rather than as a metronome.
-- **Bob.** `--bob` floats the whole sprite a couple of pixels. It is a rigid
-  translation, so nothing distorts, and it keeps the long rest hold alive.
+- **Holds.** `--holds` sets how long each pose stays on screen, and it carries
+  the performance. Her expression changes across these drawings — 3 and 4 are
+  serious, the smirk arrives with the swing at 5, and 6 and 7 are smiling — so
+  the loop sits on two beats and moves fast between them:
+
+  | | pose | time | |
+  | --- | --- | --- | --- |
+  | beat | 3 | 1.0 s | blade low, serious |
+  | | 4 | 0.2 s | wound out |
+  | action | 5 | 0.1 s | swing, trail, smirk arrives |
+  | | 6 | 0.1 s | rising |
+  | beat | 7 | 1.4 s | blade up, smiling |
+  | | 6, 5 | 0.2 s each | coming back down |
+  | | 4 | 0.4 s | settling |
+
+  Two thirds of the loop is spent on two drawings. Fast through the action and
+  long on the extremes is what makes five poses read as a performance rather
+  than a metronome.
+- **Float.** `--bob` and `--sway` drift the whole sprite on a slow ellipse, a
+  few pixels per loop. It is a rigid translation, so nothing distorts, and it is
+  what stops the 1.4 s smile from reading as a frozen still — the sprite moves
+  through eight distinct positions while that drawing is on screen.
 - **Stabilisation.** `--stabilize core` registers poses on the hoodie and
   trousers, ignoring the hair — the hair is the most freely redrawn thing on the
   sheet and dominates a whole-silhouette match, dragging the body around with it.
@@ -66,7 +83,7 @@ python3 tools/assemble.py out/dagger_twirl/frames -o /tmp -n all_twelve --poses 
 
 ### What would make it genuinely fluid
 
-Sixteen frames off five drawings is a snappy idle, not a fluid one. Fluidity is
+Timing carries this a long way, but five drawings is still five drawings. Fluidity is
 a property of the source: it needs eight to twelve drawings **of the same
 action**, dagger in hand throughout, with hair length, hood and proportions held
 consistent between them — phases of one twirl rather than twelve separate
