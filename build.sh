@@ -26,6 +26,15 @@ $BUILD out/dahlia_block/frames -o out/dahlia_block -n dahlia_block \
   --poses 1,12,2,3,4,6,5,3,11,12 --holds 16,12,2,2,5,8,3,2,6,14 \
   --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 4:5,6:3
 
+# Taunt: panelled like the block sheet, and its poses overlap once flattened,
+# so it needs both the grid painted out and splitting by connected ink.
+$SLICE assets/dahlia_taunt_sheet.png -o out/dahlia_taunt \
+  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_taunt
+$BUILD out/dahlia_taunt/frames -o out/dahlia_taunt -n dahlia_taunt \
+  --poses 14,1,2,3,4,6,5,6,9,6,5,9,11,12,8,7,13 \
+  --holds 10,3,3,2,2,3,2,2,2,3,2,3,3,2,6,3,8 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 3:4
+
 # The three action sheets: poses overlap once flattened, so they are split by
 # connected ink. Each draws a motion-blurred frame that shades into the
 # background, so holes punched through it get filled back in.

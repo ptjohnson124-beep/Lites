@@ -8,6 +8,7 @@ browser player for previewing the result.
 | --- | --- | --- |
 | **attack** | `assets/dahlia_attack_sheet.png`, 20 drawings | `out/dahlia_attack/` — 57 frames, 2.85 s |
 | **dodge** | `assets/dahlia_dodge_sheet.png`, 20 drawings | `out/dahlia_dodge/` — 49 frames, 2.45 s |
+| **taunt** | `assets/dahlia_taunt_sheet.png`, 15 drawings | `out/dahlia_taunt/` — 59 frames, 2.95 s |
 | **getting hit** | `assets/dahlia_hit_sheet.png`, 20 drawings | `out/dahlia_hit/` — 55 frames, 2.75 s |
 | **block** | `assets/dahlia_block_sheet.png`, 12 drawings | `out/dahlia_block/` — 70 frames, 3.5 s |
 | **dagger twirl idle** | `assets/twirl_sheet.png`, 12 drawings | `out/dahlia_twirl/` — 150 frames, 7.5 s |
@@ -59,6 +60,37 @@ out, back, further out, and back again — a stumble rather than a dash.
 own footing from the desaturated pixels of its lower body — hair being the most
 mobile thing on the character, it gets no vote on where her feet are — and
 works out the shift from there. All three travelling animations use it.
+
+## The taunt
+
+She snaps a flame alight in her palm, shows it off, and gives a smug little
+gesture. Built from 13 of the 15 drawings.
+
+| | pose | time | |
+| --- | --- | --- | --- |
+| ready | 14 | 0.50 s | standing, knife at her hip |
+| wind up | 1, 2 | 0.30 s | hand comes up, fingers spread |
+| **spark** | 3 | 0.10 s | ignition flash, 4 px pop |
+| | 4 | 0.10 s | it catches |
+| **the flame** | 6, 5, 6, 9, 6, 5 | 0.70 s | held up, flickering |
+| | 9, 11 | 0.30 s | lowered, burning down |
+| | 12 | 0.10 s | out |
+| **the taunt** | 8, 7 | 0.45 s | hand to her chin, smug |
+| | 13 | 0.40 s | back to ready |
+
+**The flame is the reason this sheet is worth more than its 15 drawings.** Four
+of them — 4, 5, 6 and 9 — are the same held flame at different heights and
+shapes, which makes them frames of a fire rather than four separate poses.
+Cycling them two frames at a time through the hold gives a flame that dances
+for three quarters of a second, where holding any single drawing that long
+would have given a candle painted on her hand. Her arm rides slightly with it,
+because the drawings put the flame at slightly different heights, and that
+reads as the weight of holding something alive.
+
+The knife stays at her hip in all 15 drawings, so nothing had to be dropped for
+prop continuity. Poses 7 and 8 have no flame in them, so they are played after
+it burns out rather than during — the smug beat lands on an empty hand, which
+is the better read anyway.
 
 ## The dodge
 
@@ -318,14 +350,14 @@ Frames are also cropped with a small margin rather than flush to the union of
 the loop, so no pixel sits on the canvas edge where a renderer that scales or
 offsets the sprite would shave it off.
 
-Every animation is audited frame by frame — 381 frames in total, not samples:
+Every animation is audited frame by frame — 440 frames in total, not samples:
 
-| | twirl | block | attack | hit | dodge |
-| --- | --- | --- | --- | --- | --- |
-| frames touching the canvas edge | 0 | 0 | 0 | 0 | 0 |
-| islands under 24 px, i.e. grain | 0 | 0 | 0 | 0 | 0 |
-| aura kept | 96 % | 97 % | 96 % | 94 % | 95 % |
-| line work vs the raw sheet | 119 % | 106 % | 126 % | 117 % | 131 % |
+| | twirl | block | attack | hit | dodge | taunt |
+| --- | --- | --- | --- | --- | --- | --- |
+| frames touching the canvas edge | 0 | 0 | 0 | 0 | 0 | 0 |
+| islands under 24 px, i.e. grain | 0 | 0 | 0 | 0 | 0 | 0 |
+| aura kept | 96 % | 97 % | 96 % | 94 % | 95 % | 98 % |
+| line work vs the raw sheet | 119 % | 106 % | 126 % | 117 % | 131 % | 121 % |
 
 `build.sh` rebuilds all five from their sheets; the per-sheet flags differ
 because the sheets differ, and its comments say how.
