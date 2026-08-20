@@ -134,17 +134,17 @@ $BUILD out/dahlia_dodge/frames -o out/dahlia_dodge -n dahlia_dodge \
 # Counter: exported with transparency and saved as JPEG, so the editor's
 # checkerboard is baked into the pixels — --checker flattens it back to one
 # background. She closes 20px, then the counter lands with a 6px jolt.
-$SLICE assets/dahlia_counter_sheet.png -o out/dahlia_counter \
-  --checker --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_counter
-# Pose 4 is a smear frame — a third less ink than the solid poses — so it gets
-# a single frame. Held longer it reads as her phasing out rather than moving
-# fast. Travel is monotonic in and monotonic out for the same reason: the first
-# cut had her lurch to 20px and snap back to 14 mid-dash, which looked like a
-# teleport rather than a step.
+$SLICE assets/dahlia_counter_v2_sheet.png -o out/dahlia_counter \
+  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_counter
+# Pose 3 is the slash smear --- 76% less edge detail than the others, which is
+# how a smear shows up when the arc it carries makes it the densest frame on the
+# sheet --- so it gets two frames and no more. The loop opens on pose 7, the one
+# with the dagger retracted, so the deploy lands mid-loop rather than on the
+# seam, the same reason the block opens where it does.
 $BUILD out/dahlia_counter/frames -o out/dahlia_counter -n dahlia_counter \
-  --poses 1,2,3,4,5,6,7,8,9,10,11,12 --holds 10,3,2,1,4,8,3,3,3,4,5,10 \
+  --poses 7,8,1,2,3,4,5,6,9,10 --holds 10,5,5,3,2,7,4,4,4,6 \
   --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
-  --shake 6:6,7:3 --travel 1:0,2:0,3:10,4:22,5:24,6:24,7:20,8:14,9:8,10:4,11:2,12:0
+  --shake 4:5 --travel 7:0,8:0,1:0,2:-4,3:14,4:20,5:16,6:10,9:4,10:0
 
 # Taunt: a flame lit in her free hand. Poses 5 and 6 are the same flame at two
 # sizes, so they alternate to make it gutter rather than sit still.
@@ -162,3 +162,15 @@ $SLICE assets/dahlia_insane_idle_v2_sheet.png -o out/dahlia_insane_idle \
 $BUILD out/dahlia_insane_idle/frames -o out/dahlia_insane_idle -n dahlia_insane_idle \
   --poses 1,2,3,4,5,6,7,8,9,10,11,10,9,12 --holds 10,5,4,4,7,4,4,3,2,2,2,2,2,7 \
   --fps 20 --breathe 1.3 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 10:3,11:3
+
+# Fully insane idle. This one arrived as a finished animation rather than a
+# sheet, so import_gif turns its frames into poses and its per-frame durations
+# into holds --- it keeps exactly the timing it was authored with, and still
+# gets the same cleanup, strip, manifest and exports as everything else.
+# Mirrored to face the other way. No breathing or sway: the motion is drawn.
+python3 tools/import_gif.py assets/dahlia_fully_insane_sheet.gif \
+  -o out/dahlia_fully_insane_idle -n dahlia_fully_insane_idle --fps 20 --mirror
+$BUILD out/dahlia_fully_insane_idle/frames -o out/dahlia_fully_insane_idle -n dahlia_fully_insane_idle \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48 \
+  --holds 1,2,1,6,1,2,2,1,1,4,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,4,2,1,1,1,2,1,1,1,4,2,1,2,2,1,1,6,2,1 \
+  --fps 20 --breathe 0 --sway 0 --despeckle 24

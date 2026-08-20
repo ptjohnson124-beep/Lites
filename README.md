@@ -16,10 +16,11 @@ sheet lands, at which point the same two commands rebuild them.
 | **attack** (new style) | `assets/dahlia_attack_b_sheet.png`, 8 drawings | `out/dahlia_attack/` — 33 frames, 1.65 s |
 | **spin combo** (new style) | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
 | **evasion** (new style) | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 56 frames, 2.8 s |
-| **counter** (new style) | `assets/dahlia_counter_sheet.png`, 12 drawings | `out/dahlia_counter/` — 56 frames, 2.8 s |
+| **counter** (v2) (new style) | `assets/dahlia_counter_sheet.png`, 12 drawings | `out/dahlia_counter/` — 56 frames, 2.8 s |
 | **taunt** (new style) | `assets/dahlia_taunt_v2_sheet.png`, 12 drawings | `out/dahlia_taunt/` — 75 frames, 3.75 s |
 | **going insane** | `assets/dahlia_insane_b_sheet.png`, 16 drawings | `out/dahlia_insane/` — 68 frames, 3.4 s |
 | **insanity transformation** | `assets/dahlia_insanity_sheet.png`, 16 drawings | `out/dahlia_insanity/` — 79 frames, 3.95 s |
+| **fully insane idle** | `assets/dahlia_fully_insane_sheet.gif`, 48 frames | `out/dahlia_fully_insane_idle/` — 79 frames, 3.95 s |
 | **insane idle** (new style) | `assets/dahlia_insane_idle_v2_sheet.png`, 12 drawings | `out/dahlia_insane_idle/` — 58 frames, 2.9 s |
 | **cyberpsychosis** | `assets/dahlia_cyberpsychosis_sheet.png`, 16 drawings | `out/dahlia_cyberpsychosis/` — 93 frames, 4.65 s |
 | **corrupted idle** | `assets/dahlia_insane_a_sheet.png`, 16 drawings | `out/dahlia_insane_idle/` — 47 frames, 2.35 s |
@@ -538,6 +539,26 @@ to 4.80 while costing 4 % of the line work, which is not a trade worth making.
 
 The only detached shapes left in either loop are the drawn gold flame wisps,
 52 px and larger.
+
+## Bringing in a finished animation
+
+Everything else here starts from a sheet of drawings and gets its timing from
+`--holds`. The fully insane idle arrived as an animated GIF instead, with the
+timing already baked into per-frame durations that are not uniform — 50 ms up to
+300 ms.
+
+`tools/import_gif.py` turns each source frame into a pose and each duration into
+a hold count at the target rate, so the animation keeps exactly the timing it was
+authored with and still gets the same cleanup, sprite strip, manifest and exports
+as everything else. `--mirror` flips it to face the other way. Breathing and sway
+are off for it: the motion is already drawn, and adding more would fight it.
+
+Its despeckle threshold is worth a note. That animation *draws* disintegration
+debris, so a speck pass could plausibly eat real art — but the strays it removes
+are one to three 15-20 px islands in frames where her body is fully intact, not
+in the burst frames. Raising the threshold to the same 24 the rest of the set
+uses costs 0.41 % of the most disintegrated frame, so the drawn debris survives
+and the artefacts do not.
 
 ## Slicing a sheet
 
