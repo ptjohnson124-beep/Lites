@@ -94,7 +94,7 @@
   "travel": "7:0,8:0,1:0,2:-4,3:14,4:20,5:16,6:10,9:4,10:0",
   "stabilize": "core",
   "size": [
-    364,
+    363,
     271
   ],
   "strip": "dahlia_counter_strip.png",

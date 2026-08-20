@@ -13,21 +13,23 @@ sheet lands, at which point the same two commands rebuild them.
 | animation | source | result |
 | --- | --- | --- |
 | **idle** (canonical) | `assets/dahlia_idle_sheet.png`, 6 drawings | `out/dahlia_idle/` — 61 frames, 3.05 s |
-| **attack** (new style) | `assets/dahlia_attack_b_sheet.png`, 8 drawings | `out/dahlia_attack/` — 33 frames, 1.65 s |
-| **spin combo** (new style) | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
-| **evasion** (new style) | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 56 frames, 2.8 s |
-| **soul attack** | `assets/dahlia_soul_sheet.png`, 16 drawings | `out/dahlia_soul/` — 80 frames, 4.0 s |
-| **skill / special** | `assets/dahlia_skill_sheet.png`, 15 drawings | `out/dahlia_skill/` — 83 frames, 4.15 s |
-| **counter** (v2) (new style) | `assets/dahlia_counter_sheet.png`, 12 drawings | `out/dahlia_counter/` — 56 frames, 2.8 s |
-| **taunt** (new style) | `assets/dahlia_taunt_v2_sheet.png`, 12 drawings | `out/dahlia_taunt/` — 75 frames, 3.75 s |
+| **moving** | `assets/dahlia_move_v4_sheet.png`, 12 drawings | `out/dahlia_move/` — 24 frames, 1.0 s |
+| **attack** | `assets/dahlia_attack_b_sheet.png`, 8 drawings | `out/dahlia_attack/` — 33 frames, 1.65 s |
+| **spin combo** | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
+| **ranged attack** | `assets/dahlia_ranged_v2_sheet.png`, 12 drawings | `out/dahlia_ranged/` — 48 frames, 2.4 s |
+| **soul attack** | `assets/dahlia_soul_sheet.png`, 16 drawings | `out/dahlia_soul/` — 64 frames, 2.67 s |
+| **skill / special** | `assets/dahlia_skill_v2_sheet.png`, 15 drawings | `out/dahlia_skill/` — 109 frames, 5.45 s |
+| **block** | `assets/dahlia_block_v2_sheet.png`, 8 drawings | `out/dahlia_block/` — 44 frames, 2.2 s |
+| **counter** | `assets/dahlia_counter_v2_sheet.png`, 10 drawings | `out/dahlia_counter/` — 67 frames, 3.35 s |
+| **evasion** | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 56 frames, 2.8 s |
+| **getting hit** | `assets/dahlia_hit_v2_sheet.png`, 8 drawings | `out/dahlia_hit/` — 51 frames, 2.55 s |
+| **ragdoll** | `assets/dahlia_ragdoll_b_sheet.png`, 27 drawings | `out/dahlia_ragdoll/` — 114 frames, 4.75 s |
+| **taunt** | `assets/dahlia_taunt_v2_sheet.png`, 12 drawings | `out/dahlia_taunt/` — 75 frames, 3.75 s |
 | **going insane** | `assets/dahlia_insane_b_sheet.png`, 16 drawings | `out/dahlia_insane/` — 68 frames, 3.4 s |
 | **insanity transformation** | `assets/dahlia_insanity_sheet.png`, 16 drawings | `out/dahlia_insanity/` — 79 frames, 3.95 s |
+| **insane idle** | `assets/dahlia_insane_idle_v2_sheet.png`, 12 drawings | `out/dahlia_insane_idle/` — 58 frames, 2.9 s |
 | **fully insane idle** | `assets/dahlia_fully_insane_sheet.gif`, 48 frames | `out/dahlia_fully_insane_idle/` — 79 frames, 3.95 s |
-| **insane idle** (new style) | `assets/dahlia_insane_idle_v2_sheet.png`, 12 drawings | `out/dahlia_insane_idle/` — 58 frames, 2.9 s |
-| **cyberpsychosis** | `assets/dahlia_cyberpsychosis_sheet.png`, 16 drawings | `out/dahlia_cyberpsychosis/` — 93 frames, 4.65 s |
-| **corrupted idle** | `assets/dahlia_insane_a_sheet.png`, 16 drawings | `out/dahlia_insane_idle/` — 47 frames, 2.35 s |
-| **getting hit** (new style) | `assets/dahlia_hit_v2_sheet.png`, 8 drawings | `out/dahlia_hit/` — 51 frames, 2.55 s |
-| **block** (new style) | `assets/dahlia_block_v2_sheet.png`, 8 drawings | `out/dahlia_block/` — 44 frames, 2.2 s |
+| **cyberpsychosis** | `assets/dahlia_cyber_v2_sheet.png`, 12 drawings | `out/dahlia_cyberpsychosis/` — 55 frames, 2.75 s |
 | **dagger twirl idle** | `assets/twirl_sheet.png`, 12 drawings | `out/dahlia_twirl/` — 150 frames, 7.5 s |
 | **dagger-flip idle** | `assets/dahlia_flip_idle_sheet.png`, 15 drawings | `out/dahlia_flip_idle/` — 59 frames, 2.95 s |
 
@@ -382,6 +384,19 @@ fixed where it is created rather than filtered out afterwards:
   that happens to sit near one of them is never touched. Repainting rather than
   masking keeps the sprite's antialiased fringe meaningful: it still shades off
   toward a background, just a single one now.
+
+  Reachability alone is not quite enough. The squares showing through the gaps
+  in her hair, and the ones behind the ranged sheet's translucent muzzle flash,
+  are walled off from the open backdrop by a film of artwork a pixel or two
+  thick, and they came out as grey confetti over the sprite. Size cannot tell
+  those pockets from a genuinely grey piece of costume — her gun is grey — so
+  the flood is simply run a second time through a slightly widened backdrop,
+  which steps over a film that thin, and the result is intersected back with the
+  real checker so nothing but checker is ever repainted. The second pass is held
+  to a far tighter tone match than the first: `--checker`'s working tolerance is
+  wide enough to swallow the checkerboard's antialiasing, but it is also wide
+  enough to cover a white hoodie, and a flood that can step over an outline will
+  eat one.
 - **A pose that came apart.** On that same sheet the dash frame's motion blur
   broke the figure into two islands, and her legs arrived as a thirteenth pose.
   Pieces of one figure sit almost on top of each other horizontally — 0.84
@@ -518,13 +533,17 @@ fixed where it is created rather than filtered out afterwards:
   frames — the poses are despeckled when sliced, but the breath resamples them
   afterwards and makes new specks of its own, so the guarantee has to be made
   last, on the images actually written out.
-- **Semi-transparency where it does not belong.** `--unmatte` only treats warm
-  haze now. The problem it exists to solve — glow painted over grey reading as
-  tan — is a property of her gold and red auras; the dagger's cool teal glow has
-  no mud in it and is right as drawn. Left in the band it was being made half
-  transparent (603 partial pixels against 566 opaque in the blade region), and
-  GIF's one-bit alpha then chewed its soft edge into a stair-stepped crunch. The
-  blade is now fully opaque in every pose, 4335 pixels with none partial.
+- **Semi-transparency where it does not belong.** `--unmatte` used to be
+  restricted to warm haze, because the dagger's cool teal is a hard-edged solid
+  shape: made half transparent (603 partial pixels against 566 opaque in the
+  blade region) GIF's one-bit alpha chewed its edge into a stair-stepped crunch.
+  But the soul attack's fire is cyan, painted over the same grey as her gold,
+  and skipping it left that whole animation reading washed-out beside the
+  original. Colour recovery and alpha are now separated: cool ink is unmatted
+  for colour like anything else, then stored through a far steeper gamma
+  (`cool_solidity` 0.12 against 0.45), which puts it back at effectively the
+  opacity it had before the pass ran. The cyan comes back saturated and the
+  blade stays solid.
 - **Palette starvation on small bright things.** The GIF palette is built from
   *distinct* frames only — a pose held ten frames used to contribute ten
   identical copies, so the quantiser spent its entries on whatever was most
@@ -597,23 +616,59 @@ Where two poses genuinely fuse into one island — the ranged sheet's lunge and
 its muzzle blast — no ownership rule helps, because there is only one island.
 That sheet is cut on a forced 3x4 grid instead, verified to clip nothing.
 
-## The one sheet that does not build
+A forced grid brings its own problem back, though: a cell is a rectangle, and a
+pose that reaches a prop past its own cell leaves it lying in the neighbour's.
+On the ranged sheet pose 2 puts its gun barrel across the line, which is why a
+disembodied muzzle floated behind Dahlia at the exact moment she fires, and pose
+3's blast reaches the same way into pose 4. Nothing distinguishes those pixels
+from artwork — they *are* artwork, just the pose next door's — so `--erase` takes
+sheet coordinates and paints the overspill out before anything is keyed. Two
+rectangles do it, and they are in `build.sh` with the reason beside them.
 
-*(Resolved: `dahlia_move_v3_sheet.png` supersedes it and builds — 36 frames.
-The note below is kept because the diagnosis holds for any future export.)*
+## Which ragdoll
 
-`assets/dahlia_move_v2_sheet.png` is not in `build.sh`. It holds a genuine run
-cycle — seventeen drawings, the best locomotion art in the set — but it was
-exported at 800x422 for seventeen sprites, about 200x105 each, against roughly
-350x370 on every other new-style sheet. At that size the anti-aliased outline
-between a figure and her dagger, and between her body and her hair, keys away,
-so each drawing arrives as two or three separate islands: 26 islands for 17
-sprites. Neither clustering (up to a 30 px gap) nor any component threshold
-lands on 17 — the fragments are genuinely further apart than parts of one
-drawing should be, and the cell grid is too faint to fall back on.
+Three ragdoll sheets arrived together, and only one of them contains the whole
+action. `dahlia_ragdoll_c_sheet.png` has the most drawings (28) and the cleanest
+background — it comes on a transparency checkerboard rather than flat grey — but
+it opens with Dahlia already airborne and closes on standing, so the blow that
+knocks her down and the stance she recovers into are both missing.
+`dahlia_ragdoll_a_sheet.png` is the same shape at 12 drawings, sparser through
+the fall. `dahlia_ragdoll_b_sheet.png` is the build: 27 drawings running stance,
+hit, tumble, an airborne beat, the dust of the landing, face down, crawl,
+push-up, kneel, stand, ready. It is the only one that starts and ends where a
+knockdown should.
 
-Re-exported at the size of the other sheets it will slice with the same flags as
-everything else. Nothing else about it is wrong.
+It is also the sheet that forced the grid detector to grow up, twice. Its cells
+are ruled in a grey *lighter* than the backdrop, which an absolute darkness test
+cannot see at all, and its first row holds six wide cells where the other three
+hold seven narrow ones — so the dividers in row one exist nowhere else on the
+sheet and score barely a quarter of the image height when the column profile is
+taken over the whole thing. They are now measured band by band, inside each row
+of cells, where they are as solid as any other line.
+
+That alone cut a stripe of transparency straight through her: a column of hair
+can cover a cell as completely as a divider does. What separates them is that a
+ruled line is drawn in one flat tone and a sprite is shaded, so a candidate line
+is only accepted if the spread of its ink is small — and lines are looked for in
+one direction at a time, lighter-than-background or darker, never both at once,
+because a figure is both and scores like a divider when they are mixed.
+
+## The run cycle
+
+`dahlia_move_v4_sheet.png` replaces the 36-drawing v3 at the same output path.
+Fewer drawings, better cycle: v3 spent most of its length on stances and read as
+a shuffle, where these twelve are all stride. Uniform two-frame holds at 24fps,
+no breathing and no sway — the drawings carry every bit of the motion, and a
+cycle wants even spacing where an action wants beats. Built in place with no
+`--travel`, because whatever plays a locomotion clip supplies the ground speed;
+baking it in would have her dash out and slide back once per cycle.
+
+*(The older note here recorded that `dahlia_move_v2_sheet.png` would not build —
+seventeen sprites exported at 800x422, small enough that the anti-aliased
+outlines keyed away and each drawing arrived as two or three islands. The
+diagnosis still holds for any future export: at roughly 200x105 per sprite,
+component segmentation cannot find the drawings. Every other new-style sheet
+gives about 350x370.)*
 
 ## Slicing a sheet
 
@@ -637,6 +692,7 @@ background, so the alpha comes from a flood fill inward from the edges.
 | `--single NAME` | treat every frame on the sheet as one sequence, in reading order |
 | `--align silhouette` | fine-register frames to each other instead of anchoring on the feet |
 | `--rows N` / `--cols N` | force a uniform grid instead of detecting one |
+| `--erase X0,Y0,X1,Y1` | paint a rectangle of the sheet out before keying; for a prop one pose has lent across a cell boundary. Repeatable |
 | `--tol N` | background colour tolerance; raise it on a noisy or JPEG-compressed sheet |
 | `--glow-tol N` | strip soft painted haze, up to this distance from the background |
 | `--glow-depth N` | how many pixels in from the silhouette `--glow-tol` may reach |

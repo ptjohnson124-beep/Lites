@@ -24,24 +24,134 @@ import numpy as np
 from PIL import Image, ImageFilter
 
 
-def panel_border_lines(rgb, darkness=90, coverage=0.8, grow=3):
+def grid_ink(rgb, darkness=90, bg=None, sign=0):
+    """Pixels that could belong to a drawn panel grid.
+
+    A drawn grid is not always black. Some sheets rule their cells in a grey
+    only a little off the background, and others rule them in a light grey
+    brighter than it, neither of which an absolute darkness test can see. When
+    a background colour is known, look for a consistent offset from it instead
+    — but only ever in one direction at a time, because a line is uniformly
+    lighter or uniformly darker than the backdrop while a sprite is both, and
+    taking the two together lets a figure score as solidly as a divider.
+    """
+    if bg is None:
+        return rgb.max(axis=2) < darkness
+    d = rgb.astype(np.int16) - np.asarray(bg, dtype=np.int16)
+    if sign > 0:
+        return (d.min(axis=2) > 8) & (d.max(axis=2) < 110)
+    return (d.max(axis=2) < -8) & (d.min(axis=2) > -110)
+
+
+def spans(profile, coverage, limit, grow, thickest=0):
+    """Indices covered by lines in a coverage profile, widened by `grow`.
+
+    Lines are widened to swallow their antialiased edges: one pixel left
+    standing still walls the background flood out of the cell, and then nothing
+    inside gets keyed at all. `thickest` rejects a run too broad to be a ruled
+    line, which is the only thing separating a divider from a sprite that
+    happens to stand square in its cell.
+    """
+    hits, runs = np.flatnonzero(profile > coverage), []
+    for i in hits:
+        if runs and i <= runs[-1][1] + 1:
+            runs[-1][1] = i
+        else:
+            runs.append([i, i])
+
+    wide = set()
+    for lo, hi in runs:
+        if thickest and hi - lo + 1 > thickest:
+            continue
+        wide.update(range(max(0, lo - grow), min(limit, hi + grow + 1)))
+    return sorted(wide)
+
+
+def uniform(strip, axis, bg, tol=8, spread=12):
+    """Per-line flag: is this line's ink one flat colour along its length?
+
+    A ruled divider is drawn in a single tone, so the pixels along it barely
+    vary. A column of sprite can cover a cell just as completely — hair, a
+    coat seam, a leg — but it is shaded, so its spread is several times wider.
+    Uniformity is what tells the two apart, and without it the grid eraser
+    eventually cuts a stripe of transparency straight through a figure.
+    """
+    lum = strip.astype(np.float32).mean(axis=2)
+    ink = np.abs(lum - float(np.mean(bg))) > tol
+    n = ink.sum(axis=axis)
+    total = np.where(ink, lum, 0).sum(axis=axis)
+    sq = np.where(ink, lum * lum, 0).sum(axis=axis)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        mean = total / np.maximum(n, 1)
+        var = sq / np.maximum(n, 1) - mean * mean
+    return np.sqrt(np.maximum(var, 0)) < spread
+
+
+def panel_border_lines(rgb, darkness=90, coverage=0.8, grow=3, bg=None):
     """Rows and columns occupied by a drawn panel grid.
 
     Some sheets box each pose in a black frame. The frame is ink, so the
     segmenter reads the whole grid as one connected drawing and finds no gaps to
-    split on. Lines are widened to swallow their antialiased edges: one pixel
-    left standing still walls the background flood out of the cell, and then
-    nothing inside gets keyed at all.
+    split on. Painting the grid out gives the gaps back.
     """
-    dark = rgb.max(axis=2) < darkness
+    if bg is None:
+        inks, thickest = [grid_ink(rgb, darkness)], 0
+    else:
+        inks = [grid_ink(rgb, darkness, bg, sign=+1), grid_ink(rgb, darkness, bg, sign=-1)]
+        # A ruled line is interrupted wherever a sprite crosses it, so demanding
+        # near-total coverage misses exactly the lines that matter on a busy
+        # sheet. Two thirds is enough to be a line and far more than any sprite.
+        coverage, thickest = 0.62, 6
 
-    def lines(profile, limit):
-        wide = set()
-        for i in np.flatnonzero(profile > coverage):
-            wide.update(range(max(0, i - grow), min(limit, i + grow + 1)))
-        return sorted(wide)
+    h, w = rgb.shape[:2]
+    flat_rows = uniform(rgb, 1, bg) if bg is not None else np.ones(h, bool)
+    flat_cols = uniform(rgb, 0, bg) if bg is not None else np.ones(w, bool)
+    rows, cols = set(), set()
+    for ink in inks:
+        rows.update(spans(np.where(flat_rows, ink.mean(axis=1), 0.0),
+                          coverage, h, grow, thickest))
+        cols.update(spans(np.where(flat_cols, ink.mean(axis=0), 0.0),
+                          coverage, w, grow, thickest))
+    return sorted(rows), sorted(cols)
 
-    return lines(dark.mean(axis=1), rgb.shape[0]), lines(dark.mean(axis=0), rgb.shape[1])
+
+def row_bands(rows, height, minimum=40):
+    """The horizontal strips of cells left between a grid's row lines."""
+    marks, bands = sorted(set(rows)), []
+    for i in marks:
+        if bands and i <= bands[-1][1] + 1:
+            bands[-1][1] = i
+        else:
+            bands.append([i, i])
+
+    edges, cells = [0] + [b[1] + 1 for b in bands], []
+    for k, lo in enumerate(edges):
+        hi = bands[k][0] if k < len(bands) else height
+        if hi - lo > minimum:
+            cells.append((lo, hi))
+    return cells
+
+
+def banded_column_lines(rgb, rows, bg, coverage=0.55, grow=3):
+    """Column lines found separately inside each row of cells.
+
+    A grid is not always regular. This sheet gives its first row six wide cells
+    and the rest seven narrow ones, so the dividers in row one exist nowhere
+    else on the sheet and score barely a quarter of the height when the column
+    profile is taken over the whole image. Measured inside their own band they
+    are as solid as any other line. Scanning band by band also stops a divider
+    from one row being painted through a sprite standing in another.
+    """
+    inks = [grid_ink(rgb, bg=bg, sign=+1), grid_ink(rgb, bg=bg, sign=-1)]
+    out = []
+    for y0, y1 in row_bands(rows, rgb.shape[0]):
+        flat = uniform(rgb[y0:y1], 0, bg)
+        cols = set()
+        for ink in inks:
+            profile = np.where(flat, ink[y0:y1].mean(axis=0), 0.0)
+            cols.update(spans(profile, coverage, rgb.shape[1], grow, thickest=6))
+        out.append((y0, y1, sorted(cols)))
+    return out
 
 
 def strip_captions(rgb, bg, rows, darkness=90, coverage=0.8):
@@ -57,21 +167,8 @@ def strip_captions(rgb, bg, rows, darkness=90, coverage=0.8):
     """
     ink = np.abs(rgb.astype(np.int16) - bg).max(axis=2) > 14
 
-    marks, bands = sorted(set(rows)), []
-    for i in marks:
-        if bands and i <= bands[-1][1] + 1:
-            bands[-1][1] = i
-        else:
-            bands.append([i, i])
-
-    edges, cells = [0] + [b[1] + 1 for b in bands], []
-    for k, lo in enumerate(edges):
-        hi = bands[k][0] if k < len(bands) else rgb.shape[0]
-        if hi - lo > 40:
-            cells.append((lo, hi))
-
     out, cut = rgb.copy(), 0
-    for lo, hi in cells:
+    for lo, hi in row_bands(rows, rgb.shape[0]):
         profile = ink[lo:hi].sum(axis=1)
         start = int(len(profile) * 0.67)
         quietest = start + int(np.argmin(profile[start:]))
@@ -81,7 +178,16 @@ def strip_captions(rgb, bg, rows, darkness=90, coverage=0.8):
     return out, cut
 
 
-def flatten_checker(rgb, tol=40):
+def dilate(mask, radius):
+    """Grow a mask by `radius` pixels in the four directions."""
+    out = mask
+    for _ in range(radius):
+        out = (out | np.roll(out, 1, 0) | np.roll(out, -1, 0) |
+               np.roll(out, 1, 1) | np.roll(out, -1, 1))
+    return out
+
+
+def flatten_checker(rgb, tol=40, jump=3):
     """Flatten a transparency checkerboard into one background colour.
 
     A sheet exported with transparency and then saved as JPEG arrives with the
@@ -112,12 +218,29 @@ def flatten_checker(rgb, tol=40):
     if len(tones) < 2:
         return rgb, None
 
-    near = np.minimum(*[np.abs(rgb.astype(np.int16) - t).max(axis=2) for t in tones]) < tol
+    d = [np.abs(rgb.astype(np.int16) - t).max(axis=2) for t in tones]
+    near = np.minimum(*d) < tol
     field = outside(near)
     flat = np.round(np.mean(tones, axis=0)).astype(np.int16)
 
     out = rgb.copy()
     out[field] = flat
+
+    # Checker sealed inside the artwork is still transparency. A strict flood
+    # from the sheet edge cannot reach the squares showing through the gaps in
+    # her hair or behind a translucent muzzle flash — the thin film of artwork
+    # across the opening walls it out — and those came out as grey confetti over
+    # the sprite. Flooding again through a slightly widened backdrop steps over
+    # a film that thin, and the result is intersected back with the real
+    # checker, so nothing but checker is ever repainted. Anything walled off by
+    # more than `jump` pixels of solid drawing is genuinely interior and stays:
+    # a grey costume part is never mistaken for backdrop, and her gun is grey.
+    # The second flood is held to a much tighter match than the first. `tol` is
+    # generous enough to swallow the checker's antialiasing, but it is also wide
+    # enough to cover a white hoodie, and a flood that can step over an outline
+    # will eat one: only a near-exact tone counts as a pocket.
+    exact = np.minimum(*d) < max(4, int(np.abs(tones[0] - tones[1]).max()) // 4)
+    out[outside(dilate(exact, jump)) & exact] = flat
     return out, flat
 
 
@@ -301,7 +424,7 @@ def fill_holes(alpha, radius, max_area=0.02):
     return alpha | enclosed
 
 
-def unmatte(rgb, bg, alpha, tol, reach, depth, solidity=0.45):
+def unmatte(rgb, bg, alpha, tol, reach, depth, solidity=0.45, cool_solidity=0.12):
     """Recover the aura's real colour and give it real transparency.
 
     Her glow is painted *over* the sheet's grey at partial opacity, so grey is
@@ -336,14 +459,15 @@ def unmatte(rgb, bg, alpha, tol, reach, depth, solidity=0.45):
     for _ in range(depth):
         near_edge |= (np.roll(near_edge, 1, 0) | np.roll(near_edge, -1, 0) |
                       np.roll(near_edge, 1, 1) | np.roll(near_edge, -1, 1))
-    # Only warm haze needs this. The problem being solved is glow painted over
-    # grey reading as tan, and that is a property of her warm gold and red
-    # auras; the dagger's cool teal glow has no mud in it and comes out right
-    # as drawn. Left in the band it was being made half-transparent, and GIF's
-    # one-bit alpha then chewed the blade's soft edge into a stair-stepped
-    # crunch. Cool ink stays solid.
+    # Warm and cool haze both need the colour back — the soul attack's cyan fire
+    # is painted over the same grey as her gold, and left alone it came out as
+    # washed-out teal against the vivid original. What differs is the alpha they
+    # can afford. Cool ink is mostly the dagger, a hard-edged solid shape, and
+    # making it half-transparent let GIF's one-bit alpha chew its edge into a
+    # stair-stepped crunch. So cool ink is unmatted for colour and then stored
+    # very close to opaque, which is what it was before this ran.
     warm = rgb[:, :, 0].astype(np.int16) > rgb[:, :, 2].astype(np.int16) + 10
-    band = outside(soft) & alpha & near_edge & warm
+    band = outside(soft) & alpha & near_edge
 
     a = np.clip((d.astype(np.float32) - tol) / np.maximum(span - tol, 1), 0, 1)
 
@@ -353,7 +477,7 @@ def unmatte(rgb, bg, alpha, tol, reach, depth, solidity=0.45):
     # GIFs entirely while surviving in the WebP. A gamma curve lifts the stored
     # alpha so the glow shows in its solved colour on every format, while the
     # very fringe still fades out.
-    stored = np.clip(a, 0, 1) ** solidity
+    stored = np.clip(a, 0, 1) ** np.where(warm, solidity, cool_solidity)
     a_solve = np.where(band, a, 1.0) * alpha
     a = np.where(band, stored, 1.0) * alpha
 
@@ -688,6 +812,9 @@ def main():
                     help="strip soft haze around the character up to this distance from the background")
     ap.add_argument("--checker", action="store_true",
                     help="the sheet's background is a transparency checkerboard baked into the image")
+    ap.add_argument("--erase", action="append", default=[], metavar="X0,Y0,X1,Y1",
+                    help="paint a rectangle of the sheet out to background before keying; "
+                         "repeatable. For a prop one pose has lent across a cell boundary.")
     ap.add_argument("--strip-captions", action="store_true",
                     help="blank the text written under each pose on a labelled reference sheet")
     ap.add_argument("--components", action="store_true",
@@ -728,13 +855,35 @@ def main():
         print("flattened checkerboard background" if forced_bg is not None
               else "no checkerboard found; leaving the background as it is")
 
+    for spec in args.erase:
+        # A neighbouring pose can lean a prop across the line between two cells:
+        # on the ranged sheet her gun barrel reaches into the next cell, so the
+        # firing pose came out with a disembodied muzzle floating behind her.
+        # There is no rule that finds it — it is properly drawn artwork that
+        # simply belongs to the pose next door — so the sheet says where it is.
+        x0, y0, x1, y1 = (int(v) for v in spec.split(","))
+        rgb[y0:y1, x0:x1] = forced_bg if forced_bg is not None else background_color(rgb)
+        print(f"erased sheet rectangle {x0},{y0} to {x1},{y1}")
+
     if args.panels:
         rows_, cols_ = panel_border_lines(rgb)
+        if not rows_ and not cols_:
+            # Fall back to a grid ruled in a grey close to the background.
+            rows_, cols_ = panel_border_lines(rgb, bg=background_color(rgb))
         bg = background_color(rgb, skip_rows=rows_, skip_cols=cols_)
         rgb = rgb.copy()
         rgb[rows_, :] = bg          # paint the grid out so the gaps come back
         rgb[:, cols_] = bg
-        print(f"panelled sheet: erased {len(rows_)} row and {len(cols_)} column border lines")
+        # Then again per row of cells, which is the only way to see a divider
+        # that exists in one row and nowhere else on the sheet.
+        banded = banded_column_lines(rgb, rows_, bg) if rows_ else []
+        extra = 0
+        for y0, y1, cols in banded:
+            fresh = [c for c in cols if c not in set(cols_)]
+            rgb[y0:y1, fresh] = bg
+            extra += len(fresh)
+        print(f"panelled sheet: erased {len(rows_)} row and {len(cols_) + extra} "
+              f"column border lines")
         if args.strip_captions:
             rgb, n = strip_captions(rgb, bg, rows_)
             print(f"stripped captions under {n} row(s) of cells")

@@ -184,7 +184,13 @@ $BUILD out/dahlia_skill/frames -o out/dahlia_skill -n dahlia_skill \
 # Forced 3x4 grid, not --components: the lunge pose and the muzzle-blast
 # pose overlap into one island, and clustering them apart leaves one frame
 # empty and the other holding two figures. Checked for clipping: none.
+# The two --erase rectangles are the price of the forced grid. Pose 2 reaches
+# its gun barrel across the line into pose 3's cell, which put a disembodied
+# muzzle behind her at the moment she fires, and pose 3's blast reaches the
+# same way into pose 4. Both are properly drawn artwork belonging to the pose
+# next door, so no rule finds them; the coordinates say where they are.
 $SLICE assets/dahlia_ranged_v2_sheet.png -o out/dahlia_ranged \
+  --erase 552,116,576,160 --erase 828,55,884,200 \
   --checker --rows 3 --cols 4 --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_ranged
 $BUILD out/dahlia_ranged/frames -o out/dahlia_ranged -n dahlia_ranged \
   --poses 1,2,3,4,5,7,8,6 --holds 9,3,6,5,5,8,6,6 \
@@ -200,24 +206,45 @@ $BUILD out/dahlia_cyberpsychosis/frames -o out/dahlia_cyberpsychosis -n dahlia_c
   --poses 1,2,3,4,5,6,7,8,9,12,10,11 --holds 8,4,4,3,5,4,4,4,4,5,4,6 \
   --fps 20 --breathe 1.3 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 4:6,5:4,12:5
 
-# Soul attack: a long charge — energy gathering, the flame peak, gold — then
-# the lunge into a vortex held half a second, lightning, and two slash frames
-# before settling. The longest build here at 4s.
+# Soul attack: energy gathers, the flame peak, gold, then the lunge into the
+# vortex, lightning, and two slash frames before settling. Retimed from 4.0s to
+# 2.7s — at 20fps with eight- and ten-frame holds it dragged. The two extremes
+# still get the longest holds, the ignition and the burst; everything between
+# them now moves. Only the smear at pose 9 is short enough to read as speed.
 $SLICE assets/dahlia_soul_sheet.png -o out/dahlia_soul \
   --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_soul
 $BUILD out/dahlia_soul/frames -o out/dahlia_soul -n dahlia_soul \
   --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 \
-  --holds 8,4,4,4,4,8,4,4,3,10,5,3,4,4,4,7 \
-  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --holds 4,3,3,3,3,7,3,5,2,8,3,3,3,4,4,6 \
+  --fps 24 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
   --shake 6:3,10:8,11:4 --travel 9:12,10:16,11:10,12:6,13:2
 
-# Moving: a 36-frame run cycle, the densest sheet in the set. Uniform one-frame
-# holds and no breathing or sway — the drawings already carry every bit of the
-# motion, and a cycle wants even spacing where an action wants beats. Built in
-# place; whatever plays it supplies the ground speed.
-$SLICE assets/dahlia_move_v3_sheet.png -o out/dahlia_move \
+# Moving: a 12-drawing run cycle, replacing the 36-frame v3. Fewer drawings but
+# a much better cycle — v3 spent most of its length on stances and read as a
+# shuffle. These twelve are all stride. Uniform two-frame holds and no breathing
+# or sway: the drawings already carry every bit of the motion, and a cycle wants
+# even spacing where an action wants beats. Built in place with no --travel; a
+# locomotion clip is translated by whatever plays it, and baking the ground into
+# the loop would have her dash out and slide back every cycle.
+$SLICE assets/dahlia_move_v4_sheet.png -o out/dahlia_move \
   --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_move
 $BUILD out/dahlia_move/frames -o out/dahlia_move -n dahlia_move \
-  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36 \
-  --holds 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 \
-  --fps 25 --breathe 0 --sway 0
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12 \
+  --holds 2,2,2,2,2,2,2,2,2,2,2,2 \
+  --fps 24 --breathe 0 --sway 0
+
+# Ragdoll: knocked off her feet and back up again, the longest arc in the set at
+# 27 drawings — stance, the hit, the tumble, an airborne beat, the dust of the
+# landing, face down, then crawl, push-up, kneel and stand. Chosen over the two
+# other candidates because it is the only one that contains the blow that starts
+# it and the stance that ends it; the others open mid-air and stop at standing.
+# Timed as a knockdown: fast through the hit and the fall, a long hold face
+# down, then the recovery slow and laboured all the way up. Not a loop, so it
+# ends on the ready stance rather than returning.
+$SLICE assets/dahlia_ragdoll_b_sheet.png -o out/dahlia_ragdoll \
+  --panels --components --component-min 4000 --tol 14 --glow-tol 0 --fill-holes 3 \
+  $CLEAN --single dahlia_ragdoll
+$BUILD out/dahlia_ragdoll/frames -o out/dahlia_ragdoll -n dahlia_ragdoll \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27 \
+  --holds 4,2,2,2,2,3,4,10,3,3,3,3,3,4,4,4,4,4,4,5,5,5,5,6,6,6,8 \
+  --fps 24 --breathe 0 --sway 0 --shake 6:5,7:3
