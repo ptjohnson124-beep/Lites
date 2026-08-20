@@ -261,7 +261,7 @@ def label_components(mask):
     return lab
 
 
-def fill_holes(alpha, radius):
+def fill_holes(alpha, radius, max_area=0.02):
     """Close holes punched through a pose by the background flood.
 
     A drawing with heavy motion blur shades large parts of itself toward the
@@ -287,6 +287,17 @@ def fill_holes(alpha, radius):
         sealed = ~shift_or(~sealed)
 
     enclosed = ~sealed & ~outside(~sealed)
+
+    # Only small holes. A ring-shaped effect encloses a big disc of sheet
+    # background, and filling that paints the grey backdrop into the middle of
+    # the sprite — which is what put a grey card inside the skill's energy
+    # ring. Blur-pose holes are blotches; an enclosed backdrop is enormous.
+    cap = alpha.size * max_area
+    lab = label_components(enclosed)
+    ids, counts = np.unique(lab[enclosed], return_counts=True)
+    big = ids[counts > cap]
+    if len(big):
+        enclosed &= ~np.isin(lab, big)
     return alpha | enclosed
 
 
@@ -498,7 +509,17 @@ def frames_from_components(mask, min_px):
             rows.append(cur); cur = []
         cur.append(p)
     rows.append(cur)
-    return [[tuple(p) for p in sorted(r, key=lambda p: p[0])] for r in rows]
+    ordered = [[tuple(p) for p in sorted(r, key=lambda p: p[0])] for r in rows]
+
+    # Which pose each pixel belongs to. A rect is only a bounding box, so when
+    # one pose's effects overflow into a neighbour's cell the crop picks up part
+    # of that neighbour — and any panel border inside the box comes too. Masking
+    # each crop to its own island keeps a frame to one pose.
+    owner = np.zeros(mask.shape, np.int32)
+    for n, (x0, y0, x1, y1) in enumerate([r for row in ordered for r in row], 1):
+        owner[y0:y1, x0:x1] = np.where((owner[y0:y1, x0:x1] == 0) & mask[y0:y1, x0:x1],
+                                       n, owner[y0:y1, x0:x1])
+    return ordered, owner
 
 
 def find_frames(mask, rows=None, cols=None, min_gap=4, min_size=16, noise=2):
@@ -546,7 +567,7 @@ def feet_anchor(mask, rect):
     return float(xs.mean()), float(hgt)
 
 
-def cut_frames(sheet, mask, alpha, rects, transparent, pad, soft=None):
+def cut_frames(sheet, mask, alpha, rects, transparent, pad, soft=None, owner=None, first=1):
     """Crop each rect onto a shared canvas, registered on the feet anchor."""
     anchors = [feet_anchor(mask, r) for r in rects]
     widths = [r[2] - r[0] for r in rects]
@@ -563,9 +584,12 @@ def cut_frames(sheet, mask, alpha, rects, transparent, pad, soft=None):
         if transparent:
             crop = crop.copy()
             if soft is not None:
-                sub = soft[rect[1]:rect[3], rect[0]:rect[2]]
+                sub = soft[rect[1]:rect[3], rect[0]:rect[2]].copy()
             else:
                 sub = (alpha[rect[1]:rect[3], rect[0]:rect[2]] * 255).astype(np.uint8)
+            if owner is not None:
+                mine = owner[rect[1]:rect[3], rect[0]:rect[2]]
+                sub = np.where((mine == first + rects.index(rect)) | (mine == 0), sub, 0)
             crop.putalpha(Image.fromarray(sub, "L"))
         dx, dy = int(round(left - ax)) + pad, int(ch - pad - ay)
         canvas = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
@@ -659,6 +683,8 @@ def main():
                     help="repeat the denoise; more clears more grain and costs more sharpness")
     ap.add_argument("--fill-holes", type=int, default=0, metavar="RADIUS",
                     help="seal and fill holes the flood punched through blurred poses (try 3)")
+    ap.add_argument("--max-hole", type=float, default=0.0006,
+                    help="largest sealed background region kept as interior, as a fraction of the sheet")
     ap.add_argument("--denoise", type=int, default=0, metavar="STRENGTH",
                     help="clear JPEG grain: differences under this many levels are noise (try 12)")
     ap.add_argument("--despeckle", type=int, default=24,
@@ -695,6 +721,21 @@ def main():
 
     alpha = ~outside(~mask)
 
+    # Background sealed inside a ring is still background. Keying treats
+    # anything not reachable from the sheet edge as interior, which is what
+    # keeps mid-grey shading on her face — but a ring-shaped effect encloses a
+    # whole disc of backdrop, and that came out as a grey card in the middle of
+    # the sprite. Large enclosed regions that are still background-coloured go;
+    # small ones are real shading and stay.
+    off_bg = np.abs(rgb.astype(np.int16) - bg).max(axis=2)
+    sealed_bg = alpha & (off_bg < args.tol)
+    if sealed_bg.any():
+        lab = label_components(sealed_bg)
+        ids, counts = np.unique(lab[sealed_bg], return_counts=True)
+        big = ids[counts > alpha.size * args.max_hole]
+        if len(big):
+            alpha &= ~np.isin(lab, big)
+
     if args.glow_tol:
         # The sheet paints a soft warm aura around the character. It is real
         # ink, so the keying tolerance leaves it in place, where it reads as a
@@ -714,15 +755,16 @@ def main():
                      np.roll(band, 1, 1) | np.roll(band, -1, 1))
         alpha &= ~(haze & band)
 
-    alpha = despeckle(fill_holes(alpha, args.fill_holes), args.despeckle)
+    alpha = despeckle(fill_holes(alpha, args.fill_holes, args.max_hole), args.despeckle)
 
     if args.denoise:
         # Masks are decided on the original pixels; only the pixels shipped
         # get cleaned, so keying is unaffected by the filter.
         sheet = denoise_art(sheet, args.denoise, args.denoise_passes)
 
+    owner = None
     if args.components:
-        rows = frames_from_components(mask, args.component_min)
+        rows, owner = frames_from_components(mask, args.component_min)
     else:
         rows = find_frames(mask, args.rows, args.cols, args.min_gap, args.min_size)
     if not rows:
@@ -752,13 +794,15 @@ def main():
     if args.single:
         rows = [[rect for row in rows for rect in row]]
 
+    first_index = 1
     names = args.names.split(",") if args.names else []
     names = [args.single] if args.single else names
     names += [f"row{i}" for i in range(len(names) + 1, len(rows) + 1)]
 
     for ri, (name, rects) in enumerate(zip(names, rows), 1):
         frames, offsets = cut_frames(sheet, mask, alpha, rects, not args.opaque, args.pad,
-                                     soft_alpha)
+                                     soft_alpha, owner, first_index)
+        first_index += len(rects)
         if args.align == "silhouette":
             frames, offsets = refine_alignment(frames, offsets)
         for fi, frame in enumerate(frames, 1):

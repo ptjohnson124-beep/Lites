@@ -44,17 +44,6 @@ $BUILD out/dahlia_insanity/frames -o out/dahlia_insanity -n dahlia_insanity \
 # peaks grinning in the full aura, one dark flash, then a red-eyed comedown back
 # to herself. The tear poses stay single components because the drawn glitch
 # streaks connect the halves.
-$SLICE assets/dahlia_cyberpsychosis_sheet.png -o out/dahlia_cyberpsychosis \
-  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_cyberpsychosis
-$BUILD out/dahlia_cyberpsychosis/frames -o out/dahlia_cyberpsychosis -n dahlia_cyberpsychosis \
-  --poses 1,2,3,4,5,6,7,6,7,8,9,12,11,10,13,14,15,16 \
-  --holds 8,6,5,6,4,2,2,2,3,12,3,4,5,5,5,5,6,10 \
-  --fps 20 --breathe 1.4 --breathe-cycles 3 --breathe-levels 12 --sway 2 \
-  --shake 4:3,6:4,7:4,8:6,9:5
-
-# The dagger-flip idle: one coherent toss cycle across all 15 drawings, the
-# ornate teal dagger consistent in every one. Ends where it starts, so it
-# cycles without ping-pong. Poses 12, 14, 15 are spares.
 $SLICE assets/dahlia_flip_idle_sheet.png -o out/dahlia_flip_idle \
   --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_flip_idle
 $BUILD out/dahlia_flip_idle/frames -o out/dahlia_flip_idle -n dahlia_flip_idle \
@@ -187,3 +176,31 @@ $BUILD out/dahlia_skill/frames -o out/dahlia_skill -n dahlia_skill \
   --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
   --shake 4:2,8:8,9:5 \
   --travel 1:0,2:0,3:0,4:0,5:14,6:22,7:24,8:26,9:30,10:22,11:14,12:8,13:4,14:2,15:0
+
+# Moving. Built in place, with no --travel: a locomotion clip is translated by
+# whatever plays it, and baking the ground into the loop would have her dash out
+# and slide back every cycle. The sheet gives one leap, one stride and one dash
+# smear; the rest are stances, so two of those close the loop.
+$SLICE assets/dahlia_move_sheet.png -o out/dahlia_move \
+  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_move
+$BUILD out/dahlia_move/frames -o out/dahlia_move -n dahlia_move \
+  --poses 1,2,3,6,4,5,7 --holds 8,3,3,2,4,5,6 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2
+
+# Ranged attack: aim, advance, fire with a 7px jolt, recoil, then the charge
+# frame with its gold aura before settling back.
+$SLICE assets/dahlia_ranged_sheet.png -o out/dahlia_ranged \
+  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_ranged
+$BUILD out/dahlia_ranged/frames -o out/dahlia_ranged -n dahlia_ranged \
+  --poses 1,2,3,4,5,7,8,6 --holds 8,3,5,4,4,7,5,5 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 3:7,4:3,7:2 --travel 1:0,2:8,3:12,4:6,5:2,7:0,8:0,6:0
+
+# Cyberpsychosis, new style, replacing the old-style build: eyes go, the face
+# corrupts, one flash of the double-headed glitch, a scream, then the gold surge
+# before she settles.
+$SLICE assets/dahlia_cyber_v2_sheet.png -o out/dahlia_cyberpsychosis \
+  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_cyberpsychosis
+$BUILD out/dahlia_cyberpsychosis/frames -o out/dahlia_cyberpsychosis -n dahlia_cyberpsychosis \
+  --poses 1,2,3,4,5,6,7,8,9,12,10,11 --holds 8,4,4,3,5,4,4,4,4,5,4,6 \
+  --fps 20 --breathe 1.3 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 4:6,5:4,12:5
