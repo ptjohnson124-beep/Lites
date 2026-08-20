@@ -16,6 +16,7 @@ sheet lands, at which point the same two commands rebuild them.
 | **attack** (new style) | `assets/dahlia_attack_b_sheet.png`, 8 drawings | `out/dahlia_attack/` — 33 frames, 1.65 s |
 | **spin combo** (new style) | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
 | **evasion** (new style) | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 56 frames, 2.8 s |
+| **soul attack** | `assets/dahlia_soul_sheet.png`, 16 drawings | `out/dahlia_soul/` — 80 frames, 4.0 s |
 | **skill / special** | `assets/dahlia_skill_sheet.png`, 15 drawings | `out/dahlia_skill/` — 83 frames, 4.15 s |
 | **counter** (v2) (new style) | `assets/dahlia_counter_sheet.png`, 12 drawings | `out/dahlia_counter/` — 56 frames, 2.8 s |
 | **taunt** (new style) | `assets/dahlia_taunt_v2_sheet.png`, 12 drawings | `out/dahlia_taunt/` — 75 frames, 3.75 s |
@@ -397,6 +398,11 @@ fixed where it is created rather than filtered out afterwards:
   the bottom third — the gap between her boots and the text — and paints out
   everything below it. On a sheet with no captions the quietest line is already
   below her feet and nothing is lost.
+- **A figure and its own dagger as two islands.** On a soft or low-resolution
+  sheet the outline between a hand and the blade it holds keys away, so one
+  drawing arrives as two islands. Islands within `--cluster-gap` pixels of each
+  other are now grouped before anything decides what counts as a pose, since
+  different drawings sit a cell apart while parts of one drawing touch.
 - **Two poses joined by a wisp.** On the skill sheet the last two drawings' hair
   touches across the cell border, so they came back as one island twice the
   width of its neighbours. Width alone cannot judge this — that sheet also has a
@@ -571,6 +577,21 @@ are one to three 15-20 px islands in frames where her body is fully intact, not
 in the burst frames. Raising the threshold to the same 24 the rest of the set
 uses costs 0.41 % of the most disintegrated frame, so the drawn debris survives
 and the artefacts do not.
+
+## The one sheet that does not build
+
+`assets/dahlia_move_v2_sheet.png` is not in `build.sh`. It holds a genuine run
+cycle — seventeen drawings, the best locomotion art in the set — but it was
+exported at 800x422 for seventeen sprites, about 200x105 each, against roughly
+350x370 on every other new-style sheet. At that size the anti-aliased outline
+between a figure and her dagger, and between her body and her hair, keys away,
+so each drawing arrives as two or three separate islands: 26 islands for 17
+sprites. Neither clustering (up to a 30 px gap) nor any component threshold
+lands on 17 — the fragments are genuinely further apart than parts of one
+drawing should be, and the cell grid is too faint to fall back on.
+
+Re-exported at the size of the other sheets it will slice with the same flags as
+everything else. Nothing else about it is wrong.
 
 ## Slicing a sheet
 

@@ -397,7 +397,7 @@ def bands(occupied, min_size, min_gap):
     return [r for r in merged if r[1] - r[0] >= min_size]
 
 
-def frames_from_components(mask, min_px):
+def frames_from_components(mask, min_px, gap=10):
     """Segment poses by connected ink rather than by gaps in its projection.
 
     Gap splitting fails as soon as two poses overlap when flattened onto an
@@ -513,12 +513,21 @@ def frames_from_components(mask, min_px):
 
     # Which pose each pixel belongs to. A rect is only a bounding box, so when
     # one pose's effects overflow into a neighbour's cell the crop picks up part
-    # of that neighbour — and any panel border inside the box comes too. Masking
-    # each crop to its own island keeps a frame to one pose.
+    # of that neighbour — and any panel border inside the box comes too.
+    #
+    # Ownership follows the ink, not the boxes. Claiming every unowned pixel
+    # inside a rect just hands overlapping ink to whichever rect is listed
+    # first, which left a neighbour visible in about half the cases. Each
+    # island instead goes to the pose whose rect contains its centre, so a
+    # figure travels with its own effects and nothing else comes along.
+    flat_rects = [r for row in ordered for r in row]
     owner = np.zeros(mask.shape, np.int32)
-    for n, (x0, y0, x1, y1) in enumerate([r for row in ordered for r in row], 1):
-        owner[y0:y1, x0:x1] = np.where((owner[y0:y1, x0:x1] == 0) & mask[y0:y1, x0:x1],
-                                       n, owner[y0:y1, x0:x1])
+    for lbl, (bx, by, bx1, by1) in zip(np.unique(labels), box):
+        cx, cy = (bx + bx1) / 2, (by + by1) / 2
+        for n, (x0, y0, x1, y1) in enumerate(flat_rects, 1):
+            if x0 <= cx < x1 and y0 <= cy < y1:
+                owner[lab == lbl] = n
+                break
     return ordered, owner
 
 
@@ -589,7 +598,7 @@ def cut_frames(sheet, mask, alpha, rects, transparent, pad, soft=None, owner=Non
                 sub = (alpha[rect[1]:rect[3], rect[0]:rect[2]] * 255).astype(np.uint8)
             if owner is not None:
                 mine = owner[rect[1]:rect[3], rect[0]:rect[2]]
-                sub = np.where((mine == first + rects.index(rect)) | (mine == 0), sub, 0)
+                sub = np.where(mine == first + rects.index(rect), sub, 0)
             crop.putalpha(Image.fromarray(sub, "L"))
         dx, dy = int(round(left - ax)) + pad, int(ch - pad - ay)
         canvas = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
@@ -669,6 +678,8 @@ def main():
                     help="blank the text written under each pose on a labelled reference sheet")
     ap.add_argument("--components", action="store_true",
                     help="split poses by connected ink instead of by gaps; use when poses overlap")
+    ap.add_argument("--cluster-gap", type=int, default=10,
+                    help="islands within this many pixels belong to the same drawing")
     ap.add_argument("--component-min", type=int, default=2000,
                     help="smallest island counted as a pose rather than a stray scrap")
     ap.add_argument("--panels", action="store_true",
@@ -764,7 +775,7 @@ def main():
 
     owner = None
     if args.components:
-        rows, owner = frames_from_components(mask, args.component_min)
+        rows, owner = frames_from_components(mask, args.component_min, args.cluster_gap)
     else:
         rows = find_frames(mask, args.rows, args.cols, args.min_gap, args.min_size)
     if not rows:
