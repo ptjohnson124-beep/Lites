@@ -95,8 +95,8 @@
   "shake": "4:5,6:3",
   "stabilize": "core",
   "size": [
-    202,
-    319
+    206,
+    324
   ],
   "strip": "dahlia_block_strip.png",
   "cols": 8,

@@ -26,6 +26,8 @@ import shutil
 import numpy as np
 from PIL import Image
 
+from slice_sheet import despeckle
+
 
 def parse_range(spec, n):
     """'3-7,10' -> [2, 3, 4, 5, 6, 9] (input is 1-based, output is 0-based)."""
@@ -218,11 +220,18 @@ def impact_shake(frames, played, spec):
     return out
 
 
-def trim(frames):
-    """Crop every frame to one common box, so nothing shifts on playback."""
+def trim(frames, margin=2):
+    """Crop every frame to one common box, so nothing shifts on playback.
+
+    The box is the union across the whole loop, plus a small margin: cropped
+    flush, the widest frame's outermost pixels sit on the canvas edge, and any
+    renderer that scales or offsets the sprite shaves them off.
+    """
     boxes = [Image.fromarray(np.array(f)[:, :, 3]).getbbox() for f in frames]
-    x0 = min(b[0] for b in boxes); y0 = min(b[1] for b in boxes)
-    x1 = max(b[2] for b in boxes); y1 = max(b[3] for b in boxes)
+    x0 = min(b[0] for b in boxes) - margin
+    y0 = min(b[1] for b in boxes) - margin
+    x1 = max(b[2] for b in boxes) + margin
+    y1 = max(b[3] for b in boxes) + margin
     return [f.crop((x0, y0, x1, y1)) for f in frames]
 
 
@@ -249,6 +258,24 @@ def gif_frames(frames):
         p.paste(255, f.getchannel("A").point(lambda a: 255 if a < 128 else 0))
         p.info["transparency"] = 255
         out.append(p)
+    return out
+
+
+def scrub(frames, min_size=24):
+    """Final speck pass, after every transform has had its say.
+
+    The poses are despeckled when they are sliced, but resampling for the
+    breath makes new specks of its own: ringing that survives the alpha clamp
+    lands as islands of a few pixels beside the silhouette. Clearing them here,
+    on the frames actually written out, is the only place that can promise the
+    shipped loop has none.
+    """
+    out = []
+    for frame in frames:
+        a = np.array(frame)
+        keep = despeckle(a[:, :, 3] > 0, min_size)
+        a[:, :, 3] = np.where(keep, a[:, :, 3], 0)
+        out.append(Image.fromarray(a))
     return out
 
 
@@ -288,6 +315,8 @@ def main():
     ap.add_argument("--bob-cycles", type=float, default=1.0, help="float cycles per loop")
     ap.add_argument("--stabilize", choices=("core", "silhouette", "none"), default="core",
                     help="core: match on hoodie and trousers, ignoring hair")
+    ap.add_argument("--despeckle", type=int, default=24,
+                    help="drop islands smaller than this from the finished frames")
     ap.add_argument("--quality", type=int, default=92)
     args = ap.parse_args()
 
@@ -302,7 +331,7 @@ def main():
     played_frames = breathe([poses[i] for i in played], args.breathe,
                             args.breathe_cycles, args.breathe_levels)
     moved = float_motion(played_frames, args.bob, args.sway, args.bob_cycles)
-    frames = trim(impact_shake(moved, played, args.shake))
+    frames = trim(scrub(impact_shake(moved, played, args.shake), args.despeckle))
 
     # Rebuild the directory rather than write into it: a shorter run would
     # otherwise leave the tail of a longer one behind, and the strip and any

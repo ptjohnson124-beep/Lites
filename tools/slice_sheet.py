@@ -20,7 +20,7 @@ import os
 from collections import Counter
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter
 
 
 def panel_border_lines(rgb, darkness=90, coverage=0.8, grow=3):
@@ -110,6 +110,26 @@ def outside(free):
             break
         reach = grown
     return reach
+
+
+def denoise_art(sheet, radius, blur=1.5, thresh=4.0):
+    """Take the compression grain off flat areas without softening the drawing.
+
+    These sheets arrive as JPEGs, so every flat surface carries mottling that no
+    amount of careful keying removes — it is in the paint. A median filter
+    clears it, but run everywhere it eats line work too, so the filtered and
+    original images are blended by local gradient: flat areas take the filtered
+    version, edges keep every original pixel. The gradient is measured on a
+    blurred copy, because compression ringing around a line is itself a
+    gradient and would otherwise protect the very noise being removed.
+    """
+    rgb = np.array(sheet.convert("RGB"))
+    med = np.array(sheet.convert("RGB").filter(ImageFilter.MedianFilter(radius)))
+    grey = Image.fromarray(rgb).convert("L").filter(ImageFilter.GaussianBlur(blur))
+    gy, gx = np.gradient(np.asarray(grey, dtype=np.float32))
+    keep = np.clip((np.hypot(gx, gy) - thresh) / thresh, 0, 1)[:, :, None]
+    blended = (rgb * keep + med * (1 - keep)).astype(np.uint8)
+    return Image.fromarray(np.dstack([blended, np.array(sheet)[:, :, 3]]))
 
 
 def label_components(mask):
@@ -312,6 +332,10 @@ def main():
                     help="strip soft haze around the character up to this distance from the background")
     ap.add_argument("--panels", action="store_true",
                     help="the sheet boxes each pose in a drawn frame; paint the grid out first")
+    ap.add_argument("--glow-depth", type=int, default=3,
+                    help="how many pixels in from the silhouette --glow-tol may reach")
+    ap.add_argument("--denoise", type=int, default=0, metavar="RADIUS",
+                    help="clear JPEG grain from flat areas (try 5); 0 disables")
     ap.add_argument("--despeckle", type=int, default=24,
                     help="drop opaque islands smaller than this many pixels")
     ap.add_argument("--pad", type=int, default=4)
@@ -341,10 +365,25 @@ def main():
         # blurred halo tracing the whole silhouette. A second flood inward at a
         # much looser tolerance eats haze that shades off into the background
         # while genuine line work, hair and the blade trail stop it.
-        haze = np.abs(rgb.astype(np.int16) - bg).max(axis=2) < args.glow_tol
-        alpha &= ~outside(haze)
+        haze = outside(np.abs(rgb.astype(np.int16) - bg).max(axis=2) < args.glow_tol)
+
+        # Depth matters as much as tolerance. Unbounded, this flood does not
+        # stop at the halo: it pours through the gold swing trail and hollows
+        # it out, and keeps going into the hand holding the dagger. Limiting it
+        # to a band of a few pixels around the existing silhouette trims the
+        # halo and leaves anything with real body to it alone.
+        band = ~alpha
+        for _ in range(args.glow_depth):
+            band |= (np.roll(band, 1, 0) | np.roll(band, -1, 0) |
+                     np.roll(band, 1, 1) | np.roll(band, -1, 1))
+        alpha &= ~(haze & band)
 
     alpha = despeckle(alpha, args.despeckle)
+
+    if args.denoise:
+        # Masks are decided on the original pixels; only the pixels shipped
+        # get cleaned, so keying is unaffected by the filter.
+        sheet = denoise_art(sheet, args.denoise)
 
     rows = find_frames(mask, args.rows, args.cols, args.min_gap, args.min_size)
     if not rows:

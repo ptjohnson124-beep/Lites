@@ -22,7 +22,8 @@ python3 -m http.server 8000
 
 ```sh
 python3 tools/slice_sheet.py assets/dahlia_block_sheet.png -o out/dahlia_block \
-  --panels --tol 28 --glow-tol 35 --despeckle 24 --single dahlia_block --align silhouette
+  --panels --tol 28 --glow-tol 35 --glow-depth 3 --despeckle 24 --denoise 5 \
+  --single dahlia_block --align silhouette
 python3 tools/assemble.py out/dahlia_block/frames -o out/dahlia_block -n dahlia_block \
   --poses 1,12,2,3,4,6,5,3,11,12 --holds 16,12,2,2,5,8,3,2,6,14 \
   --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 4:5,6:3
@@ -64,7 +65,8 @@ holds. Rigid translation, so nothing smears.
 
 ```sh
 python3 tools/slice_sheet.py assets/twirl_sheet.png -o out/dahlia_twirl \
-  --tol 28 --glow-tol 62 --despeckle 24 --single dahlia_twirl --align silhouette
+  --tol 28 --glow-tol 62 --glow-depth 3 --despeckle 24 --denoise 5 \
+  --single dahlia_twirl --align silhouette
 python3 tools/assemble.py out/dahlia_twirl/frames -o out/dahlia_twirl -n dahlia_twirl \
   --poses 3,4,3,4,5,6,7,6,5,4 --holds 28,24,32,16,2,2,28,4,4,10 \
   --fps 20 --breathe 1.2 --breathe-cycles 3 --breathe-levels 12 --sway 2
@@ -126,22 +128,52 @@ fixed where it is created rather than filtered out afterwards:
   character. It is real ink, so the keying tolerance kept it, and it read as a
   blurred halo tracing the whole silhouette. `--glow-tol` floods inward from the
   sheet edge a second time at a looser tolerance, eating haze that shades off
-  into the background while line work, hair and the blade trail stop it. Set it
-  low on the block sheet: there the gold aura *is* the block effect, and a high
-  tolerance floods straight through it into her face.
+  into the background while line work and hair stop it.
+- **How deep that flood may reach.** Tolerance alone is not enough. Left
+  unbounded it does not stop at the halo: it pours through the gold swing trail,
+  hollows it out into an outline, and keeps going into the hand holding the
+  dagger — which is what made the idle look like the blade was being clipped.
+  `--glow-depth 3` confines it to a band a few pixels wide around the existing
+  silhouette, so a halo is trimmed and anything with real body to it survives.
+  The trail keeps 95 % of its pixels instead of 92 %, and it keeps its middle.
+- **Compression grain.** These sheets arrive as JPEGs, so every flat surface
+  carries mottling that no amount of careful keying removes — it is in the
+  paint. `--denoise 5` medians it away and blends the result back by local
+  gradient, so flat areas take the filtered version and edges keep every
+  original pixel. The gradient is measured on a blurred copy, because ringing
+  around a line is itself a gradient and would otherwise protect the very noise
+  being removed. Flat-area variation drops from 9.9 to 3.9 of 255 with the line
+  work intact.
 - **Specks.** Keying left hundreds of stray islands of a dozen pixels each.
   `--despeckle` drops any island too small to be drawn detail.
 - **Resampling ringing.** Lanczos undershoots around a hard silhouette and
   leaves a dusting of alpha-3-to-8 pixels in what was clean transparency. Alpha
   below 12 is cleared straight after the resize, and the resize runs in
   premultiplied form so transparent pixels are not blended into the edges.
+  Whatever survives that is caught by a final speck pass over the finished
+  frames — the poses are despeckled when sliced, but the breath resamples them
+  afterwards and makes new specks of its own, so the guarantee has to be made
+  last, on the images actually written out.
 - **GIF encoding.** Handing RGBA to the encoder loses transparency altogether
   and puts the character on a black card; dithering stipples every flat surface;
   and a palette rebuilt per frame makes those surfaces crawl between frames. One
   shared palette per loop, no dithering, one index reserved for transparency.
 
-Every frame of both finished animations is a single connected shape with no
-stray pixels.
+Frames are also cropped with a small margin rather than flush to the union of
+the loop, so no pixel sits on the canvas edge where a renderer that scales or
+offsets the sprite would shave it off.
+
+Both animations are audited frame by frame — 150 and 70 frames, not samples:
+
+| | twirl | block |
+| --- | --- | --- |
+| frames touching the canvas edge | 0 | 0 |
+| islands under 24 px, i.e. grain | 0 | 0 |
+| flat-area variation (of 255) | 3.9 | 4.1 |
+| same, measured on the GIF | 3.9 | 4.2 |
+
+The only detached shapes left in either loop are the drawn gold flame wisps,
+52 px and larger.
 
 ## Slicing a sheet
 
@@ -162,6 +194,8 @@ background, so the alpha comes from a flood fill inward from the edges.
 | `--rows N` / `--cols N` | force a uniform grid instead of detecting one |
 | `--tol N` | background colour tolerance; raise it on a noisy or JPEG-compressed sheet |
 | `--glow-tol N` | strip soft painted haze, up to this distance from the background |
+| `--glow-depth N` | how many pixels in from the silhouette `--glow-tol` may reach |
+| `--denoise N` | clear JPEG grain from flat areas without softening line work |
 | `--despeckle N` | drop opaque islands smaller than this many pixels |
 | `--min-gap N` | smallest background gap that counts as a frame boundary |
 | `--min-size N` | drop specks smaller than this |
