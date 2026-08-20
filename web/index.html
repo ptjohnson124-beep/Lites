@@ -111,7 +111,7 @@ try {
     const image = await loadImage(base + man.strip);
     man = { fps: man.fps, rows: [{
       name: man.name, canvas: man.size, image,
-      note: `${(man.poses || []).length || man.source_poses} drawn poses → `
+      note: `${new Set(man.poses || []).size || man.source_poses} drawn poses → `
           + `${man.frames} frames, ${man.loop_seconds}s loop`
           + (man.pingpong ? ', ping-pong' : ''),
       frames: Array.from({ length: man.frames }, (_, k) => ({

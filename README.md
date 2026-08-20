@@ -13,7 +13,7 @@ twelve teleports the weapon between hand and hip twice per loop. The idle is
 built from poses 3–7 alone, which form a clean arc: blade low, wound out,
 swept with its trail, up, settled.
 
-`out/dagger_twirl/` holds the result — **36 frames, 3.6 s, looping** — as
+`out/dagger_twirl/` holds the result — **75 frames, 7.5 s, looping** — as
 `dagger_twirl.gif`, `dagger_twirl.webp`, and `dagger_twirl_strip.png` with
 `dagger_twirl.json` describing it.
 
@@ -23,8 +23,8 @@ pip install pillow numpy
 python3 tools/slice_sheet.py assets/twirl_sheet.png -o out/dagger_twirl \
   --tol 28 --single dagger_twirl --align silhouette
 python3 tools/assemble.py out/dagger_twirl/frames -o out/dagger_twirl \
-  -n dagger_twirl --poses 3-7 --pingpong --fps 10 \
-  --holds 10,2,1,1,14,2,2,4 --bob 3 --sway 2
+  -n dagger_twirl --poses 3,4,3,4,5,6,7,6,5,4 --holds 14,12,16,8,1,1,14,2,2,5 \
+  --fps 10 --breathe 1.2 --breathe-cycles 3 --sway 2
 ```
 
 Preview it in the player:
@@ -56,21 +56,33 @@ lossless — every pixel shipped is a pixel that was drawn:
 
   | | pose | time | |
   | --- | --- | --- | --- |
-  | beat | 3 | 1.0 s | blade low, serious |
-  | | 4 | 0.2 s | wound out |
+  | idle | 3 | 1.4 s | standing, staring, blade low |
+  | | 4 | 1.2 s | weight settles |
+  | | 3 | 1.6 s | staring |
+  | | 4 | 0.8 s | settles again, about to move |
   | action | 5 | 0.1 s | swing, trail, smirk arrives |
   | | 6 | 0.1 s | rising |
   | beat | 7 | 1.4 s | blade up, smiling |
   | | 6, 5 | 0.2 s each | coming back down |
-  | | 4 | 0.4 s | settling |
+  | | 4 | 0.5 s | settling |
 
-  Two thirds of the loop is spent on two drawings. Fast through the action and
-  long on the extremes is what makes five poses read as a performance rather
-  than a metronome.
-- **Float.** `--bob` and `--sway` drift the whole sprite on a slow ellipse, a
-  few pixels per loop. It is a rigid translation, so nothing distorts, and it is
-  what stops the 1.4 s smile from reading as a frozen still — the sprite moves
-  through eight distinct positions while that drawing is on screen.
+  Five of the seven and a half seconds are spent standing still. Poses 3 and 4
+  differ by 5 % below the waist and mostly in the hair, so alternating them
+  reads as settling rather than as an arm move, and the blade never leaves her
+  hand. Then the flourish passes in two frames and lands on the smile, which is
+  the only moment in the loop her expression changes.
+- **Breathing.** `--breathe 1.2` stretches the sprite by up to 1.2 % of its
+  height, planted at the feet, three breaths to the loop. Chest expansion is the
+  one part of breathing a single drawing can fake, and at this size it moves her
+  head three or four pixels while the boots stay put. Scales are quantised to
+  six levels and cached, so a pose held for a second and a half resamples to
+  pixel-identical images at each level instead of shimmering as the scale
+  creeps — each hold gets exactly one inhale and one exhale.
+- **Float.** `--sway` drifts the sprite sideways once per loop, a rigid
+  translation, so weight appears to shift without anything distorting. Vertical
+  drift is left to the breathing: `--bob` as well would put two vertical rhythms
+  of different periods on the same body, which reads as nervous rather than
+  calm.
 - **Stabilisation.** `--stabilize core` registers poses on the hoodie and
   trousers, ignoring the hair — the hair is the most freely redrawn thing on the
   sheet and dominates a whole-silhouette match, dragging the body around with it.

@@ -11,6 +11,7 @@ extremes longer than the passing frames, and keep the body from wandering.
   --poses      which drawings take part, and in what order
   --pingpong   play the sequence out and back, so a non-cyclic set still loops
   --holds      frames each pose is held for; the shape of the timing
+  --breathe    slight feet-planted stretch, the one deformation a still drawing takes
   --bob/--sway gentle rigid drift, the one motion safe to add to a still drawing
   --stabilize  register poses on the body, ignoring the hair
 """
@@ -106,6 +107,39 @@ def timeline(order, holds, pingpong):
     return [i for i, c in zip(seq, counts) for _ in range(c)]
 
 
+def breathe(frames, percent, cycles, levels=6):
+    """Rise and fall on the breath: a slight vertical stretch, planted at the feet.
+
+    Chest expansion is the one part of breathing a single drawing can fake, and
+    a whole-body stretch of a percent or so reads as it without distorting
+    anything recognisably. Scales are quantised to a few levels and the results
+    cached, so a pose held across many frames resamples to pixel-identical
+    images instead of shimmering as the scale creeps.
+    """
+    if not percent:
+        return frames
+
+    w, h = frames[0].size
+    cache = {}
+    scaled = []
+    for i, frame in enumerate(frames):
+        phase = (np.sin(2 * np.pi * cycles * i / len(frames)) + 1) / 2
+        level = int(round(phase * (levels - 1)))
+        key = (id(frame), level)
+        if key not in cache:
+            factor = 1 + (percent / 100.0) * (level / (levels - 1))
+            cache[key] = frame.resize((w, int(round(h * factor))), Image.LANCZOS)
+        scaled.append(cache[key])
+
+    top = max(f.height for f in scaled)
+    out = []
+    for frame in scaled:
+        canvas = Image.new("RGBA", (w, top), (0, 0, 0, 0))
+        canvas.paste(frame, (0, top - frame.height))   # feet stay planted
+        out.append(canvas)
+    return out
+
+
 def float_motion(frames, rise, sway, cycles):
     """Drift the whole sprite on a slow ellipse — rigid, so nothing distorts.
 
@@ -159,6 +193,9 @@ def main():
     ap.add_argument("--holds", help="frames per pose, comma separated, one per played pose")
     ap.add_argument("--fps", type=float, default=12.0,
                     help="playback rate; multiples of 10ms stay exact in GIF")
+    ap.add_argument("--breathe", type=float, default=0.0,
+                    help="breathing stretch as a percent of height, e.g. 1.5")
+    ap.add_argument("--breathe-cycles", type=float, default=3.0, help="breaths per loop")
     ap.add_argument("--bob", type=int, default=2, help="vertical idle float in pixels (0 disables)")
     ap.add_argument("--sway", type=int, default=0, help="horizontal idle drift in pixels")
     ap.add_argument("--bob-cycles", type=float, default=1.0, help="float cycles per loop")
@@ -175,8 +212,8 @@ def main():
     order = parse_range(args.poses, len(poses)) if args.poses else list(range(len(poses)))
     poses = stabilize(poses, args.stabilize)
     played = timeline(order, args.holds, args.pingpong)
-    frames = trim(float_motion([poses[i] for i in played],
-                               args.bob, args.sway, args.bob_cycles))
+    played_frames = breathe([poses[i] for i in played], args.breathe, args.breathe_cycles)
+    frames = trim(float_motion(played_frames, args.bob, args.sway, args.bob_cycles))
 
     # Rebuild the directory rather than write into it: a shorter run would
     # otherwise leave the tail of a longer one behind, and the strip and any
@@ -202,6 +239,7 @@ def main():
                    "played": [i + 1 for i in played], "frames": len(frames),
                    "fps": args.fps, "loop_seconds": round(len(frames) / args.fps, 3),
                    "pingpong": args.pingpong, "bob": args.bob, "sway": args.sway,
+                   "breathe": args.breathe, "breathe_cycles": args.breathe_cycles,
                    "stabilize": args.stabilize,
                    "size": [fw, fh], "strip": f"{args.name}_strip.png",
                    "cols": cols, "strip_rows": rows}, fh_, indent=2)
