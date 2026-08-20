@@ -76,7 +76,7 @@
   "travel": "1:0,2:0,3:0,4:0,5:0,6:4,7:10,8:16,9:14,10:8,11:3,12:0",
   "stabilize": "core",
   "size": [
-    369,
+    374,
     251
   ],
   "strip": "dahlia_attack_spin_strip.png",

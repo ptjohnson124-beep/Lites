@@ -20,6 +20,7 @@ sheet lands, at which point the same two commands rebuild them.
 | **taunt** (new style) | `assets/dahlia_taunt_v2_sheet.png`, 12 drawings | `out/dahlia_taunt/` — 75 frames, 3.75 s |
 | **going insane** | `assets/dahlia_insane_b_sheet.png`, 16 drawings | `out/dahlia_insane/` — 68 frames, 3.4 s |
 | **insanity transformation** | `assets/dahlia_insanity_sheet.png`, 16 drawings | `out/dahlia_insanity/` — 79 frames, 3.95 s |
+| **insane idle** (new style) | `assets/dahlia_insane_idle_v2_sheet.png`, 12 drawings | `out/dahlia_insane_idle/` — 58 frames, 2.9 s |
 | **cyberpsychosis** | `assets/dahlia_cyberpsychosis_sheet.png`, 16 drawings | `out/dahlia_cyberpsychosis/` — 93 frames, 4.65 s |
 | **corrupted idle** | `assets/dahlia_insane_a_sheet.png`, 16 drawings | `out/dahlia_insane_idle/` — 47 frames, 2.35 s |
 | **getting hit** (new style) | `assets/dahlia_hit_v2_sheet.png`, 8 drawings | `out/dahlia_hit/` — 51 frames, 2.55 s |
@@ -498,6 +499,20 @@ fixed where it is created rather than filtered out afterwards:
   frames — the poses are despeckled when sliced, but the breath resamples them
   afterwards and makes new specks of its own, so the guarantee has to be made
   last, on the images actually written out.
+- **Semi-transparency where it does not belong.** `--unmatte` only treats warm
+  haze now. The problem it exists to solve — glow painted over grey reading as
+  tan — is a property of her gold and red auras; the dagger's cool teal glow has
+  no mud in it and is right as drawn. Left in the band it was being made half
+  transparent (603 partial pixels against 566 opaque in the blade region), and
+  GIF's one-bit alpha then chewed its soft edge into a stair-stepped crunch. The
+  blade is now fully opaque in every pose, 4335 pixels with none partial.
+- **Palette starvation on small bright things.** The GIF palette is built from
+  *distinct* frames only — a pose held ten frames used to contribute ten
+  identical copies, so the quantiser spent its entries on whatever was most
+  common rather than on what was hardest to represent — and by octree rather
+  than median cut. On the counter's blade that is 78 colours against 45, for a
+  cost of 0.7/255 mean error elsewhere, which does not show where the banding
+  did.
 - **GIF encoding.** Handing RGBA to the encoder loses transparency altogether
   and puts the character on a black card; dithering stipples every flat surface;
   and a palette rebuilt per frame makes those surfaces crawl between frames. One

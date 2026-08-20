@@ -21,12 +21,6 @@ $BUILD out/dahlia_twirl/frames -o out/dahlia_twirl -n dahlia_twirl \
 
 # Going insane. Sheet A is panelled and holds her corrupted idle, the aura
 # guttering between gold and red; sheet B is the transformation itself.
-$SLICE assets/dahlia_insane_a_sheet.png -o out/dahlia_insane_idle \
-  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_insane_idle
-$BUILD out/dahlia_insane_idle/frames -o out/dahlia_insane_idle -n dahlia_insane_idle \
-  --poses 3,4,5,8,9,10,11,12,6,16 --holds 6,4,4,3,4,5,4,5,4,8 \
-  --fps 20 --breathe 1.4 --breathe-cycles 3 --breathe-levels 12 --sway 2
-
 $SLICE assets/dahlia_insane_b_sheet.png -o out/dahlia_insane \
   --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_insane
 $BUILD out/dahlia_insane/frames -o out/dahlia_insane -n dahlia_insane \
@@ -159,3 +153,12 @@ $SLICE assets/dahlia_taunt_v2_sheet.png -o out/dahlia_taunt \
 $BUILD out/dahlia_taunt/frames -o out/dahlia_taunt -n dahlia_taunt \
   --poses 1,2,3,4,5,6,5,6,7,8,9,10,11,12 --holds 12,4,3,3,5,4,4,7,4,4,4,4,5,12 \
   --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 4:2
+
+# Insane idle, new style. A corruption cycle rather than a steady state: she
+# starts normal, her face shadows over, red glitch and text artefacts build,
+# stutter at the peak (poses 9-11 played out and back), then snap clean again.
+$SLICE assets/dahlia_insane_idle_v2_sheet.png -o out/dahlia_insane_idle \
+  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_insane_idle
+$BUILD out/dahlia_insane_idle/frames -o out/dahlia_insane_idle -n dahlia_insane_idle \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,10,9,12 --holds 10,5,4,4,7,4,4,3,2,2,2,2,2,7 \
+  --fps 20 --breathe 1.3 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 10:3,11:3

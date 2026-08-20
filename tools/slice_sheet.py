@@ -325,7 +325,14 @@ def unmatte(rgb, bg, alpha, tol, reach, depth, solidity=0.45):
     for _ in range(depth):
         near_edge |= (np.roll(near_edge, 1, 0) | np.roll(near_edge, -1, 0) |
                       np.roll(near_edge, 1, 1) | np.roll(near_edge, -1, 1))
-    band = outside(soft) & alpha & near_edge
+    # Only warm haze needs this. The problem being solved is glow painted over
+    # grey reading as tan, and that is a property of her warm gold and red
+    # auras; the dagger's cool teal glow has no mud in it and comes out right
+    # as drawn. Left in the band it was being made half-transparent, and GIF's
+    # one-bit alpha then chewed the blade's soft edge into a stair-stepped
+    # crunch. Cool ink stays solid.
+    warm = rgb[:, :, 0].astype(np.int16) > rgb[:, :, 2].astype(np.int16) + 10
+    band = outside(soft) & alpha & near_edge & warm
 
     a = np.clip((d.astype(np.float32) - tol) / np.maximum(span - tol, 1), 0, 1)
 

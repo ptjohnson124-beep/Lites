@@ -292,10 +292,26 @@ def gif_frames(frames):
     held back for transparent pixels avoids all three.
     """
     w, h = frames[0].size
-    montage = Image.new("RGB", (w, h * len(frames)), (0, 0, 0))
-    for i, f in enumerate(frames):
+
+    # Build the palette from distinct frames only. A held pose contributes ten
+    # identical copies otherwise, and the quantiser spends its entries on
+    # whatever is most common rather than on what is hardest to represent.
+    seen, distinct = set(), []
+    for f in frames:
+        key = f.tobytes()
+        if key not in seen:
+            seen.add(key)
+            distinct.append(f)
+
+    montage = Image.new("RGB", (w, h * len(distinct)), (0, 0, 0))
+    for i, f in enumerate(distinct):
         montage.paste(f.convert("RGB"), (0, i * h))
-    shared = montage.quantize(colors=255, method=Image.Quantize.MEDIANCUT,
+
+    # Octree over median cut: it keeps far more of a small bright gradient like
+    # the dagger's glow — 78 colours against 45 in that region on the counter —
+    # at a cost of 0.7/255 mean error over the rest of the sprite, which does
+    # not show where median cut's banding on the blade did.
+    shared = montage.quantize(colors=255, method=Image.Quantize.FASTOCTREE,
                               dither=Image.Dither.NONE)
 
     out = []
