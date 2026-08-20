@@ -12,6 +12,7 @@ extremes longer than the passing frames, and keep the body from wandering.
   --pingpong   play the sequence out and back, so a non-cyclic set still loops
   --holds      frames each pose is held for; the shape of the timing
   --shake      decaying jolt on impact poses, for hits the drawings do not show
+  --offset     ground covered per pose, for travel registration deliberately removes
   --breathe    slight feet-planted stretch, the one deformation a still drawing takes
   --bob/--sway gentle rigid drift, the one motion safe to add to a still drawing
   --stabilize  register poses on the body, ignoring the hair
@@ -186,36 +187,44 @@ def float_motion(frames, rise, sway, cycles):
     return out
 
 
-def impact_shake(frames, played, spec):
-    """Jolt the sprite on the frames where something hits it.
+def parse_pose_map(spec):
+    """'4:5,6:3' -> {3: 5, 5: 3}, keyed by 0-based pose index."""
+    out = {}
+    for part in (spec or "").split(","):
+        if part.strip():
+            pose, value = part.split(":")
+            out[int(pose) - 1] = int(value)
+    return out
 
-    A block reads as a block because the body registers the impact, and with no
-    drawing of the recoil the shake has to supply it. The offset decays over the
-    run so the hit lands hard and settles, rather than vibrating for as long as
-    the pose is held, and it is a rigid translation, so nothing smears.
+
+def displace(frames, played, shake_spec, offset_spec):
+    """Move whole frames around: a jolt on impact, and travel through an attack.
+
+    Two rigid motions the drawings cannot supply on their own. The jolt is what
+    registers a hit — nothing shows Dahlia recoiling, so it decays over the run
+    to strike and settle rather than vibrate. The offset is the ground she
+    covers: registration deliberately holds her still so a loop does not drift,
+    which is right for an idle and wrong for a lunge, so the travel is put back
+    by hand, a pose at a time.
     """
-    if not spec:
+    shake = parse_pose_map(shake_spec)
+    offset = parse_pose_map(offset_spec)
+    if not shake and not offset:
         return frames
-    amps = {}
-    for part in spec.split(","):
-        pose, amp = part.split(":")
-        amps[int(pose) - 1] = int(amp)
 
-    biggest = max(amps.values())
-    w, h = frames[0].size
+    pad = max([abs(v) for v in list(shake.values()) + list(offset.values())] or [0]) + 1
+    decay = [1.0, -0.85, 0.6, -0.4, 0.25, -0.15, 0.08]
+
     out, run_pose, step = [], None, 0
     for frame, pose in zip(frames, played):
         step = step + 1 if pose == run_pose else 0
         run_pose = pose
-        amp = amps.get(pose, 0)
-        if amp:
-            decay = [1.0, -0.85, 0.6, -0.4, 0.25, -0.15, 0.08]
-            k = decay[step] if step < len(decay) else 0.0
-            dx, dy = int(round(amp * k)), int(round(amp * k * -0.5))
-        else:
-            dx = dy = 0
-        canvas = Image.new("RGBA", (w + 2 * biggest, h + 2 * biggest), (0, 0, 0, 0))
-        canvas.paste(frame, (biggest + dx, biggest + dy))
+        amp = shake.get(pose, 0)
+        k = (decay[step] if step < len(decay) else 0.0) if amp else 0.0
+        dx = int(round(amp * k)) + offset.get(pose, 0)
+        dy = int(round(amp * k * -0.5))
+        canvas = Image.new("RGBA", (frame.width + 2 * pad, frame.height + 2 * pad), (0, 0, 0, 0))
+        canvas.paste(frame, (pad + dx, pad + dy))
         out.append(canvas)
     return out
 
@@ -312,6 +321,7 @@ def main():
     ap.add_argument("--bob", type=int, default=2, help="vertical idle float in pixels (0 disables)")
     ap.add_argument("--sway", type=int, default=0, help="horizontal idle drift in pixels")
     ap.add_argument("--shake", help="jolt on impact poses, e.g. '4:4,6:2' (1-based pose:pixels)")
+    ap.add_argument("--offset", help="ground covered on given poses, e.g. '7:16,9:24'; negative goes back")
     ap.add_argument("--bob-cycles", type=float, default=1.0, help="float cycles per loop")
     ap.add_argument("--stabilize", choices=("core", "silhouette", "none"), default="core",
                     help="core: match on hoodie and trousers, ignoring hair")
@@ -331,7 +341,7 @@ def main():
     played_frames = breathe([poses[i] for i in played], args.breathe,
                             args.breathe_cycles, args.breathe_levels)
     moved = float_motion(played_frames, args.bob, args.sway, args.bob_cycles)
-    frames = trim(scrub(impact_shake(moved, played, args.shake), args.despeckle))
+    frames = trim(scrub(displace(moved, played, args.shake, args.offset), args.despeckle))
 
     # Rebuild the directory rather than write into it: a shorter run would
     # otherwise leave the tail of a longer one behind, and the strip and any
@@ -358,7 +368,7 @@ def main():
                    "fps": args.fps, "loop_seconds": round(len(frames) / args.fps, 3),
                    "pingpong": args.pingpong, "bob": args.bob, "sway": args.sway,
                    "breathe": args.breathe, "breathe_cycles": args.breathe_cycles,
-                   "shake": args.shake,
+                   "shake": args.shake, "offset": args.offset,
                    "stabilize": args.stabilize,
                    "size": [fw, fh], "strip": f"{args.name}_strip.png",
                    "cols": cols, "strip_rows": rows}, fh_, indent=2)

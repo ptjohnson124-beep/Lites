@@ -162,6 +162,35 @@ def label_components(mask):
     return lab
 
 
+def fill_holes(alpha, radius):
+    """Close holes punched through a pose by the background flood.
+
+    A drawing with heavy motion blur shades large parts of itself toward the
+    background colour, and the soft edge gives the flood a path inward, so it
+    walks into the body and hollows it out. Tightening the tolerance does not
+    fix it — those pixels really are background-coloured. Instead the mask is
+    sealed shut (dilated, then eroded back) so the thin channels the flood came
+    through are closed, any transparency that is then cut off from the outside
+    is a hole, and those are filled. The original silhouette is kept: only the
+    holes are added back, so the outline stays exactly as crisp as it was.
+    """
+    if radius < 1:
+        return alpha
+
+    def shift_or(m):
+        return (m | np.roll(m, 1, 0) | np.roll(m, -1, 0) |
+                np.roll(m, 1, 1) | np.roll(m, -1, 1))
+
+    sealed = alpha.copy()
+    for _ in range(radius):
+        sealed = shift_or(sealed)
+    for _ in range(radius):
+        sealed = ~shift_or(~sealed)
+
+    enclosed = ~sealed & ~outside(~sealed)
+    return alpha | enclosed
+
+
 def despeckle(alpha, min_size):
     """Drop specks: islands of opaque pixels too small to be drawn detail."""
     if min_size < 2:
@@ -193,6 +222,56 @@ def bands(occupied, min_size, min_gap):
         else:
             merged.append(run)
     return [r for r in merged if r[1] - r[0] >= min_size]
+
+
+def frames_from_components(mask, min_px):
+    """Segment poses by connected ink rather than by gaps in its projection.
+
+    Gap splitting fails as soon as two poses overlap when flattened onto an
+    axis — one pose's hair reaching across into the next one's column is enough,
+    and a whole row collapses into a single frame. The drawings themselves stay
+    separate, so labelling the ink and taking one frame per island is exact
+    where projection is only a guess.
+
+    Detached scraps of drawing — the flame wisps — are folded into the nearest
+    pose rather than becoming frames of their own.
+    """
+    lab = label_components(mask)
+    flat = lab.ravel()
+    sel = np.flatnonzero(flat >= 0)
+    labels = flat[sel]
+    ys, xs = np.divmod(sel, mask.shape[1])
+
+    order = np.argsort(labels, kind="stable")
+    labels, ys, xs = labels[order], ys[order], xs[order]
+    starts = np.flatnonzero(np.concatenate(([True], labels[1:] != labels[:-1])))
+    sizes = np.diff(np.concatenate((starts, [len(labels)])))
+    box = np.stack([np.minimum.reduceat(xs, starts), np.minimum.reduceat(ys, starts),
+                    np.maximum.reduceat(xs, starts) + 1, np.maximum.reduceat(ys, starts) + 1], 1)
+
+    poses = [b.tolist() for b, n in zip(box, sizes) if n >= min_px]
+    if not poses:
+        raise SystemExit("--components found no islands; lower --component-min")
+
+    for b, n in zip(box, sizes):
+        if n >= min_px:
+            continue
+        cx, cy = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
+        near = min(poses, key=lambda p: (max(p[0] - cx, 0, cx - p[2]) ** 2 +
+                                         max(p[1] - cy, 0, cy - p[3]) ** 2))
+        near[0] = min(near[0], int(b[0])); near[1] = min(near[1], int(b[1]))
+        near[2] = max(near[2], int(b[2])); near[3] = max(near[3], int(b[3]))
+
+    # Reading order: group into rows by vertical position, then left to right.
+    heights = sorted(p[3] - p[1] for p in poses)
+    tol = heights[len(heights) // 2] / 2
+    rows, cur = [], []
+    for p in sorted(poses, key=lambda p: (p[1] + p[3]) / 2):
+        if cur and (p[1] + p[3]) / 2 - (cur[-1][1] + cur[-1][3]) / 2 > tol:
+            rows.append(cur); cur = []
+        cur.append(p)
+    rows.append(cur)
+    return [[tuple(p) for p in sorted(r, key=lambda p: p[0])] for r in rows]
 
 
 def find_frames(mask, rows=None, cols=None, min_gap=4, min_size=16, noise=2):
@@ -330,10 +409,16 @@ def main():
     ap.add_argument("--tol", type=int, default=24, help="background colour tolerance (0-255)")
     ap.add_argument("--glow-tol", type=int, default=0,
                     help="strip soft haze around the character up to this distance from the background")
+    ap.add_argument("--components", action="store_true",
+                    help="split poses by connected ink instead of by gaps; use when poses overlap")
+    ap.add_argument("--component-min", type=int, default=2000,
+                    help="smallest island counted as a pose rather than a stray scrap")
     ap.add_argument("--panels", action="store_true",
                     help="the sheet boxes each pose in a drawn frame; paint the grid out first")
     ap.add_argument("--glow-depth", type=int, default=3,
                     help="how many pixels in from the silhouette --glow-tol may reach")
+    ap.add_argument("--fill-holes", type=int, default=0, metavar="RADIUS",
+                    help="seal and fill holes the flood punched through blurred poses (try 3)")
     ap.add_argument("--denoise", type=int, default=0, metavar="RADIUS",
                     help="clear JPEG grain from flat areas (try 5); 0 disables")
     ap.add_argument("--despeckle", type=int, default=24,
@@ -378,14 +463,17 @@ def main():
                      np.roll(band, 1, 1) | np.roll(band, -1, 1))
         alpha &= ~(haze & band)
 
-    alpha = despeckle(alpha, args.despeckle)
+    alpha = despeckle(fill_holes(alpha, args.fill_holes), args.despeckle)
 
     if args.denoise:
         # Masks are decided on the original pixels; only the pixels shipped
         # get cleaned, so keying is unaffected by the filter.
         sheet = denoise_art(sheet, args.denoise)
 
-    rows = find_frames(mask, args.rows, args.cols, args.min_gap, args.min_size)
+    if args.components:
+        rows = frames_from_components(mask, args.component_min)
+    else:
+        rows = find_frames(mask, args.rows, args.cols, args.min_gap, args.min_size)
     if not rows:
         raise SystemExit("no frames found — try a larger --tol or pass --rows/--cols")
 

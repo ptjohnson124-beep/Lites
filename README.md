@@ -6,6 +6,8 @@ browser player for previewing the result.
 
 | animation | source | result |
 | --- | --- | --- |
+| **attack** | `assets/dahlia_attack_sheet.png`, 20 drawings | `out/dahlia_attack/` — 57 frames, 2.85 s |
+| **getting hit** | `assets/dahlia_hit_sheet.png`, 20 drawings | `out/dahlia_hit/` — 55 frames, 2.75 s |
 | **block** | `assets/dahlia_block_sheet.png`, 12 drawings | `out/dahlia_block/` — 70 frames, 3.5 s |
 | **dagger twirl idle** | `assets/twirl_sheet.png`, 12 drawings | `out/dahlia_twirl/` — 150 frames, 7.5 s |
 
@@ -17,6 +19,73 @@ pip install pillow numpy
 python3 -m http.server 8000
 # http://localhost:8000/web/index.html?m=../out/dahlia_block/dahlia_block.json
 ```
+
+## The attack
+
+```sh
+python3 tools/slice_sheet.py assets/dahlia_attack_sheet.png -o out/dahlia_attack \
+  --components --tol 18 --glow-tol 0 --fill-holes 3 --despeckle 24 --denoise 5 \
+  --single dahlia_attack --align silhouette
+python3 tools/assemble.py out/dahlia_attack/frames -o out/dahlia_attack -n dahlia_attack \
+  --poses 1,3,6,7,8,9,10,11,13,15,16 --holds 12,8,3,2,2,6,3,3,3,5,10 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 9:4 --offset 7:16,8:24,9:26,10:24,11:16,13:8
+```
+
+| | pose | time | |
+| --- | --- | --- | --- |
+| ready | 1, 3 | 1.00 s | stance, weight shifts |
+| **coil** | 6 | 0.15 s | arm back, about to go |
+| **dash** | 7 | 0.10 s | the drawn motion blur, 16 px forward |
+| | 8 | 0.10 s | blade out, 24 px forward |
+| **strike** | 9 | 0.30 s | thrust at full extension, jolt of 4 px |
+| | 10 | 0.15 s | follow through |
+| recovery | 11, 13 | 0.30 s | pulling back |
+| | 15, 16 | 0.75 s | settles, back to ready |
+
+Half a second covers coil, dash and strike. This is the one animation of the
+four that travels: `--offset` walks the sprite 26 px forward across the lunge
+and back over the recovery. Registration holds a character still on purpose, so
+a loop cannot drift — right for an idle, wrong for an attack, and neither
+alignment mode recovers the ground she covers, because the drawings disagree
+about where she is standing. So the travel is authored rather than measured.
+
+## Getting hit
+
+```sh
+python3 tools/slice_sheet.py assets/dahlia_hit_sheet.png -o out/dahlia_hit \
+  --components --tol 18 --glow-tol 0 --fill-holes 3 --despeckle 24 --denoise 5 \
+  --single dahlia_hit --align silhouette
+python3 tools/assemble.py out/dahlia_hit/frames -o out/dahlia_hit -n dahlia_hit \
+  --poses 19,3,4,5,6,7,8,9,10,13,16 --holds 14,2,2,3,4,2,4,5,5,6,8 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 3:9,4:5,5:3 --offset 5:-6,6:-10,7:-8,8:-5,9:-2
+```
+
+| | pose | time | |
+| --- | --- | --- | --- |
+| ready | 19 | 0.70 s | standing |
+| **impact** | 3 | 0.10 s | gold burst, jolt of 9 px |
+| | 4 | 0.10 s | snapped back, jolt of 5 px |
+| **knocked back** | 5, 6 | 0.35 s | staggering, mouth open, 10 px back |
+| | 7 | 0.10 s | the drawn motion blur, head down |
+| recovery | 8, 9, 10 | 0.70 s | straightening up |
+| | 13, 16 | 0.70 s | settles, back to standing |
+
+A hit is the inverse of a block: no anticipation at all, because being hit is
+not something you prepare for. It opens straight onto the impact frame, and the
+jolt is the largest in any of these animations at 9 px, decaying through the
+recoil. The knockback is `--offset` again, negative — she gives ground and
+walks it back as she recovers.
+
+**The knife is only in her hand on 6 of these 20 drawings**, and none of the
+recoil poses is one of them. Building the reaction around the knife would mean
+dropping the entire recoil, so this runs knife-free: the ready pose, the
+stagger and the recovery are all drawings where her hands are open. The one
+exception is the impact frame itself, which is the only drawing with the burst
+on it. It is on screen for 0.1 s under a 9 px jolt and a screenful of gold,
+which is exactly what an impact frame is for — but it is a compromise, and
+`--poses 19,4,5,6,7,8,9,10,13,16` builds the version without it.
 
 ## The block
 
@@ -117,6 +186,21 @@ a genuinely smooth loop with no other changes.
 Five separate things put grain, haze or holes on these animations, and each is
 fixed where it is created rather than filtered out afterwards:
 
+- **Poses that overlap.** Gap splitting fails as soon as two poses overlap once
+  flattened onto an axis — on the attack sheet one pose's hair reaches into the
+  next one's column and a whole row of four collapsed into a single frame.
+  `--components` labels the ink and takes one frame per island, which is exact
+  where a projection is only a guess, and folds detached scraps like the flame
+  wisps into the nearest pose rather than making frames of them. Both 20-pose
+  sheets segment exactly.
+- **Blurred poses hollowed out.** Both action sheets draw one frame with heavy
+  motion blur, which shades large parts of the body toward the background
+  colour and gives the flood a path inward, so it walked in and punched holes
+  through her torso. Tightening the tolerance does not fix it — those pixels
+  really are background-coloured. `--fill-holes` seals the mask shut, treats
+  whatever transparency is then cut off from the outside as a hole, and fills
+  it, adding back only the holes so the outline stays exactly as crisp. The
+  haze pass has to be off entirely on these sheets for the same reason.
 - **Panel borders.** The block sheet boxes every pose in a black frame. The
   frame is ink, so the segmenter read the whole grid as one connected drawing
   and found no gaps to split on — and the corner-sampled background colour came
@@ -163,14 +247,18 @@ Frames are also cropped with a small margin rather than flush to the union of
 the loop, so no pixel sits on the canvas edge where a renderer that scales or
 offsets the sprite would shave it off.
 
-Both animations are audited frame by frame — 150 and 70 frames, not samples:
+Every animation is audited frame by frame — 332 frames in total, not samples:
 
-| | twirl | block |
-| --- | --- | --- |
-| frames touching the canvas edge | 0 | 0 |
-| islands under 24 px, i.e. grain | 0 | 0 |
-| flat-area variation (of 255) | 3.9 | 4.1 |
-| same, measured on the GIF | 3.9 | 4.2 |
+| | twirl | block | attack | hit |
+| --- | --- | --- | --- | --- |
+| frames touching the canvas edge | 0 | 0 | 0 | 0 |
+| islands under 24 px, i.e. grain | 0 | 0 | 0 | 0 |
+| flat-area variation (of 255) | 3.9 | 4.1 | 4.8 | 6.1 |
+| same, measured on the GIF | 3.9 | 4.2 | 5.1 | 5.8 |
+
+The two action sheets read higher because they are grainier JPEGs to begin with,
+and what is left is drawn texture: a stronger median takes the figure from 4.98
+to 4.80 while costing 4 % of the line work, which is not a trade worth making.
 
 The only detached shapes left in either loop are the drawn gold flame wisps,
 52 px and larger.
@@ -188,7 +276,10 @@ background, so the alpha comes from a flood fill inward from the edges.
 
 | flag | why |
 | --- | --- |
+| `--components` | split poses by connected ink instead of by gaps; use when poses overlap |
+| `--component-min N` | smallest island counted as a pose rather than a stray scrap |
 | `--panels` | the sheet boxes each pose in a drawn frame; paint the grid out first |
+| `--fill-holes N` | seal and fill holes the flood punched through blurred poses |
 | `--single NAME` | treat every frame on the sheet as one sequence, in reading order |
 | `--align silhouette` | fine-register frames to each other instead of anchoring on the feet |
 | `--rows N` / `--cols N` | force a uniform grid instead of detecting one |
