@@ -23,12 +23,46 @@ import numpy as np
 from PIL import Image
 
 
+def panel_border_lines(rgb, darkness=90, coverage=0.8, grow=3):
+    """Rows and columns occupied by a drawn panel grid.
+
+    Some sheets box each pose in a black frame. The frame is ink, so the
+    segmenter reads the whole grid as one connected drawing and finds no gaps to
+    split on. Lines are widened to swallow their antialiased edges: one pixel
+    left standing still walls the background flood out of the cell, and then
+    nothing inside gets keyed at all.
+    """
+    dark = rgb.max(axis=2) < darkness
+
+    def lines(profile, limit):
+        wide = set()
+        for i in np.flatnonzero(profile > coverage):
+            wide.update(range(max(0, i - grow), min(limit, i + grow + 1)))
+        return sorted(wide)
+
+    return lines(dark.mean(axis=1), rgb.shape[0]), lines(dark.mean(axis=0), rgb.shape[1])
+
+
 def load_sheet(path):
     return Image.open(path).convert("RGBA")
 
 
-def background_color(rgb, probe=8):
-    """Most common colour among the sheet's corner patches."""
+def background_color(rgb, probe=8, skip_rows=(), skip_cols=()):
+    """Most common colour among the sheet's corner patches.
+
+    On a panelled sheet the corners are the drawn grid rather than the
+    background, so those rows and columns are dropped first and the commonest
+    colour over everything that remains is used instead.
+    """
+    if len(skip_rows) or len(skip_cols):
+        keep_r = np.setdiff1d(np.arange(rgb.shape[0]), np.asarray(skip_rows, dtype=int))
+        keep_c = np.setdiff1d(np.arange(rgb.shape[1]), np.asarray(skip_cols, dtype=int))
+        px = rgb[np.ix_(keep_r, keep_c)].reshape(-1, 3).astype(np.uint32)
+        packed = (px[:, 0] << 16) | (px[:, 1] << 8) | px[:, 2]
+        vals, counts = np.unique(packed, return_counts=True)
+        top = int(vals[counts.argmax()])
+        return np.array([top >> 16, (top >> 8) & 255, top & 255], dtype=np.int16)
+
     h, w, _ = rgb.shape
     patches = [
         rgb[:probe, :probe], rgb[:probe, w - probe:],
@@ -276,6 +310,8 @@ def main():
     ap.add_argument("--tol", type=int, default=24, help="background colour tolerance (0-255)")
     ap.add_argument("--glow-tol", type=int, default=0,
                     help="strip soft haze around the character up to this distance from the background")
+    ap.add_argument("--panels", action="store_true",
+                    help="the sheet boxes each pose in a drawn frame; paint the grid out first")
     ap.add_argument("--despeckle", type=int, default=24,
                     help="drop opaque islands smaller than this many pixels")
     ap.add_argument("--pad", type=int, default=4)
@@ -286,7 +322,15 @@ def main():
 
     sheet = load_sheet(args.sheet)
     rgb = np.array(sheet)[:, :, :3]
-    bg = background_color(rgb)
+    if args.panels:
+        rows_, cols_ = panel_border_lines(rgb)
+        bg = background_color(rgb, skip_rows=rows_, skip_cols=cols_)
+        rgb = rgb.copy()
+        rgb[rows_, :] = bg          # paint the grid out so the gaps come back
+        rgb[:, cols_] = bg
+        print(f"panelled sheet: erased {len(rows_)} row and {len(cols_)} column border lines")
+    else:
+        bg = background_color(rgb)
     mask = foreground_mask(rgb, bg, args.tol)
 
     alpha = ~outside(~mask)

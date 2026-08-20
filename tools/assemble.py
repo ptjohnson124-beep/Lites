@@ -11,6 +11,7 @@ extremes longer than the passing frames, and keep the body from wandering.
   --poses      which drawings take part, and in what order
   --pingpong   play the sequence out and back, so a non-cyclic set still loops
   --holds      frames each pose is held for; the shape of the timing
+  --shake      decaying jolt on impact poses, for hits the drawings do not show
   --breathe    slight feet-planted stretch, the one deformation a still drawing takes
   --bob/--sway gentle rigid drift, the one motion safe to add to a still drawing
   --stabilize  register poses on the body, ignoring the hair
@@ -183,6 +184,40 @@ def float_motion(frames, rise, sway, cycles):
     return out
 
 
+def impact_shake(frames, played, spec):
+    """Jolt the sprite on the frames where something hits it.
+
+    A block reads as a block because the body registers the impact, and with no
+    drawing of the recoil the shake has to supply it. The offset decays over the
+    run so the hit lands hard and settles, rather than vibrating for as long as
+    the pose is held, and it is a rigid translation, so nothing smears.
+    """
+    if not spec:
+        return frames
+    amps = {}
+    for part in spec.split(","):
+        pose, amp = part.split(":")
+        amps[int(pose) - 1] = int(amp)
+
+    biggest = max(amps.values())
+    w, h = frames[0].size
+    out, run_pose, step = [], None, 0
+    for frame, pose in zip(frames, played):
+        step = step + 1 if pose == run_pose else 0
+        run_pose = pose
+        amp = amps.get(pose, 0)
+        if amp:
+            decay = [1.0, -0.85, 0.6, -0.4, 0.25, -0.15, 0.08]
+            k = decay[step] if step < len(decay) else 0.0
+            dx, dy = int(round(amp * k)), int(round(amp * k * -0.5))
+        else:
+            dx = dy = 0
+        canvas = Image.new("RGBA", (w + 2 * biggest, h + 2 * biggest), (0, 0, 0, 0))
+        canvas.paste(frame, (biggest + dx, biggest + dy))
+        out.append(canvas)
+    return out
+
+
 def trim(frames):
     """Crop every frame to one common box, so nothing shifts on playback."""
     boxes = [Image.fromarray(np.array(f)[:, :, 3]).getbbox() for f in frames]
@@ -249,6 +284,7 @@ def main():
                     help="distinct breathing scales; more means finer steps at higher frame rates")
     ap.add_argument("--bob", type=int, default=2, help="vertical idle float in pixels (0 disables)")
     ap.add_argument("--sway", type=int, default=0, help="horizontal idle drift in pixels")
+    ap.add_argument("--shake", help="jolt on impact poses, e.g. '4:4,6:2' (1-based pose:pixels)")
     ap.add_argument("--bob-cycles", type=float, default=1.0, help="float cycles per loop")
     ap.add_argument("--stabilize", choices=("core", "silhouette", "none"), default="core",
                     help="core: match on hoodie and trousers, ignoring hair")
@@ -265,7 +301,8 @@ def main():
     played = timeline(order, args.holds, args.pingpong)
     played_frames = breathe([poses[i] for i in played], args.breathe,
                             args.breathe_cycles, args.breathe_levels)
-    frames = trim(float_motion(played_frames, args.bob, args.sway, args.bob_cycles))
+    moved = float_motion(played_frames, args.bob, args.sway, args.bob_cycles)
+    frames = trim(impact_shake(moved, played, args.shake))
 
     # Rebuild the directory rather than write into it: a shorter run would
     # otherwise leave the tail of a longer one behind, and the strip and any
@@ -292,6 +329,7 @@ def main():
                    "fps": args.fps, "loop_seconds": round(len(frames) / args.fps, 3),
                    "pingpong": args.pingpong, "bob": args.bob, "sway": args.sway,
                    "breathe": args.breathe, "breathe_cycles": args.breathe_cycles,
+                   "shake": args.shake,
                    "stabilize": args.stabilize,
                    "size": [fw, fh], "strip": f"{args.name}_strip.png",
                    "cols": cols, "strip_rows": rows}, fh_, indent=2)
