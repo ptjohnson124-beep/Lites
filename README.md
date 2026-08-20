@@ -11,6 +11,7 @@ browser player for previewing the result.
 | **taunt** | `assets/dahlia_taunt_sheet.png`, 15 drawings | `out/dahlia_taunt/` — 59 frames, 2.95 s |
 | **going insane** | `assets/dahlia_insane_b_sheet.png`, 16 drawings | `out/dahlia_insane/` — 68 frames, 3.4 s |
 | **insanity transformation** | `assets/dahlia_insanity_sheet.png`, 16 drawings | `out/dahlia_insanity/` — 79 frames, 3.95 s |
+| **cyberpsychosis** | `assets/dahlia_cyberpsychosis_sheet.png`, 16 drawings | `out/dahlia_cyberpsychosis/` — 93 frames, 4.65 s |
 | **corrupted idle** | `assets/dahlia_insane_a_sheet.png`, 16 drawings | `out/dahlia_insane_idle/` — 47 frames, 2.35 s |
 | **getting hit** | `assets/dahlia_hit_sheet.png`, 20 drawings | `out/dahlia_hit/` — 55 frames, 2.75 s |
 | **block** | `assets/dahlia_block_sheet.png`, 12 drawings | `out/dahlia_block/` — 70 frames, 3.5 s |
@@ -63,6 +64,36 @@ out, back, further out, and back again — a stumble rather than a dash.
 own footing from the desaturated pixels of its lower body — hair being the most
 mobile thing on the character, it gets no vote on where her feet are — and
 works out the shift from there. All three travelling animations use it.
+
+## Cyberpsychosis
+
+A different failure mode from the insanity sheets: digital rather than demonic.
+Her eyes go red, an afterimage splits off her, red static crawls up her chest,
+and she tears into two copies of herself before it peaks and lets her go. The
+episode plays start to finish in 4.65 s:
+
+| | pose | time | |
+| --- | --- | --- | --- |
+| normal | 1, 2 | 0.70 s | stance, gold aura |
+| onset | 3 | 0.25 s | eyes go red, first artefacts |
+| | 4 | 0.30 s | an afterimage splits off, small jolt |
+| | 5 | 0.20 s | static in her chest |
+| **the tear** | 6, 7, 6, 7 | 0.45 s | ripped into two, the two drawings flickered against each other |
+| **peak** | 8 | 0.60 s | full aura, grinning, the loop's biggest jolt |
+| | 9 | 0.15 s | one dark flash — the deepest point, gone as fast as it came |
+| comedown | 12, 11, 10 | 0.70 s | red-eyed, steadying |
+| | 13, 14 | 0.50 s | flushed, catching her breath |
+| back | 15, 16 | 0.80 s | herself again |
+
+The two tear drawings are the same trick as the taunt's flame: flickering
+between them animates the glitch instead of holding a static rip. The dark
+pose 9 gets a single 0.15 s flash — held any longer it reads as a costume
+change; flashed, it reads as something underneath showing through.
+
+The audit's flat-area noise reads high on this sheet (11.4 against 4–6
+elsewhere) and that is correct behaviour: the red static *is* noise, drawn on
+purpose, and the denoiser's edge threshold protects it the same way it protects
+line work.
 
 ## The insanity transformation
 
@@ -418,7 +449,7 @@ Frames are also cropped with a small margin rather than flush to the union of
 the loop, so no pixel sits on the canvas edge where a renderer that scales or
 offsets the sprite would shave it off.
 
-Every animation is audited frame by frame — 634 frames in total, not samples.
+Every animation is audited frame by frame — 727 frames in total, not samples.
 
 Across all eight: no frame touches a canvas edge, no island under 24 px
 anywhere, 94–98 % of the aura survives, and line work measures 106–131 % of the

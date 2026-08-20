@@ -84,3 +84,16 @@ $BUILD out/dahlia_insanity/frames -o out/dahlia_insanity -n dahlia_insanity \
   --poses 13,1,2,3,4,12,10,11,9,14,15,16 --holds 10,6,5,4,7,4,6,5,8,6,8,10 \
   --fps 20 --breathe 1.5 --breathe-cycles 3 --breathe-levels 12 --sway 2 \
   --shake 3:3,4:8,10:6
+
+# Cyberpsychosis. The episode arc: eyes go red, an afterimage splits off, static
+# in the chest, she tears into two (poses 6 and 7 flickered against each other),
+# peaks grinning in the full aura, one dark flash, then a red-eyed comedown back
+# to herself. The tear poses stay single components because the drawn glitch
+# streaks connect the halves.
+$SLICE assets/dahlia_cyberpsychosis_sheet.png -o out/dahlia_cyberpsychosis \
+  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_cyberpsychosis
+$BUILD out/dahlia_cyberpsychosis/frames -o out/dahlia_cyberpsychosis -n dahlia_cyberpsychosis \
+  --poses 1,2,3,4,5,6,7,6,7,8,9,12,11,10,13,14,15,16 \
+  --holds 8,6,5,6,4,2,2,2,3,12,3,4,5,5,5,5,6,10 \
+  --fps 20 --breathe 1.4 --breathe-cycles 3 --breathe-levels 12 --sway 2 \
+  --shake 4:3,6:4,7:4,8:6,9:5
