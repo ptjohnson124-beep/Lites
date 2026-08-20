@@ -81,10 +81,11 @@
   "breathe": 1.2,
   "breathe_cycles": 2.0,
   "shake": "9:4",
-  "offset": "7:16,8:24,9:26,10:24,11:16,13:8",
+  "offset": null,
+  "travel": "1:0,3:0,6:6,7:18,8:28,9:32,10:28,11:18,13:8,15:2,16:0",
   "stabilize": "core",
   "size": [
-    233,
+    247,
     244
   ],
   "strip": "dahlia_attack_strip.png",

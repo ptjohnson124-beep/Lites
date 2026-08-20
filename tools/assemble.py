@@ -12,7 +12,7 @@ extremes longer than the passing frames, and keep the body from wandering.
   --pingpong   play the sequence out and back, so a non-cyclic set still loops
   --holds      frames each pose is held for; the shape of the timing
   --shake      decaying jolt on impact poses, for hits the drawings do not show
-  --offset     ground covered per pose, for travel registration deliberately removes
+  --travel     where each pose should stand; the shift to get there is measured
   --breathe    slight feet-planted stretch, the one deformation a still drawing takes
   --bob/--sway gentle rigid drift, the one motion safe to add to a still drawing
   --stabilize  register poses on the body, ignoring the hair
@@ -197,6 +197,39 @@ def parse_pose_map(spec):
     return out
 
 
+def ground_x(frame):
+    """Where a pose stands: horizontal centre of its legs and boots.
+
+    Measured on the desaturated pixels of the lower body, so streaming hair —
+    the most mobile thing on the character — does not vote on where her feet
+    are.
+    """
+    a = np.array(frame)
+    rgb = a[:, :, :3].astype(np.int16)
+    mx, mn = rgb.max(axis=2), rgb.min(axis=2)
+    sat = np.where(mx > 0, (mx - mn) * 255 // np.maximum(mx, 1), 0)
+    core = (a[:, :, 3] > 0) & (sat < 70)
+    core[:int(core.shape[0] * 0.55)] = False
+    xs = np.nonzero(core.any(axis=0))[0]
+    return float(xs.mean()) if len(xs) else frame.width / 2
+
+
+def travel_offsets(poses, order, spec):
+    """Turn requested ground positions into the shift each pose needs.
+
+    Asking for a raw shift per pose does not survive contact with the drawings:
+    each one sits at its own spot once registered, so equal shifts produce an
+    uneven path and a dash reads as a stumble. Here the request is where she
+    should be standing, relative to the pose the sequence opens on, and the
+    shift that gets her there is measured rather than guessed.
+    """
+    targets = parse_pose_map(spec)
+    if not targets:
+        return {}
+    base = ground_x(poses[order[0]])
+    return {i: int(round(t - (ground_x(poses[i]) - base))) for i, t in targets.items()}
+
+
 def displace(frames, played, shake_spec, offset_spec):
     """Move whole frames around: a jolt on impact, and travel through an attack.
 
@@ -208,7 +241,7 @@ def displace(frames, played, shake_spec, offset_spec):
     by hand, a pose at a time.
     """
     shake = parse_pose_map(shake_spec)
-    offset = parse_pose_map(offset_spec)
+    offset = offset_spec if isinstance(offset_spec, dict) else parse_pose_map(offset_spec)
     if not shake and not offset:
         return frames
 
@@ -321,7 +354,8 @@ def main():
     ap.add_argument("--bob", type=int, default=2, help="vertical idle float in pixels (0 disables)")
     ap.add_argument("--sway", type=int, default=0, help="horizontal idle drift in pixels")
     ap.add_argument("--shake", help="jolt on impact poses, e.g. '4:4,6:2' (1-based pose:pixels)")
-    ap.add_argument("--offset", help="ground covered on given poses, e.g. '7:16,9:24'; negative goes back")
+    ap.add_argument("--offset", help="raw shift on given poses, e.g. '7:16,9:24'; negative goes back")
+    ap.add_argument("--travel", help="where each pose should stand, e.g. '7:-20,9:-30'; measured, not guessed")
     ap.add_argument("--bob-cycles", type=float, default=1.0, help="float cycles per loop")
     ap.add_argument("--stabilize", choices=("core", "silhouette", "none"), default="core",
                     help="core: match on hoodie and trousers, ignoring hair")
@@ -341,7 +375,10 @@ def main():
     played_frames = breathe([poses[i] for i in played], args.breathe,
                             args.breathe_cycles, args.breathe_levels)
     moved = float_motion(played_frames, args.bob, args.sway, args.bob_cycles)
-    frames = trim(scrub(displace(moved, played, args.shake, args.offset), args.despeckle))
+    shifts = parse_pose_map(args.offset)
+    for pose, dx in travel_offsets(poses, order, args.travel).items():
+        shifts[pose] = shifts.get(pose, 0) + dx
+    frames = trim(scrub(displace(moved, played, args.shake, shifts), args.despeckle))
 
     # Rebuild the directory rather than write into it: a shorter run would
     # otherwise leave the tail of a longer one behind, and the strip and any
@@ -368,7 +405,7 @@ def main():
                    "fps": args.fps, "loop_seconds": round(len(frames) / args.fps, 3),
                    "pingpong": args.pingpong, "bob": args.bob, "sway": args.sway,
                    "breathe": args.breathe, "breathe_cycles": args.breathe_cycles,
-                   "shake": args.shake, "offset": args.offset,
+                   "shake": args.shake, "offset": args.offset, "travel": args.travel,
                    "stabilize": args.stabilize,
                    "size": [fw, fh], "strip": f"{args.name}_strip.png",
                    "cols": cols, "strip_rows": rows}, fh_, indent=2)

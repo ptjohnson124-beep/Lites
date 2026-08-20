@@ -7,6 +7,7 @@ browser player for previewing the result.
 | animation | source | result |
 | --- | --- | --- |
 | **attack** | `assets/dahlia_attack_sheet.png`, 20 drawings | `out/dahlia_attack/` — 57 frames, 2.85 s |
+| **dodge** | `assets/dahlia_dodge_sheet.png`, 20 drawings | `out/dahlia_dodge/` — 49 frames, 2.45 s |
 | **getting hit** | `assets/dahlia_hit_sheet.png`, 20 drawings | `out/dahlia_hit/` — 55 frames, 2.75 s |
 | **block** | `assets/dahlia_block_sheet.png`, 12 drawings | `out/dahlia_block/` — 70 frames, 3.5 s |
 | **dagger twirl idle** | `assets/twirl_sheet.png`, 12 drawings | `out/dahlia_twirl/` — 150 frames, 7.5 s |
@@ -43,12 +44,56 @@ python3 tools/assemble.py out/dahlia_attack/frames -o out/dahlia_attack -n dahli
 | recovery | 11, 13 | 0.30 s | pulling back |
 | | 15, 16 | 0.75 s | settles, back to ready |
 
-Half a second covers coil, dash and strike. This is the one animation of the
-four that travels: `--offset` walks the sprite 26 px forward across the lunge
-and back over the recovery. Registration holds a character still on purpose, so
-a loop cannot drift — right for an idle, wrong for an attack, and neither
-alignment mode recovers the ground she covers, because the drawings disagree
-about where she is standing. So the travel is authored rather than measured.
+Half a second covers coil, dash and strike, with the sprite carried 32 px
+forward across the lunge and walked back over the recovery.
+
+Registration holds a character still on purpose, so a loop cannot drift — right
+for an idle, wrong for an attack, and neither alignment mode recovers the ground
+she covers, because the drawings disagree about where she is standing. So travel
+is authored. Asking for a raw shift per pose (`--offset`) does not survive
+contact with the drawings, though: each already sits at its own spot once
+registered, so equal shifts produce an uneven path, and the dodge came out going
+out, back, further out, and back again — a stumble rather than a dash.
+`--travel` takes where she should be *standing* instead, measures each pose's
+own footing from the desaturated pixels of its lower body — hair being the most
+mobile thing on the character, it gets no vote on where her feet are — and
+works out the shift from there. All three travelling animations use it.
+
+## The dodge
+
+```sh
+python3 tools/slice_sheet.py assets/dahlia_dodge_sheet.png -o out/dahlia_dodge \
+  --components --tol 18 --glow-tol 0 --fill-holes 3 --despeckle 24 --denoise 5 \
+  --single dahlia_dodge --align silhouette
+python3 tools/assemble.py out/dahlia_dodge/frames -o out/dahlia_dodge -n dahlia_dodge \
+  --poses 1,3,4,7,9,8,10,6,12,11 --holds 12,3,3,2,2,3,5,4,5,10 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 10:3 --travel 1:0,3:0,4:-6,7:-20,9:-30,8:-22,10:-12,6:-6,12:-2,11:0
+```
+
+The drawings turn out to describe a spin, not a sidestep, so that is what this
+plays:
+
+| | pose | time | ground | |
+| --- | --- | --- | --- | --- |
+| ready | 1 | 0.60 s | 0 | knife at her side |
+| | 3 | 0.15 s | 0 | eyes close — she has read it |
+| **push off** | 4 | 0.15 s | −6 | gold flares at her feet |
+| **dash** | 7 | 0.10 s | −20 | drawn motion blur |
+| **spin** | 9 | 0.10 s | −30 | back to the camera, furthest out |
+| | 8 | 0.15 s | −22 | coming back around, knife up |
+| **land** | 10 | 0.25 s | −12 | crouched, small jolt |
+| recovery | 6, 12 | 0.45 s | −6 → −2 | rising, settling |
+| | 11 | 0.50 s | 0 | back to ready |
+
+Half a second from push-off to landing, of which the two blurred drawings hold
+0.1 s each. Poses 9 and 8 are played in that order rather than the order they
+sit on the sheet: 7 faces left, 9 has her back turned, 8 brings her round to
+face the camera again, which is one continuous rotation instead of a spin that
+skips and resets.
+
+This is the first animation where the ground she covers is the whole point, and
+it is also where `--offset` stopped being good enough — see below.
 
 ## Getting hit
 
@@ -247,14 +292,14 @@ Frames are also cropped with a small margin rather than flush to the union of
 the loop, so no pixel sits on the canvas edge where a renderer that scales or
 offsets the sprite would shave it off.
 
-Every animation is audited frame by frame — 332 frames in total, not samples:
+Every animation is audited frame by frame — 381 frames in total, not samples:
 
-| | twirl | block | attack | hit |
-| --- | --- | --- | --- | --- |
-| frames touching the canvas edge | 0 | 0 | 0 | 0 |
-| islands under 24 px, i.e. grain | 0 | 0 | 0 | 0 |
-| flat-area variation (of 255) | 3.9 | 4.1 | 4.8 | 6.1 |
-| same, measured on the GIF | 3.9 | 4.2 | 5.1 | 5.8 |
+| | twirl | block | attack | hit | dodge |
+| --- | --- | --- | --- | --- | --- |
+| frames touching the canvas edge | 0 | 0 | 0 | 0 | 0 |
+| islands under 24 px, i.e. grain | 0 | 0 | 0 | 0 | 0 |
+| flat-area variation (of 255) | 3.9 | 4.1 | 4.8 | 6.1 | 4.7 |
+| same, measured on the GIF | 3.9 | 4.2 | 5.1 | 5.8 | 4.6 |
 
 The two action sheets read higher because they are grainier JPEGs to begin with,
 and what is left is drawn texture: a stronger median takes the figure from 4.98
