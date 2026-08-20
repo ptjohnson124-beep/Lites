@@ -301,7 +301,9 @@ def gif_frames(frames):
     out = []
     for f in frames:
         p = f.convert("RGB").quantize(palette=shared, dither=Image.Dither.NONE)
-        p.paste(255, f.getchannel("A").point(lambda a: 255 if a < 128 else 0))
+        # Cut low, not at half: the aura is deliberately semi-transparent, and a
+        # 128 cut erases most of it. At 64 the glow keeps its full drawn extent.
+        p.paste(255, f.getchannel("A").point(lambda a: 255 if a < 64 else 0))
         p.info["transparency"] = 255
         out.append(p)
     return out

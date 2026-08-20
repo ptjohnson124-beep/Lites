@@ -74,3 +74,13 @@ $BUILD out/dahlia_insane/frames -o out/dahlia_insane -n dahlia_insane \
   --holds 8,3,6,3,3,2,8,3,4,4,3,5,4,4,8 \
   --fps 20 --breathe 1.5 --breathe-cycles 3 --breathe-levels 12 --sway 2 \
   --shake 3:5,5:3,7:10,8:5 --travel 6:10,7:2,8:-4
+
+# The full insanity transformation: head grab, escalating glitch, two corruption
+# bursts, then she comes down bloodied and sparking. The sheet also draws a
+# corrupted lunge (poses 6-8) — a different action, left out of this clip.
+$SLICE assets/dahlia_insanity_sheet.png -o out/dahlia_insanity \
+  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_insanity
+$BUILD out/dahlia_insanity/frames -o out/dahlia_insanity -n dahlia_insanity \
+  --poses 13,1,2,3,4,12,10,11,9,14,15,16 --holds 10,6,5,4,7,4,6,5,8,6,8,10 \
+  --fps 20 --breathe 1.5 --breathe-cycles 3 --breathe-levels 12 --sway 2 \
+  --shake 3:3,4:8,10:6

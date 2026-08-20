@@ -10,6 +10,7 @@ browser player for previewing the result.
 | **dodge** | `assets/dahlia_dodge_sheet.png`, 20 drawings | `out/dahlia_dodge/` — 49 frames, 2.45 s |
 | **taunt** | `assets/dahlia_taunt_sheet.png`, 15 drawings | `out/dahlia_taunt/` — 59 frames, 2.95 s |
 | **going insane** | `assets/dahlia_insane_b_sheet.png`, 16 drawings | `out/dahlia_insane/` — 68 frames, 3.4 s |
+| **insanity transformation** | `assets/dahlia_insanity_sheet.png`, 16 drawings | `out/dahlia_insanity/` — 79 frames, 3.95 s |
 | **corrupted idle** | `assets/dahlia_insane_a_sheet.png`, 16 drawings | `out/dahlia_insane_idle/` — 47 frames, 2.35 s |
 | **getting hit** | `assets/dahlia_hit_sheet.png`, 20 drawings | `out/dahlia_hit/` — 55 frames, 2.75 s |
 | **block** | `assets/dahlia_block_sheet.png`, 12 drawings | `out/dahlia_block/` — 70 frames, 3.5 s |
@@ -62,6 +63,18 @@ out, back, further out, and back again — a stumble rather than a dash.
 own footing from the desaturated pixels of its lower body — hair being the most
 mobile thing on the character, it gets no vote on where her feet are — and
 works out the shift from there. All three travelling animations use it.
+
+## The insanity transformation
+
+The heaviest sheet: bloodied hoodie, the drawing itself glitching apart, and two
+frames of full corruption wrapped in lightning. The clip is the descent — hand
+to her head, the glitch escalating, a burst, shaking, a second burst, then she
+comes down head-bowed and ends standing, bloodied and still sparking. 3.95 s,
+with 8 px and 6 px jolts on the two bursts.
+
+The sheet also draws a corrupted lunge (poses 6–8) — that is an attack she does
+in this state, not part of the transformation, so it is left out of this clip
+and available for an insane-attack animation later.
 
 ## Going insane
 
@@ -323,7 +336,15 @@ fixed where it is created rather than filtered out afterwards:
   solves for the colour. The glow comes out genuinely semi-transparent, coloured
   as painted, and fading out smoothly rather than ending on a keyed edge.
 
-  Where it may reach is the whole problem. Her hair sits 54 levels off the
+  What gets *stored* is not the true coverage, though. Most of a soft glow sits
+  under half-opacity, and GIF's one-bit alpha throws every such pixel away — the
+  first version of this fix recovered the colour and then lost the whole aura in
+  the GIFs. The colour is solved from the true coverage, then the stored alpha
+  is lifted through a gamma curve, and the GIF export cuts at 64 rather than
+  128, so the glow keeps its full drawn extent in every format while the very
+  fringe still fades.
+
+  Where the solve may reach is the other problem. Her hair sits 54 levels off the
   background and her skin 74, so a reach that passes either turns the character
   herself translucent — at 90 the entire figure washed out to a ghost. Two
   things keep it honest: the band is capped a fixed distance in from the keyed
@@ -397,7 +418,7 @@ Frames are also cropped with a small margin rather than flush to the union of
 the loop, so no pixel sits on the canvas edge where a renderer that scales or
 offsets the sprite would shave it off.
 
-Every animation is audited frame by frame — 555 frames in total, not samples.
+Every animation is audited frame by frame — 634 frames in total, not samples.
 
 Across all eight: no frame touches a canvas edge, no island under 24 px
 anywhere, 94–98 % of the aura survives, and line work measures 106–131 % of the

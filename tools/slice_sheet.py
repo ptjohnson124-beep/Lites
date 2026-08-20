@@ -212,7 +212,7 @@ def fill_holes(alpha, radius):
     return alpha | enclosed
 
 
-def unmatte(rgb, bg, alpha, tol, reach, depth):
+def unmatte(rgb, bg, alpha, tol, reach, depth, solidity=0.45):
     """Recover the aura's real colour and give it real transparency.
 
     Her glow is painted *over* the sheet's grey at partial opacity, so grey is
@@ -250,12 +250,21 @@ def unmatte(rgb, bg, alpha, tol, reach, depth):
     band = outside(soft) & alpha & near_edge
 
     a = np.clip((d.astype(np.float32) - tol) / np.maximum(span - tol, 1), 0, 1)
-    a = np.where(band, a, 1.0) * alpha
+
+    # The colour is solved from the true coverage, but the true coverage is not
+    # what gets stored: most of a soft glow sits under half-opacity, and GIF's
+    # one-bit alpha throws every such pixel away — the aura vanished from the
+    # GIFs entirely while surviving in the WebP. A gamma curve lifts the stored
+    # alpha so the glow shows in its solved colour on every format, while the
+    # very fringe still fades out.
+    stored = np.clip(a, 0, 1) ** solidity
+    a_solve = np.where(band, a, 1.0) * alpha
+    a = np.where(band, stored, 1.0) * alpha
 
     lifted = rgb.astype(np.float32)
-    safe = np.maximum(a, 1e-3)[:, :, None]
-    lifted = (lifted - (1 - a)[:, :, None] * bg.astype(np.float32)) / safe
-    out = np.where((band & (a > 0))[:, :, None], np.clip(lifted, 0, 255), rgb)
+    safe = np.maximum(a_solve, 1e-3)[:, :, None]
+    lifted = (lifted - (1 - a_solve)[:, :, None] * bg.astype(np.float32)) / safe
+    out = np.where((band & (a_solve > 0))[:, :, None], np.clip(lifted, 0, 255), rgb)
     return out.astype(np.uint8), (a * 255).astype(np.uint8)
 
 
