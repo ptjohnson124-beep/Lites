@@ -19,14 +19,6 @@ $BUILD out/dahlia_twirl/frames -o out/dahlia_twirl -n dahlia_twirl \
   --poses 3,4,3,4,5,6,7,6,5,4 --holds 28,24,32,16,2,2,28,4,4,10 \
   --fps 20 --breathe 1.2 --breathe-cycles 3 --breathe-levels 12 --sway 2
 
-# Block: the poses are boxed in a drawn grid, which has to be painted out
-# before anything downstream finds the gaps between them.
-$SLICE assets/dahlia_block_sheet.png -o out/dahlia_block \
-  --panels --tol 14 --glow-tol 0 $CLEAN --single dahlia_block
-$BUILD out/dahlia_block/frames -o out/dahlia_block -n dahlia_block \
-  --poses 1,12,2,3,4,6,5,3,11,12 --holds 16,12,2,2,5,8,3,2,6,14 \
-  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 4:5,6:3
-
 # Taunt: panelled like the block sheet, and its poses overlap once flattened,
 # so it needs both the grid painted out and splitting by connected ink.
 $SLICE assets/dahlia_taunt_sheet.png -o out/dahlia_taunt \
@@ -119,3 +111,14 @@ $SLICE assets/dahlia_idle_sheet.png -o out/dahlia_idle \
 $BUILD out/dahlia_idle/frames -o out/dahlia_idle -n dahlia_idle \
   --poses 1,2,3,4,5,6,5,2 --holds 18,3,3,7,10,10,8,2 \
   --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2
+
+# Block, in the new style, replacing the old-style build. The loop opens on the
+# retracted breath rather than the ready stance: the dagger deploying is the
+# sheet's largest step by far, and starting there puts it inside the loop as a
+# visible action instead of on the seam. Seam 33 against 51 for the deploy.
+$SLICE assets/dahlia_block_v2_sheet.png -o out/dahlia_block \
+  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_block
+$BUILD out/dahlia_block/frames -o out/dahlia_block -n dahlia_block \
+  --poses 8,1,2,3,4,5,6,7 --holds 10,8,2,3,5,7,3,6 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 4:6,5:3 --travel 8:0,1:0,2:0,3:0,4:-4,5:-6,6:-3,7:-1

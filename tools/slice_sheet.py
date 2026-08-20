@@ -17,6 +17,7 @@ Outputs (in --outdir):
 import argparse
 import json
 import os
+import shutil
 from collections import Counter
 
 import numpy as np
@@ -563,7 +564,12 @@ def main():
     if not rows:
         raise SystemExit("no frames found — try a larger --tol or pass --rows/--cols")
 
-    os.makedirs(os.path.join(args.outdir, "frames"), exist_ok=True)
+    # Rebuild the directory rather than write into it. A sheet with fewer poses
+    # than last time would otherwise leave the tail of the previous one behind,
+    # and a remade sheet would silently assemble against a mix of both.
+    frame_dir = os.path.join(args.outdir, "frames")
+    shutil.rmtree(frame_dir, ignore_errors=True)
+    os.makedirs(frame_dir, exist_ok=True)
 
     soft_alpha = None
     if args.unmatte:
@@ -592,7 +598,7 @@ def main():
         if args.align == "silhouette":
             frames, offsets = refine_alignment(frames, offsets)
         for fi, frame in enumerate(frames, 1):
-            frame.save(os.path.join(args.outdir, "frames", f"{name}_{fi:02d}.png"))
+            frame.save(os.path.join(frame_dir, f"{name}_{fi:02d}.png"))
         save_animation(frames, os.path.join(args.outdir, f"{name}.gif"), args.fps, bg)
         save_animation(frames, os.path.join(args.outdir, f"{name}.webp"), args.fps)
         manifest["rows"].append({

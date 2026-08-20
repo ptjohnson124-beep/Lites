@@ -21,7 +21,7 @@ sheet lands, at which point the same two commands rebuild them.
 | **cyberpsychosis** | `assets/dahlia_cyberpsychosis_sheet.png`, 16 drawings | `out/dahlia_cyberpsychosis/` — 93 frames, 4.65 s |
 | **corrupted idle** | `assets/dahlia_insane_a_sheet.png`, 16 drawings | `out/dahlia_insane_idle/` — 47 frames, 2.35 s |
 | **getting hit** | `assets/dahlia_hit_sheet.png`, 20 drawings | `out/dahlia_hit/` — 55 frames, 2.75 s |
-| **block** | `assets/dahlia_block_sheet.png`, 12 drawings | `out/dahlia_block/` — 70 frames, 3.5 s |
+| **block** (new style) | `assets/dahlia_block_v2_sheet.png`, 8 drawings | `out/dahlia_block/` — 44 frames, 2.2 s |
 | **dagger twirl idle** | `assets/twirl_sheet.png`, 12 drawings | `out/dahlia_twirl/` — 150 frames, 7.5 s |
 | **dagger-flip idle** | `assets/dahlia_flip_idle_sheet.png`, 15 drawings | `out/dahlia_flip_idle/` — 59 frames, 2.95 s |
 
@@ -282,6 +282,70 @@ which is exactly what an impact frame is for — but it is a compromise, and
 
 ## The block
 
+Second animation in the new style, and it replaces the old-style block at the
+same output path. Eight drawings, every one of them used:
+
+| | pose | time | |
+| --- | --- | --- | --- |
+| **breath** | 8 | 0.50 s | dagger retracted, catching her breath |
+| deploy | 1 | 0.40 s | dagger out, stance set |
+| **guard** | 2 | 0.10 s | snapped up |
+| | 3 | 0.15 s | set across her chest |
+| **impact** | 4 | 0.25 s | hair streaks, 6 px jolt, giving 4 px of ground |
+| **strain** | 5 | 0.35 s | eyes lit, aura at full, 6 px back |
+| release | 6 | 0.15 s | guard drops |
+| | 7 | 0.30 s | exhale, dagger still out |
+
+The loop opens on the retracted breath rather than the ready stance, which is
+worth explaining. The dagger deploying is by far the sheet's largest step — 51
+against 20-ish for the guard and impact frames — so ordering the loop to start
+there puts that jump *inside* the animation as a visible action rather than on
+the seam. The seam becomes the exhale settling back to a retracted breath, at
+33. Same eight drawings, same order in every other respect; only where the
+circle is cut changes.
+
+That retracted breath is also the handoff: it is the same rest state the idle
+opens on, so block-into-idle needs no bridging frame.
+
+## Getting hit
+
+```sh
+python3 tools/slice_sheet.py assets/dahlia_hit_sheet.png -o out/dahlia_hit \
+  --components --tol 18 --glow-tol 0 --fill-holes 3 --despeckle 24 --denoise 5 \
+  --single dahlia_hit --align silhouette
+python3 tools/assemble.py out/dahlia_hit/frames -o out/dahlia_hit -n dahlia_hit \
+  --poses 19,3,4,5,6,7,8,9,10,13,16 --holds 14,2,2,3,4,2,4,5,5,6,8 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 3:9,4:5,5:3 --offset 5:-6,6:-10,7:-8,8:-5,9:-2
+```
+
+| | pose | time | |
+| --- | --- | --- | --- |
+| ready | 19 | 0.70 s | standing |
+| **impact** | 3 | 0.10 s | gold burst, jolt of 9 px |
+| | 4 | 0.10 s | snapped back, jolt of 5 px |
+| **knocked back** | 5, 6 | 0.35 s | staggering, mouth open, 10 px back |
+| | 7 | 0.10 s | the drawn motion blur, head down |
+| recovery | 8, 9, 10 | 0.70 s | straightening up |
+| | 13, 16 | 0.70 s | settles, back to standing |
+
+A hit is the inverse of a block: no anticipation at all, because being hit is
+not something you prepare for. It opens straight onto the impact frame, and the
+jolt is the largest in any of these animations at 9 px, decaying through the
+recoil. The knockback is `--offset` again, negative — she gives ground and
+walks it back as she recovers.
+
+**The knife is only in her hand on 6 of these 20 drawings**, and none of the
+recoil poses is one of them. Building the reaction around the knife would mean
+dropping the entire recoil, so this runs knife-free: the ready pose, the
+stagger and the recovery are all drawings where her hands are open. The one
+exception is the impact frame itself, which is the only drawing with the burst
+on it. It is on screen for 0.1 s under a 9 px jolt and a screenful of gold,
+which is exactly what an impact frame is for — but it is a compromise, and
+`--poses 19,4,5,6,7,8,9,10,13,16` builds the version without it.
+
+## The block
+
 ```sh
 python3 tools/slice_sheet.py assets/dahlia_block_sheet.png -o out/dahlia_block \
   --panels --tol 28 --glow-tol 35 --glow-depth 3 --despeckle 24 --denoise 5 \
@@ -492,7 +556,7 @@ Frames are also cropped with a small margin rather than flush to the union of
 the loop, so no pixel sits on the canvas edge where a renderer that scales or
 offsets the sprite would shave it off.
 
-Every animation is audited frame by frame — 847 frames in total, not samples.
+Every animation is audited frame by frame — 821 frames in total, not samples.
 
 Across all eight: no frame touches a canvas edge, no island under 24 px
 anywhere, 94–98 % of the aura survives, and line work measures 106–131 % of the
