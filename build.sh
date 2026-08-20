@@ -106,3 +106,16 @@ $SLICE assets/dahlia_flip_idle_sheet.png -o out/dahlia_flip_idle \
 $BUILD out/dahlia_flip_idle/frames -o out/dahlia_flip_idle -n dahlia_flip_idle \
   --poses 1,2,3,4,5,6,7,8,9,10,11 --holds 14,4,2,3,6,4,3,2,6,5,10 \
   --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 7:2
+
+# THE idle, in the new art style (crisper line work, the cyber-dagger that
+# deploys into her hand — which retires the prop-continuity problem by design).
+# Earlier sheets are being redrawn in this style; this is the template build.
+# Loop: empty-handed breath, dagger deploys, spin flourish, held level while
+# breathing (poses 5 and 6 alternating as the micro-variation), retract, back
+# to the breath. The seam is the retract, and it measures smaller than the
+# deploy, so the loop has no pop.
+$SLICE assets/dahlia_idle_sheet.png -o out/dahlia_idle \
+  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_idle
+$BUILD out/dahlia_idle/frames -o out/dahlia_idle -n dahlia_idle \
+  --poses 1,2,3,4,5,6,5,2 --holds 18,3,3,7,10,10,8,2 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2

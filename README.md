@@ -4,8 +4,15 @@ Animations for **Dahlia**, built from drawn pose sheets: a slicer that finds the
 poses and cleans them up, an assembler that times them into a loop, and a
 browser player for previewing the result.
 
+**`dahlia_idle` is the canonical animation and the canonical style** — crisper
+line work, and a cyber-dagger that deploys into her hand, which retires the
+prop-continuity problem that dogged every earlier sheet. The other animations
+are being redrawn in this style; their builds below stand until each remade
+sheet lands, at which point the same two commands rebuild them.
+
 | animation | source | result |
 | --- | --- | --- |
+| **idle** (canonical) | `assets/dahlia_idle_sheet.png`, 6 drawings | `out/dahlia_idle/` — 61 frames, 3.05 s |
 | **attack** | `assets/dahlia_attack_sheet.png`, 20 drawings | `out/dahlia_attack/` — 57 frames, 2.85 s |
 | **dodge** | `assets/dahlia_dodge_sheet.png`, 20 drawings | `out/dahlia_dodge/` — 49 frames, 2.45 s |
 | **taunt** | `assets/dahlia_taunt_sheet.png`, 15 drawings | `out/dahlia_taunt/` — 59 frames, 2.95 s |
@@ -65,6 +72,24 @@ out, back, further out, and back again — a stumble rather than a dash.
 own footing from the desaturated pixels of its lower body — hair being the most
 mobile thing on the character, it gets no vote on where her feet are — and
 works out the shift from there. All three travelling animations use it.
+
+## The idle
+
+Six drawings, and the loop breathes between the flourishes, which is what an
+idle needs to do:
+
+| | pose | time | |
+| --- | --- | --- | --- |
+| **breath** | 1 | 0.90 s | empty-handed stance, breathing |
+| deploy | 2 | 0.15 s | the dagger flicks out |
+| **flourish** | 3 | 0.15 s | spun flat across her chest |
+| | 4 | 0.35 s | spinning at her side, eyes closed grin |
+| **breath** | 5, 6, 5 | 1.40 s | held level, breathing — the two drawings alternate as the micro-variation |
+| retract | 2 | 0.10 s | and back to empty hands |
+
+The dagger deploying and retracting is the sheet's own design, so the loop can
+return to an empty-handed breath without a prop popping in and out — the seam
+transition measures smaller than the deploy itself.
 
 ## The dagger-flip idle
 
@@ -467,7 +492,7 @@ Frames are also cropped with a small margin rather than flush to the union of
 the loop, so no pixel sits on the canvas edge where a renderer that scales or
 offsets the sprite would shave it off.
 
-Every animation is audited frame by frame — 786 frames in total, not samples.
+Every animation is audited frame by frame — 847 frames in total, not samples.
 
 Across all eight: no frame touches a canvas edge, no island under 24 px
 anywhere, 94–98 % of the aura survives, and line work measures 106–131 % of the
