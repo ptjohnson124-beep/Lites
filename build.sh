@@ -133,7 +133,7 @@ $BUILD out/dahlia_attack_spin/frames -o out/dahlia_attack_spin -n dahlia_attack_
 $SLICE assets/dahlia_dodge_v2_sheet.png -o out/dahlia_dodge \
   --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_dodge
 $BUILD out/dahlia_dodge/frames -o out/dahlia_dodge -n dahlia_dodge \
-  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13 --holds 7,3,2,2,2,2,2,3,3,3,4,4,8 \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13 --holds 12,3,2,2,2,2,3,5,3,3,4,5,10 \
   --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
   --travel 1:0,2:0,3:-8,4:-18,5:-28,6:-34,7:-30,8:-20,9:-12,10:-6,11:-2,12:0,13:0
 
@@ -142,15 +142,20 @@ $BUILD out/dahlia_dodge/frames -o out/dahlia_dodge -n dahlia_dodge \
 # background. She closes 20px, then the counter lands with a 6px jolt.
 $SLICE assets/dahlia_counter_sheet.png -o out/dahlia_counter \
   --checker --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_counter
+# Pose 4 is a smear frame — a third less ink than the solid poses — so it gets
+# a single frame. Held longer it reads as her phasing out rather than moving
+# fast. Travel is monotonic in and monotonic out for the same reason: the first
+# cut had her lurch to 20px and snap back to 14 mid-dash, which looked like a
+# teleport rather than a step.
 $BUILD out/dahlia_counter/frames -o out/dahlia_counter -n dahlia_counter \
-  --poses 1,2,3,4,5,6,7,8,9,10,11,12 --holds 7,3,2,2,3,6,3,3,3,4,4,8 \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12 --holds 10,3,2,1,4,8,3,3,3,4,5,10 \
   --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
-  --shake 6:6,7:3 --travel 1:0,2:0,3:10,4:20,5:14,6:6,7:2,8:0,9:0,10:0,11:0,12:0
+  --shake 6:6,7:3 --travel 1:0,2:0,3:10,4:22,5:24,6:24,7:20,8:14,9:8,10:4,11:2,12:0
 
 # Taunt: a flame lit in her free hand. Poses 5 and 6 are the same flame at two
 # sizes, so they alternate to make it gutter rather than sit still.
 $SLICE assets/dahlia_taunt_v2_sheet.png -o out/dahlia_taunt \
   --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_taunt
 $BUILD out/dahlia_taunt/frames -o out/dahlia_taunt -n dahlia_taunt \
-  --poses 1,2,3,4,5,6,5,6,7,8,9,10,11,12 --holds 10,4,3,4,4,5,3,6,4,4,4,4,5,8 \
+  --poses 1,2,3,4,5,6,5,6,7,8,9,10,11,12 --holds 12,4,3,3,5,4,4,7,4,4,4,4,5,12 \
   --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 4:2

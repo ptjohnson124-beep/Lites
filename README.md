@@ -15,9 +15,9 @@ sheet lands, at which point the same two commands rebuild them.
 | **idle** (canonical) | `assets/dahlia_idle_sheet.png`, 6 drawings | `out/dahlia_idle/` — 61 frames, 3.05 s |
 | **attack** (new style) | `assets/dahlia_attack_b_sheet.png`, 8 drawings | `out/dahlia_attack/` — 33 frames, 1.65 s |
 | **spin combo** (new style) | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
-| **evasion** (new style) | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 45 frames, 2.25 s |
-| **counter** (new style) | `assets/dahlia_counter_sheet.png`, 12 drawings | `out/dahlia_counter/` — 48 frames, 2.4 s |
-| **taunt** (new style) | `assets/dahlia_taunt_v2_sheet.png`, 12 drawings | `out/dahlia_taunt/` — 68 frames, 3.4 s |
+| **evasion** (new style) | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 56 frames, 2.8 s |
+| **counter** (new style) | `assets/dahlia_counter_sheet.png`, 12 drawings | `out/dahlia_counter/` — 56 frames, 2.8 s |
+| **taunt** (new style) | `assets/dahlia_taunt_v2_sheet.png`, 12 drawings | `out/dahlia_taunt/` — 75 frames, 3.75 s |
 | **going insane** | `assets/dahlia_insane_b_sheet.png`, 16 drawings | `out/dahlia_insane/` — 68 frames, 3.4 s |
 | **insanity transformation** | `assets/dahlia_insanity_sheet.png`, 16 drawings | `out/dahlia_insanity/` — 79 frames, 3.95 s |
 | **cyberpsychosis** | `assets/dahlia_cyberpsychosis_sheet.png`, 16 drawings | `out/dahlia_cyberpsychosis/` — 93 frames, 4.65 s |
@@ -73,13 +73,28 @@ cleanest seam of any animation here.
 Three more remade in the new style, replacing their old builds at the same
 output paths.
 
+All three were re-timed around beats. The first cuts held nearly every pose for
+the same length — the evasion ran five consecutive two-frame holds through its
+whole evade — which reads as a metronome however good the drawings are. Each now
+rests at the ends and passes quickly through the action: the ratio between the
+longest and shortest hold is 10× on the counter, 6× on the evasion and 4× on the
+taunt, where before it was closer to 3×.
+
 **`dahlia_dodge`** — thirteen drawings, not twelve: the top row of that sheet
 holds five, which the segmenter found on its own. She gives 34 px of ground at
 the furthest point of the evade and walks it back over the recovery.
 
-**`dahlia_counter`** — she closes 20 px, the counter lands with a 6 px jolt, and
-the gold-aura frame holds 0.3 s at the peak. Its sheet needed a new tool: see
+**`dahlia_counter`** — she closes 29 px, the counter lands with a 6 px jolt, and
+the gold-aura frame holds 0.4 s at the peak. Its sheet needed a new tool: see
 below.
+
+Two things stopped it reading as a phase rather than a movement. Pose 4 is a
+**smear frame** — a third less ink than the solid poses, so she visibly thins
+out — and it was being held two frames. A smear reads as speed when it flashes
+and as teleporting when it is held, so it is down to a single frame, 0.05 s. And
+the travel was overshooting: 10 px, then 20, then back to 14 mid-dash, which is
+a lurch forward and a snap back. It now runs monotonically in to 29 px at the
+counter and monotonically out over the recovery.
 
 **`dahlia_taunt`** — a flame lit in her free hand. Poses 5 and 6 are the same
 flame at two sizes, so alternating them makes it gutter instead of sitting
