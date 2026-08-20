@@ -44,6 +44,43 @@ def panel_border_lines(rgb, darkness=90, coverage=0.8, grow=3):
     return lines(dark.mean(axis=1), rgb.shape[0]), lines(dark.mean(axis=0), rgb.shape[1])
 
 
+def strip_captions(rgb, bg, rows, darkness=90, coverage=0.8):
+    """Blank a caption written under each pose on a panelled sheet.
+
+    A labelled reference sheet puts a line of text below every cell. It is ink
+    like anything else, so it segments as part of the pose and rides along into
+    the animation. The text sits under the figure with a thin blank gap between
+    them, and spans the cell far wider than her boots do, so within each row of
+    cells the quietest scanline in the bottom third is that gap: everything
+    below it is caption and gets painted out. On a sheet with no captions the
+    quietest line is already below her feet and nothing is lost.
+    """
+    ink = np.abs(rgb.astype(np.int16) - bg).max(axis=2) > 14
+
+    marks, bands = sorted(set(rows)), []
+    for i in marks:
+        if bands and i <= bands[-1][1] + 1:
+            bands[-1][1] = i
+        else:
+            bands.append([i, i])
+
+    edges, cells = [0] + [b[1] + 1 for b in bands], []
+    for k, lo in enumerate(edges):
+        hi = bands[k][0] if k < len(bands) else rgb.shape[0]
+        if hi - lo > 40:
+            cells.append((lo, hi))
+
+    out, cut = rgb.copy(), 0
+    for lo, hi in cells:
+        profile = ink[lo:hi].sum(axis=1)
+        start = int(len(profile) * 0.67)
+        quietest = start + int(np.argmin(profile[start:]))
+        if quietest < len(profile) - 2:
+            out[lo + quietest:hi] = bg
+            cut += 1
+    return out, cut
+
+
 def load_sheet(path):
     return Image.open(path).convert("RGBA")
 
@@ -490,6 +527,8 @@ def main():
     ap.add_argument("--tol", type=int, default=24, help="background colour tolerance (0-255)")
     ap.add_argument("--glow-tol", type=int, default=0,
                     help="strip soft haze around the character up to this distance from the background")
+    ap.add_argument("--strip-captions", action="store_true",
+                    help="blank the text written under each pose on a labelled reference sheet")
     ap.add_argument("--components", action="store_true",
                     help="split poses by connected ink instead of by gaps; use when poses overlap")
     ap.add_argument("--component-min", type=int, default=2000,
@@ -525,6 +564,9 @@ def main():
         rgb[rows_, :] = bg          # paint the grid out so the gaps come back
         rgb[:, cols_] = bg
         print(f"panelled sheet: erased {len(rows_)} row and {len(cols_)} column border lines")
+        if args.strip_captions:
+            rgb, n = strip_captions(rgb, bg, rows_)
+            print(f"stripped captions under {n} row(s) of cells")
     else:
         bg = background_color(rgb)
     mask = foreground_mask(rgb, bg, args.tol)

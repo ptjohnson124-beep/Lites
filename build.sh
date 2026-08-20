@@ -28,9 +28,9 @@ $BUILD out/dahlia_taunt/frames -o out/dahlia_taunt -n dahlia_taunt \
   --holds 10,3,3,2,2,3,2,2,2,3,2,3,3,2,6,3,8 \
   --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 3:4
 
-# The three action sheets: poses overlap once flattened, so they are split by
-# connected ink. Each draws a motion-blurred frame that shades into the
-# background, so holes punched through it get filled back in.
+# The remaining old-style action sheets: poses overlap once flattened, so they
+# are split by connected ink. Each draws a motion-blurred frame that shades into
+# the background, so holes punched through it get filled back in.
 ACTION="--components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN"
 
 $SLICE assets/dahlia_attack_sheet.png -o out/dahlia_attack $ACTION --single dahlia_attack
@@ -38,12 +38,6 @@ $BUILD out/dahlia_attack/frames -o out/dahlia_attack -n dahlia_attack \
   --poses 1,3,6,7,8,9,10,11,13,15,16 --holds 12,8,3,2,2,6,3,3,3,5,10 \
   --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
   --shake 9:4 --travel 1:0,3:0,6:6,7:18,8:28,9:32,10:28,11:18,13:8,15:2,16:0
-
-$SLICE assets/dahlia_hit_sheet.png -o out/dahlia_hit $ACTION --single dahlia_hit
-$BUILD out/dahlia_hit/frames -o out/dahlia_hit -n dahlia_hit \
-  --poses 19,3,4,5,6,7,8,9,10,13,16 --holds 14,2,2,3,4,2,4,5,5,6,8 \
-  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
-  --shake 3:9,4:5,5:3 --travel 19:0,3:0,4:-4,5:-12,6:-20,7:-16,8:-10,9:-5,10:-2,13:0,16:0
 
 $SLICE assets/dahlia_dodge_sheet.png -o out/dahlia_dodge $ACTION --single dahlia_dodge
 $BUILD out/dahlia_dodge/frames -o out/dahlia_dodge -n dahlia_dodge \
@@ -122,3 +116,15 @@ $BUILD out/dahlia_block/frames -o out/dahlia_block -n dahlia_block \
   --poses 8,1,2,3,4,5,6,7 --holds 10,8,2,3,5,7,3,6 \
   --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
   --shake 4:6,5:3 --travel 8:0,1:0,2:0,3:0,4:-4,5:-6,6:-3,7:-1
+
+# Taking a hit, in the new style. The sheet is a labelled reference --- a
+# caption under every cell --- so --strip-captions blanks the text before
+# anything segments it as part of her. Ends in a wounded idle rather than
+# returning to normal, and poses 7 and 8 alternate to give that idle a breath.
+$SLICE assets/dahlia_hit_v2_sheet.png -o out/dahlia_hit \
+  --panels --strip-captions --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN \
+  --single dahlia_hit
+$BUILD out/dahlia_hit/frames -o out/dahlia_hit -n dahlia_hit \
+  --poses 1,2,3,4,5,6,7,8,7,8 --holds 8,2,2,3,4,4,6,8,6,8 \
+  --fps 20 --breathe 1.3 --breathe-cycles 3 --breathe-levels 12 --sway 2 \
+  --shake 3:9,4:6,5:3 --travel 1:0,2:0,3:-3,4:-9,5:-15,6:-11,7:-7,8:-6

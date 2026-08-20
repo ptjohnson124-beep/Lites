@@ -20,7 +20,7 @@ sheet lands, at which point the same two commands rebuild them.
 | **insanity transformation** | `assets/dahlia_insanity_sheet.png`, 16 drawings | `out/dahlia_insanity/` — 79 frames, 3.95 s |
 | **cyberpsychosis** | `assets/dahlia_cyberpsychosis_sheet.png`, 16 drawings | `out/dahlia_cyberpsychosis/` — 93 frames, 4.65 s |
 | **corrupted idle** | `assets/dahlia_insane_a_sheet.png`, 16 drawings | `out/dahlia_insane_idle/` — 47 frames, 2.35 s |
-| **getting hit** | `assets/dahlia_hit_sheet.png`, 20 drawings | `out/dahlia_hit/` — 55 frames, 2.75 s |
+| **getting hit** (new style) | `assets/dahlia_hit_v2_sheet.png`, 8 drawings | `out/dahlia_hit/` — 51 frames, 2.55 s |
 | **block** (new style) | `assets/dahlia_block_v2_sheet.png`, 8 drawings | `out/dahlia_block/` — 44 frames, 2.2 s |
 | **dagger twirl idle** | `assets/twirl_sheet.png`, 12 drawings | `out/dahlia_twirl/` — 150 frames, 7.5 s |
 | **dagger-flip idle** | `assets/dahlia_flip_idle_sheet.png`, 15 drawings | `out/dahlia_flip_idle/` — 59 frames, 2.95 s |
@@ -206,6 +206,72 @@ The knife stays at her hip in all 15 drawings, so nothing had to be dropped for
 prop continuity. Poses 7 and 8 have no flame in them, so they are played after
 it burns out rather than during — the smug beat lands on an empty hand, which
 is the better read anyway.
+
+## The dodge
+
+```sh
+python3 tools/slice_sheet.py assets/dahlia_dodge_sheet.png -o out/dahlia_dodge \
+  --components --tol 18 --glow-tol 0 --fill-holes 3 --despeckle 24 --denoise 5 \
+  --single dahlia_dodge --align silhouette
+python3 tools/assemble.py out/dahlia_dodge/frames -o out/dahlia_dodge -n dahlia_dodge \
+  --poses 1,3,4,7,9,8,10,6,12,11 --holds 12,3,3,2,2,3,5,4,5,10 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 10:3 --travel 1:0,3:0,4:-6,7:-20,9:-30,8:-22,10:-12,6:-6,12:-2,11:0
+```
+
+The drawings turn out to describe a spin, not a sidestep, so that is what this
+plays:
+
+| | pose | time | ground | |
+| --- | --- | --- | --- | --- |
+| ready | 1 | 0.60 s | 0 | knife at her side |
+| | 3 | 0.15 s | 0 | eyes close — she has read it |
+| **push off** | 4 | 0.15 s | −6 | gold flares at her feet |
+| **dash** | 7 | 0.10 s | −20 | drawn motion blur |
+| **spin** | 9 | 0.10 s | −30 | back to the camera, furthest out |
+| | 8 | 0.15 s | −22 | coming back around, knife up |
+| **land** | 10 | 0.25 s | −12 | crouched, small jolt |
+| recovery | 6, 12 | 0.45 s | −6 → −2 | rising, settling |
+| | 11 | 0.50 s | 0 | back to ready |
+
+Half a second from push-off to landing, of which the two blurred drawings hold
+0.1 s each. Poses 9 and 8 are played in that order rather than the order they
+sit on the sheet: 7 faces left, 9 has her back turned, 8 brings her round to
+face the camera again, which is one continuous rotation instead of a spin that
+skips and resets.
+
+This is the first animation where the ground she covers is the whole point, and
+it is also where `--offset` stopped being good enough — see below.
+
+## Getting hit
+
+Third animation in the new style, replacing the old-style hit at the same
+output path. This sheet came labelled — a caption under every cell — and the
+captions are ink like anything else, so they segmented as part of her and would
+have ridden into the animation. `--strip-captions` finds the quiet scanline
+between her boots and the text in each row of cells and blanks everything below
+it, which leaves the boots untouched.
+
+| | pose | time | |
+| --- | --- | --- | --- |
+| ready | 1 | 0.40 s | dagger out, normal stance |
+| | 2 | 0.10 s | the twitch before it lands |
+| **impact** | 3 | 0.10 s | smear frame, blood, 9 px jolt |
+| **recoil** | 4 | 0.15 s | second smear, 6 px jolt, 9 px of ground given |
+| stagger | 5 | 0.20 s | driven back to 15 px |
+| | 6 | 0.20 s | wobbling for balance |
+| settle | 7 | 0.30 s | hunching over the wound |
+| **wounded idle** | 8, 7, 8 | 1.10 s | breathing hunched, the two drawings alternating |
+
+It ends in a wounded idle rather than returning to normal, which is what the
+sheet was drawn for. Poses 7 and 8 alternate to give that idle a breath of its
+own — they differ by 14 to 15 against 27 to 37 for every step in the hit
+itself, so the ending settles rather than continuing to lurch.
+
+The dagger is absent from the two smear frames (3 and 4) and present in the
+other six. Those are impact frames on screen for 0.1 s each under a jolt, which
+is exactly the convention smear frames exist for — unlike the old hit sheet,
+where the weapon vanished for the entire recoil.
 
 ## The dodge
 
