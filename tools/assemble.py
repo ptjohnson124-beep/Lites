@@ -154,7 +154,11 @@ def breathe(frames, percent, cycles, levels=6):
         key = (id(frame), level)
         if key not in cache:
             factor = 1 + (percent / 100.0) * (level / (levels - 1))
-            cache[key] = resize_premultiplied(frame, (w, int(round(h * factor))))
+            target = int(round(h * factor))
+            # At rest the breath asks for the frame it already has. Resampling
+            # it anyway would soften it for nothing, so those frames are passed
+            # through untouched and stay pixel-exact.
+            cache[key] = frame if target == h else resize_premultiplied(frame, (w, target))
         scaled.append(cache[key])
 
     top = max(f.height for f in scaled)

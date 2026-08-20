@@ -254,18 +254,23 @@ fixed where it is created rather than filtered out afterwards:
   them to swallow their antialiased edges (one pixel left standing walls the
   background flood out of a cell), measures the background with those rows and
   columns excluded, and paints the grid out in it.
-- **The painted aura.** The twirl sheet paints a soft warm glow around the
-  character. It is real ink, so the keying tolerance kept it, and it read as a
-  blurred halo tracing the whole silhouette. `--glow-tol` floods inward from the
-  sheet edge a second time at a looser tolerance, eating haze that shades off
-  into the background while line work and hair stop it.
-- **How deep that flood may reach.** Tolerance alone is not enough. Left
-  unbounded it does not stop at the halo: it pours through the gold swing trail,
-  hollows it out into an outline, and keeps going into the hand holding the
-  dagger — which is what made the idle look like the blade was being clipped.
-  `--glow-depth 3` confines it to a band a few pixels wide around the existing
-  silhouette, so a halo is trimmed and anything with real body to it survives.
-  The trail keeps 95 % of its pixels instead of 92 %, and it keeps its middle.
+- **The aura is not haze — it is Dahlia.** The warm glow around her is part of
+  her design, so no sheet strips it: `--glow-tol` stays at 0 everywhere. The
+  flag remains for sheets whose background genuinely shades off, along with
+  `--glow-depth` to stop such a flood pouring through a gold trail and hollowing
+  it out, but neither is used here.
+- **Keeping the faint end of it.** The outermost aura pixels shade toward the
+  background, so the keying tolerance decides how much survives. At `--tol 28`
+  a quarter of it was being cut; at 14 almost none is, and the background left
+  behind barely moves — 493 opaque grey pixels against 446. A lower tolerance
+  also makes a stronger barrier against the flood walking into the blurred
+  poses, so it helps twice.
+
+  | `--tol` | aura kept | background left opaque |
+  | --- | --- | --- |
+  | 28 | 75 % | 446 px |
+  | 20 | 85 % | 472 px |
+  | 14 | 95 % | 493 px |
 - **Compression grain.** These sheets arrive as JPEGs, so every flat surface
   carries mottling that no amount of careful keying removes — it is in the
   paint. `--denoise 12` clears it with a bilateral filter: each pixel is
@@ -278,15 +283,22 @@ fixed where it is created rather than filtered out afterwards:
   This replaced a median filter, which could not tell a speck from a small drawn
   feature. On a sprite this size it was quietly erasing the things that carry
   the performance — her mouth first, then the eyes and hood strings — and a grin
-  came out as a smear. Measured inside the character, against the raw sheet:
+  came out as a smear.
+
+  Strength is deliberately low, because softness is far more noticeable on a
+  sprite than speckle is. Measured inside the character, against the raw sheet:
 
   | | grain removed | line work kept |
   | --- | --- | --- |
   | median, gated by gradient | 48 % | 80 % |
-  | bilateral, 3 passes | 62 % | 90 % |
+  | bilateral, 3 passes at 12 | 62 % | 90 % |
+  | **bilateral, 1 pass at 8** | **30 %** | **98 %** |
 
-  Better on both counts. Line work reads above 100 % on some sheets, because
-  clearing the noise haze around an edge sharpens it.
+  The last is what ships. It leaves some grain, and that is the right trade: the
+  art stays sharp. Line work measures above 100 % of the raw on every sheet in
+  the end, because clearing the noise haze around an edge sharpens it, and
+  because frames whose breath is at rest now skip the resample entirely instead
+  of being resampled to the size they already are.
 - **Specks.** Keying left hundreds of stray islands of a dozen pixels each.
   `--despeckle` drops any island too small to be drawn detail.
 - **Resampling ringing.** Lanczos undershoots around a hard silhouette and
@@ -312,8 +324,8 @@ Every animation is audited frame by frame — 381 frames in total, not samples:
 | --- | --- | --- | --- | --- | --- |
 | frames touching the canvas edge | 0 | 0 | 0 | 0 | 0 |
 | islands under 24 px, i.e. grain | 0 | 0 | 0 | 0 | 0 |
-| grain removed inside the character | 52 % | 48 % | 36 % | 39 % | 35 % |
-| line work kept | 96 % | 95 % | 112 % | 104 % | 118 % |
+| aura kept | 96 % | 97 % | 96 % | 94 % | 95 % |
+| line work vs the raw sheet | 119 % | 106 % | 126 % | 117 % | 131 % |
 
 `build.sh` rebuilds all five from their sheets; the per-sheet flags differ
 because the sheets differ, and its comments say how.

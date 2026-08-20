@@ -112,7 +112,7 @@ def outside(free):
     return reach
 
 
-def denoise_art(sheet, strength, spatial=3, sigma_s=2.2, passes=3):
+def denoise_art(sheet, strength, passes=1, spatial=2, sigma_s=1.6):
     """Take compression grain off flat areas while keeping every drawn line.
 
     These sheets arrive as JPEGs, so every flat surface carries mottling that no
@@ -124,16 +124,18 @@ def denoise_art(sheet, strength, spatial=3, sigma_s=2.2, passes=3):
     A bilateral filter can tell them apart. Each pixel is averaged only with
     neighbours of similar brightness, so mottling a few levels deep is smoothed
     while anything that differs by more than `strength` — a mouth line against
-    skin, an outline against a hoodie — is left alone. Repeating a moderate
-    window clears far more grain than one wide pass at almost no extra cost to
-    the drawing: three passes take 62 % of the mottling inside the character
-    while keeping 90 % of her line work, against 48 % and 93 % for one.
+    skin, an outline against a hoodie — is left alone.
+
+    Strength is deliberately low. Pushed hard the filter does clear more grain,
+    but softness is far more noticeable on a sprite than speckle: one pass at 8
+    takes 30 % of the mottling for 2 % of the line work, where three passes at
+    12 take 63 % but cost 10 %. The art stays sharp and keeps a little grain.
     """
     if strength < 1:
         return sheet
 
     img = np.array(sheet.convert("RGB")).astype(np.float32)
-    for _ in range(passes):
+    for _ in range(max(1, passes)):
         guide = img.mean(axis=2)
         acc = np.zeros_like(img)
         wsum = np.zeros(img.shape[:2], np.float32)
@@ -436,6 +438,8 @@ def main():
                     help="the sheet boxes each pose in a drawn frame; paint the grid out first")
     ap.add_argument("--glow-depth", type=int, default=3,
                     help="how many pixels in from the silhouette --glow-tol may reach")
+    ap.add_argument("--denoise-passes", type=int, default=1,
+                    help="repeat the denoise; more clears more grain and costs more sharpness")
     ap.add_argument("--fill-holes", type=int, default=0, metavar="RADIUS",
                     help="seal and fill holes the flood punched through blurred poses (try 3)")
     ap.add_argument("--denoise", type=int, default=0, metavar="STRENGTH",
@@ -487,7 +491,7 @@ def main():
     if args.denoise:
         # Masks are decided on the original pixels; only the pixels shipped
         # get cleaned, so keying is unaffected by the filter.
-        sheet = denoise_art(sheet, args.denoise)
+        sheet = denoise_art(sheet, args.denoise, args.denoise_passes)
 
     if args.components:
         rows = frames_from_components(mask, args.component_min)
