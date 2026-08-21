@@ -170,21 +170,26 @@ $BUILD out/dahlia_fully_insane_idle/frames -o out/dahlia_fully_insane_idle -n da
   --holds 1,2,1,6,1,2,2,1,1,4,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,4,2,1,1,1,2,1,1,1,4,2,1,2,2,1,1,6,2,1 \
   --fps 20 --breathe 0 --sway 0 --despeckle 24
 
-# Special / skill, rebuilt from the v3 sheet: 25 drawings against v2's 15, and
-# the extra ten are all in the parts that were reading as jumps — the dash
-# slashes and the charge. The arc is a charge-and-release: ready, wind up, three
-# dashing slashes, gather, the glitch ring, the dagger shatters into the beam,
-# then a settle with the dagger redeployed. Down to 3.75s from v2's 5.45; more
-# drawings and less time is exactly the trade a 15-drawing version could not
-# make. Travels 30px forward across the dashes and walks it back.
-$SLICE assets/dahlia_skill_v3_sheet.jpg -o out/dahlia_skill \
+# Special / skill, from the v4 sheet: 14 drawings, down from v3's 25, and the
+# fewer poses buy resolution — her stance measures 175px tall against v3's 157,
+# because the sheet spends the same area on half as many drawings. The arc is
+# rest, the charge gathering in her hand, the corruption taking her, a beat of
+# anticipation, the glitch ring at the peak, the beam strike, and a long
+# cooldown that ends with the dagger back in her hand.
+#
+# Poses 8 and 9 are swapped against reading order. As drawn, the sequence runs
+# beam, blurred follow-through, clean arm with no effect at all, then the burst
+# — so the effect blinks off for a beat and back on. Played 7, 9, 10, 8 it
+# fades instead: sharp beam, smear, burst, light blur, clean. Only the smear at
+# pose 7 is held short enough to read as speed rather than as a pose.
+$SLICE assets/dahlia_skill_v4_sheet.png -o out/dahlia_skill \
   --components --tol 18 --glow-tol 0 --fill-holes 3 $CLEAN_SMALL --single dahlia_skill
 $BUILD out/dahlia_skill/frames -o out/dahlia_skill -n dahlia_skill \
-  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25 \
-  --holds 5,3,3,3,2,2,3,3,3,2,2,3,4,6,3,3,5,3,3,4,7,4,4,4,6 \
+  --poses 1,2,3,4,5,6,7,9,10,8,11,12,13,14 \
+  --holds 6,4,4,5,8,4,2,5,3,4,4,4,4,7 \
   --fps 24 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
-  --shake 15:4,16:4,17:6,18:3 \
-  --travel 1:0,2:0,3:0,4:8,5:18,6:24,7:26,8:22,9:16,10:22,11:28,12:30,13:26,14:20,15:14,16:12,17:10,18:8,19:6,20:4,21:2,22:0,23:0,24:0,25:0
+  --shake 5:6,6:4,9:6 \
+  --travel 1:0,2:0,3:0,4:0,5:0,6:10,7:26,9:20,10:14,8:8,11:3,12:0,13:0,14:0
 
 # Moving. Built in place, with no --travel: a locomotion clip is translated by
 # whatever plays it, and baking the ground into the loop would have her dash out

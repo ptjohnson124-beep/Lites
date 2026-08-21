@@ -18,7 +18,7 @@ sheet lands, at which point the same two commands rebuild them.
 | **spin combo** | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
 | **ranged attack** | `assets/dahlia_ranged_v4_sheet.png`, 12 drawings | `out/dahlia_ranged/` — 56 frames, 2.33 s |
 | **soul attack** | `assets/dahlia_soul_sheet.png`, 16 drawings | `out/dahlia_soul/` — 64 frames, 2.67 s |
-| **skill / special** | `assets/dahlia_skill_v3_sheet.jpg`, 25 drawings | `out/dahlia_skill/` — 90 frames, 3.75 s |
+| **skill / special** | `assets/dahlia_skill_v4_sheet.png`, 14 drawings | `out/dahlia_skill/` — 64 frames, 2.67 s |
 | **block** | `assets/dahlia_block_v2_sheet.png`, 8 drawings | `out/dahlia_block/` — 44 frames, 2.2 s |
 | **counter** | `assets/dahlia_counter_v2_sheet.png`, 10 drawings | `out/dahlia_counter/` — 67 frames, 3.35 s |
 | **evasion** | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 56 frames, 2.8 s |
@@ -714,7 +714,7 @@ large: measuring Dahlia's own height in the finished frames,
 | `dahlia_block_v2_sheet.png` | 8 | 343 px |
 | `dahlia_attack_b_sheet.png` | 8 | 342 px |
 | … | | |
-| `dahlia_skill_v3_sheet.jpg` | 25 | 168 px |
+| `dahlia_skill_v3_sheet.jpg` | 25 | 157 px |
 | `dahlia_soul_sheet.png` | 16 | 167 px |
 | `dahlia_ragdoll_b_sheet.png` | 27 | 154 px |
 
@@ -725,9 +725,14 @@ that gap is exactly what reads as a quality drop. Denser sheets also arrive as
 JPEG more often, which adds mottling on top.
 
 There is no recovering it after the fact; upscaling would only make the softness
-smoother. What helps is exporting a dense sheet larger — a 25-pose sheet needs
-about 2.3× the width and height of an 8-pose one to hold the same detail — and
-in the meantime the sheets whose sprites come out under 200 px get a stronger
+smoother. Two things help. Exporting a dense sheet larger — a 25-pose sheet needs
+about 2.3× the width and height of an 8-pose one to hold the same detail. And
+drawing fewer poses on the same sheet, which is the same trade seen from the
+other side: the ranged animation went from 22 drawings to 12 and Dahlia grew
+from 169 px to 265, and the skill went from 25 to 14 and 157 px to 175. Both
+read better for it, so the extra drawings were not buying much.
+
+In the meantime the sheets whose sprites come out under 200 px get a stronger
 grain filter (`CLEAN_SMALL` in `build.sh`, `--denoise 14` against 8), because
 the same amount of grain covers proportionally more of a small character.
 
@@ -741,6 +746,17 @@ immediately afterwards. Both flags reported success and the output was identical
 with `--denoise 0`. The filter now writes back into the array unmatte reads, and
 on the ragdoll sheet 14 takes 18% of the grain for 8% of the line work, with her
 eyes, mouth and hood strings intact.
+
+## An effect that blinks off for a beat
+
+The skill sheet's poses 8 and 9 are played out of reading order. As drawn the
+sequence runs beam, blurred follow-through, a clean arm with no effect on it at
+all, then the burst — so the beam switches off for a beat and back on, which
+reads as a dropped frame rather than as an attack. Played 7, 9, 10, 8 the effect
+fades instead: sharp beam, smear, burst, light blur, clean.
+
+Worth checking on any sheet where the effect is drawn separately from the pose.
+Reading order is where the drawings sit, not necessarily the order they play in.
 
 ## Slicing a sheet
 
