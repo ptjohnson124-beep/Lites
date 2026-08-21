@@ -25,7 +25,7 @@ import os
 import shutil
 
 import numpy as np
-from PIL import Image, AvifImagePlugin  # noqa: F401  (registers the AVIF writer)
+from PIL import Image
 
 from slice_sheet import despeckle
 
@@ -362,21 +362,7 @@ def scrub(frames, min_size=24):
 
 def save(frames, path, fps, quality=92):
     dur = 1000.0 / fps
-    if path.endswith(".avif"):
-        # 4:4:4 and full range, which is what makes AVIF worth having here.
-        # Left at its default 4:2:0 it averages the chroma of every second pixel
-        # together and the cyan aura against her hair goes to 120/255 of error;
-        # at 4:4:4 the same quality setting lands at 2/255 worst case and 0.76
-        # mean, for a file a quarter the size of the lossless WebP.
-        #
-        # Not bit-exact, though. True lossless AVIF needs identity matrix
-        # coefficients, and libavif here fails to encode the alpha plane with
-        # them set, on every codec and premultiplication setting. The WebP
-        # remains the exact copy; this is the small one that looks the same.
-        frames[0].save(path, save_all=True, append_images=frames[1:],
-                       duration=int(round(dur)), loop=0, quality=100,
-                       subsampling="4:4:4", range="full", speed=4)
-    elif path.endswith(".gif"):
+    if path.endswith(".gif"):
         # GIF delays are stored in hundredths of a second, so anything finer is
         # rounded off by players; the WebP keeps the exact rate.
         g = gif_frames(frames)
@@ -449,7 +435,6 @@ def main():
     for i, f in enumerate(frames, 1):
         f.save(os.path.join(frame_dir, f"{i:03d}.png"))
     save(frames, os.path.join(args.outdir, f"{args.name}.webp"), args.fps, args.quality)
-    save(frames, os.path.join(args.outdir, f"{args.name}.avif"), args.fps)
     save(frames, os.path.join(args.outdir, f"{args.name}.gif"), args.fps)
 
     fw, fh = frames[0].size
