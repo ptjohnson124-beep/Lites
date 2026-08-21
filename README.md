@@ -24,6 +24,7 @@ sheet lands, at which point the same two commands rebuild them.
 | **evasion** | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 56 frames, 2.8 s |
 | **getting hit** | `assets/dahlia_hit_v2_sheet.png`, 8 drawings | `out/dahlia_hit/` — 51 frames, 2.55 s |
 | **grab** | `assets/dahlia_grab_sheet.png`, 6 drawings | `out/dahlia_grab/` — 43 frames, 1.79 s |
+| **throw** | `assets/dahlia_grab_sheet.png`, 6 drawings | `out/dahlia_throw/` — 48 frames, 2.0 s |
 | **ragdoll** | `assets/dahlia_ragdoll_b_sheet.png`, 27 drawings | `out/dahlia_ragdoll/` — 94 frames, 3.92 s |
 | **taunt** | `assets/dahlia_taunt_v2_sheet.png`, 12 drawings | `out/dahlia_taunt/` — 75 frames, 3.75 s |
 | **going insane** | `assets/dahlia_insane_b_sheet.png`, 16 drawings | `out/dahlia_insane/` — 68 frames, 3.4 s |
@@ -833,6 +834,21 @@ runs none, glitch, orb, vortex, peak, wake, trail, none, none, straight down the
 reading order. Worth checking on any sheet where the effect is drawn as a layer
 over the pose — reading order is where the drawings sit, not necessarily the
 order they play in.
+
+## Two animations from one set of drawings
+
+`dahlia_grab` and `dahlia_throw` are built from the same six drawings, in
+different orders. Nothing about a pose fixes what it means: pose 3 is a full
+forward extension with her hair streaming behind, and that is the *reach* when
+the arm is opening and the *release* when it is closing. Played 1-2-3-4-5-6 the
+clip is a grab; played 5-4-3-2-6-1 the same drawings are a throw.
+
+What separates them is the timing, not the art. The grab spends everything on
+the snatch — reach 0.13s, seize 0.17s, then a 0.58s hold. The throw spends it on
+the coil instead: the wind-up holds 0.38s, the longest beat in either clip
+except the rests, and the hurl is over in 0.13s. The travel does the same trick,
+going 6px *backwards* on the coil before 30px forward on the release. A small
+move against the throw is what makes the throw look like it cost something.
 
 ## Keying a sheet drawn on a dark background
 
