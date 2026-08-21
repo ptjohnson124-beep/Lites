@@ -179,9 +179,15 @@ $BUILD out/dahlia_fully_insane_idle/frames -o out/dahlia_fully_insane_idle -n da
 # order: none, glitch, orb, vortex, peak, wake, trail, none, none. Nothing has
 # to be reordered.
 #
-# 3.46s, against v6's 2.17s. The skill had been getting shorter with every sheet
+# 3.67s, against v6's 2.17s. The skill had been getting shorter with every sheet
 # — 5.45, 3.75, 2.67, 2.25, 2.17 — and had run past deliberate into hurried.
-# The peak holds 0.58s on its own, which is what a special is for.
+#
+# The release and the recovery are timed against each other rather than evenly.
+# Poses 4 to 6 — the vortex closing, the beam, the punch through it — run 0.63s
+# together, half what they held before: an unleash reads as force when it snaps
+# and as a slideshow when it is savoured. Everything after it slows down and
+# keeps slowing, 0.33s to 0.58s per drawing across the five recovery poses, so
+# the clip lands heavily instead of stopping.
 #
 # Grain filter swept on this sheet as on v6: 10 takes 19% for no measurable loss
 # of line work (100.2%), 14 starts cutting into the drawing (94%).
@@ -190,7 +196,7 @@ $SLICE assets/dahlia_skill_v7_sheet.png -o out/dahlia_skill \
   --despeckle 24 --denoise 10 --unmatte 45 --align silhouette --single dahlia_skill
 $BUILD out/dahlia_skill/frames -o out/dahlia_skill -n dahlia_skill \
   --poses 1,2,3,4,5,6,7,8,9,10,11 \
-  --holds 10,6,7,6,14,7,6,6,6,5,10 \
+  --holds 10,6,7,4,7,4,8,9,10,9,14 \
   --fps 24 --breathe 0 --bob 2 --sway 2 \
   --shake 4:4,5:7,6:5 \
   --travel 1:0,2:0,3:0,4:4,5:10,6:20,7:14,8:8,9:4,10:0,11:0
