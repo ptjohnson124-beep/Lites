@@ -354,13 +354,13 @@ $BUILD out/dahlia_move/frames -o out/dahlia_move -n dahlia_move \
 # play the get-up. Replaces the 27-pose ragdoll sheet, on which Dahlia measured
 # 153px tall, the smallest in the project. On these she is 303px.
 #
-# Both sheets are ruled with a full-width ground line under each row, which
-# fuses every pose in the row into one component. --panels erases it, but two
-# things in the detector had to change before it could see it, both recorded in
-# the README: an absolute darkness threshold means nothing on a navy backdrop
-# darker than the threshold itself, and line uniformity has to be measured
-# against the median, because a ground line is uniform along its length and wild
-# where eight pairs of boots cross it.
+# The knockdown sheet was redrawn without the ground line the first version had,
+# so it needs no --panels at all. The get-up still carries one. The two detector
+# fixes that line forced are worth keeping either way, and are in the README: an
+# absolute darkness threshold means nothing on a navy backdrop darker than the
+# threshold itself, and line uniformity has to be measured against the median,
+# because a ground line is uniform along its length and wild where eight pairs
+# of boots cross it.
 #
 # --tol 8: the backdrop is dark and her boots and trousers are darker still, so
 # the flood needs a tight leash, and the sheet is flat enough to give it one —
@@ -374,7 +374,7 @@ $BUILD out/dahlia_move/frames -o out/dahlia_move -n dahlia_move \
 # the only frame where the fallen dagger lies inside her crop, so playing it
 # flashes the prop on for a quarter second and off again.
 $SLICE assets/dahlia_knockdown_sheet.png -o out/dahlia_ragdoll \
-  --panels --components --component-min 3000 --tol 8 --glow-tol 0 --fill-holes 4 \
+  --components --component-min 3000 --tol 8 --glow-tol 0 --fill-holes 4 \
   --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_ragdoll
 $BUILD out/dahlia_ragdoll/frames -o out/dahlia_ragdoll -n dahlia_ragdoll \
   --poses 1,2,5,4,3,6,8 \
