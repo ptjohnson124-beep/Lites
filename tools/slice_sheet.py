@@ -934,7 +934,17 @@ def main():
     if args.denoise:
         # Masks are decided on the original pixels; only the pixels shipped
         # get cleaned, so keying is unaffected by the filter.
-        sheet = denoise_art(sheet, args.denoise, args.denoise_passes)
+        #
+        # It must be the same array everything downstream reads. `rgb` is the
+        # working copy — the one with the panel grid painted out and any
+        # checkerboard flattened — and `--unmatte` solves the aura's colour from
+        # it and then rebuilds the sheet from the result. Denoising a separate
+        # copy of the sheet, as this used to, meant unmatte quietly replaced
+        # every clean pixel with a grainy one and the flag did nothing at all.
+        opacity = np.array(sheet)[:, :, 3]
+        rgb = np.array(denoise_art(Image.fromarray(np.dstack([rgb, opacity])),
+                                   args.denoise, args.denoise_passes))[:, :, :3]
+        sheet = Image.fromarray(np.dstack([rgb, opacity]))
 
     owner = None
     if args.components:

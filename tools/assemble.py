@@ -133,6 +133,29 @@ def resize_premultiplied(frame, size):
     return Image.fromarray(out.astype(np.uint8))
 
 
+def rescale(poses, spec):
+    """Resize named poses so a sheet drawn at mixed scales plays as one clip.
+
+    A sheet is not always drawn at one size. The ranged sheet's last row is
+    about 65% larger than its first, and cutting between them makes Dahlia
+    balloon mid-action. Silhouette height cannot be normalised automatically —
+    a crouch is genuinely shorter than a stance, and 'fixing' that would flatten
+    the animation into a mannequin — so the factor is given per pose. The frame
+    keeps its canvas: the pose is resized about its own centre and pasted back,
+    so everything downstream still lines up.
+    """
+    for i, pct in parse_pose_map(spec).items():     # parse_pose_map keys are 0-based
+        if not 0 <= i < len(poses):
+            continue
+        w, h = poses[i].size
+        k = pct / 100.0
+        small = resize_premultiplied(poses[i], (max(1, round(w * k)), max(1, round(h * k))))
+        out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        out.paste(small, ((w - small.width) // 2, (h - small.height) // 2))
+        poses[i] = out
+    return poses
+
+
 def breathe(frames, percent, cycles, levels=6):
     """Rise and fall on the breath: a slight vertical stretch, planted at the feet.
 
@@ -379,6 +402,8 @@ def main():
     ap.add_argument("--offset", help="raw shift on given poses, e.g. '7:16,9:24'; negative goes back")
     ap.add_argument("--travel", help="where each pose should stand, e.g. '7:-20,9:-30'; measured, not guessed")
     ap.add_argument("--bob-cycles", type=float, default=1.0, help="float cycles per loop")
+    ap.add_argument("--scale", help="resize given poses to a percentage, e.g. '19:70,21:70'; "
+                                    "for a sheet whose rows are drawn at different sizes")
     ap.add_argument("--stabilize", choices=("core", "silhouette", "none"), default="core",
                     help="core: match on hoodie and trousers, ignoring hair")
     ap.add_argument("--despeckle", type=int, default=24,
@@ -392,7 +417,7 @@ def main():
     poses = [Image.open(p).convert("RGBA") for p in paths]
 
     order = parse_range(args.poses, len(poses)) if args.poses else list(range(len(poses)))
-    poses = stabilize(poses, args.stabilize)
+    poses = stabilize(rescale(poses, args.scale), args.stabilize)
     played = timeline(order, args.holds, args.pingpong)
     played_frames = breathe([poses[i] for i in played], args.breathe,
                             args.breathe_cycles, args.breathe_levels)

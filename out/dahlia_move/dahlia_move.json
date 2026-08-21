@@ -41,8 +41,8 @@
     12
   ],
   "frames": 24,
-  "fps": 24.0,
-  "loop_seconds": 1.0,
+  "fps": 30.0,
+  "loop_seconds": 0.8,
   "pingpong": false,
   "bob": 2,
   "sway": 0,

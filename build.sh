@@ -8,6 +8,12 @@ set -e
 SLICE="python3 tools/slice_sheet.py"
 BUILD="python3 tools/assemble.py"
 CLEAN="--despeckle 24 --denoise 8 --unmatte 45 --align silhouette"
+# Grain is a fraction of the character, not of the sheet, so a sheet that packs
+# 25 poses into the space another gives 8 carries the same mottling over a third
+# of the pixels and it shows three times as much. Those sheets get a stronger
+# filter: at 14 it takes 18% of the grain for 8% of the line work, and her eyes,
+# mouth and hood strings all survive it — checked frame by frame.
+CLEAN_SMALL="--despeckle 24 --denoise 14 --unmatte 45 --align silhouette"
 
 # The warm aura around Dahlia is part of her design, so no sheet strips it:
 # --glow-tol stays at 0 everywhere. --unmatte goes further and recovers the
@@ -164,38 +170,47 @@ $BUILD out/dahlia_fully_insane_idle/frames -o out/dahlia_fully_insane_idle -n da
   --holds 1,2,1,6,1,2,2,1,1,4,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,4,2,1,1,1,2,1,1,1,4,2,1,2,2,1,1,6,2,1 \
   --fps 20 --breathe 0 --sway 0 --despeckle 24
 
-# Special / skill. A charge-and-release: she winds up for half a second while
-# the blade charges, dashes and spins through two smear frames at 0.1s each,
-# bursts, then holds the beam 0.6s --- the longest single beat in the set,
-# which is what a special is for. Travels 30px forward and walks it back.
-$SLICE assets/dahlia_skill_v2_sheet.png -o out/dahlia_skill \
-  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_skill
+# Special / skill, rebuilt from the v3 sheet: 25 drawings against v2's 15, and
+# the extra ten are all in the parts that were reading as jumps — the dash
+# slashes and the charge. The arc is a charge-and-release: ready, wind up, three
+# dashing slashes, gather, the glitch ring, the dagger shatters into the beam,
+# then a settle with the dagger redeployed. Down to 3.75s from v2's 5.45; more
+# drawings and less time is exactly the trade a 15-drawing version could not
+# make. Travels 30px forward across the dashes and walks it back.
+$SLICE assets/dahlia_skill_v3_sheet.jpg -o out/dahlia_skill \
+  --components --tol 18 --glow-tol 0 --fill-holes 3 $CLEAN_SMALL --single dahlia_skill
 $BUILD out/dahlia_skill/frames -o out/dahlia_skill -n dahlia_skill \
-  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 \
-  --holds 10,6,8,14,2,3,4,8,16,7,5,5,5,6,10 \
-  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
-  --shake 4:2,8:8,9:5 \
-  --travel 1:0,2:0,3:0,4:0,5:14,6:22,7:24,8:26,9:30,10:22,11:14,12:8,13:4,14:2,15:0
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25 \
+  --holds 5,3,3,3,2,2,3,3,3,2,2,3,4,6,3,3,5,3,3,4,7,4,4,4,6 \
+  --fps 24 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 15:4,16:4,17:6,18:3 \
+  --travel 1:0,2:0,3:0,4:8,5:18,6:24,7:26,8:22,9:16,10:22,11:28,12:30,13:26,14:20,15:14,16:12,17:10,18:8,19:6,20:4,21:2,22:0,23:0,24:0,25:0
 
 # Moving. Built in place, with no --travel: a locomotion clip is translated by
 # whatever plays it, and baking the ground into the loop would have her dash out
 # and slide back every cycle. The sheet gives one leap, one stride and one dash
 # smear; the rest are stances, so two of those close the loop.
-# Forced 3x4 grid, not --components: the lunge pose and the muzzle-blast
-# pose overlap into one island, and clustering them apart leaves one frame
-# empty and the other holding two figures. Checked for clipping: none.
-# The two --erase rectangles are the price of the forced grid. Pose 2 reaches
-# its gun barrel across the line into pose 3's cell, which put a disembodied
-# muzzle behind her at the moment she fires, and pose 3's blast reaches the
-# same way into pose 4. Both are properly drawn artwork belonging to the pose
-# next door, so no rule finds them; the coordinates say where they are.
-$SLICE assets/dahlia_ranged_v2_sheet.png -o out/dahlia_ranged \
-  --erase 552,116,576,160 --erase 828,55,884,200 \
-  --checker --rows 3 --cols 4 --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_ranged
+# Ranged attack, rebuilt from the v3 sheet, which fixes the problem at source:
+# it is drawn on flat grey rather than a checkerboard, its poses are spaced far
+# enough apart to segment on their own, and no pose lends a gun barrel into its
+# neighbour — so the forced grid, the --checker flatten and both --erase
+# rectangles the v2 build needed are all gone with it. 22 drawings against 12.
+#
+# Three are left out and one is resized. Pose 5 drops the gun for a single
+# frame between two aiming poses, which reads as the prop blinking. Pose 16 is a
+# figure tumbling head over heels: a ragdoll drawing that landed on the wrong
+# sheet. And the last row is drawn about 65% larger than the first — cutting
+# into it makes her balloon mid-action — so pose 21, the gold gun-summon and
+# the best drawing on the sheet, is scaled to match and used as the draw, while
+# 19, 20 and 22 are dropped as stances the first row already covers.
+$SLICE assets/dahlia_ranged_v3_sheet.jpg -o out/dahlia_ranged \
+  --components --tol 18 --glow-tol 0 --fill-holes 3 $CLEAN_SMALL --single dahlia_ranged
 $BUILD out/dahlia_ranged/frames -o out/dahlia_ranged -n dahlia_ranged \
-  --poses 1,2,3,4,5,7,8,6 --holds 9,3,6,5,5,8,6,6 \
-  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
-  --shake 3:7,4:3,7:2 --travel 1:0,2:8,3:12,4:6,5:2,7:0,8:0,6:0
+  --poses 1,21,2,3,4,6,7,8,9,10,11,12,13,14,15,17,18 \
+  --holds 6,6,3,3,3,3,3,3,3,4,2,8,4,4,4,5,8 \
+  --fps 24 --scale 21:62 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 12:8,13:4 \
+  --travel 1:0,21:0,2:0,3:0,4:0,6:0,7:2,8:6,9:8,10:10,11:20,12:24,13:16,14:10,15:6,17:2,18:0
 
 # Cyberpsychosis, new style, replacing the old-style build: eyes go, the face
 # corrupts, one flash of the double-headed glitch, a scream, then the gold surge
@@ -212,7 +227,7 @@ $BUILD out/dahlia_cyberpsychosis/frames -o out/dahlia_cyberpsychosis -n dahlia_c
 # still get the longest holds, the ignition and the burst; everything between
 # them now moves. Only the smear at pose 9 is short enough to read as speed.
 $SLICE assets/dahlia_soul_sheet.png -o out/dahlia_soul \
-  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_soul
+  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN_SMALL --single dahlia_soul
 $BUILD out/dahlia_soul/frames -o out/dahlia_soul -n dahlia_soul \
   --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 \
   --holds 4,3,3,3,3,7,3,5,2,8,3,3,3,4,4,6 \
@@ -231,7 +246,7 @@ $SLICE assets/dahlia_move_v4_sheet.png -o out/dahlia_move \
 $BUILD out/dahlia_move/frames -o out/dahlia_move -n dahlia_move \
   --poses 1,2,3,4,5,6,7,8,9,10,11,12 \
   --holds 2,2,2,2,2,2,2,2,2,2,2,2 \
-  --fps 24 --breathe 0 --sway 0
+  --fps 30 --breathe 0 --sway 0
 
 # Ragdoll: knocked off her feet and back up again, the longest arc in the set at
 # 27 drawings — stance, the hit, the tumble, an airborne beat, the dust of the
@@ -243,8 +258,8 @@ $BUILD out/dahlia_move/frames -o out/dahlia_move -n dahlia_move \
 # ends on the ready stance rather than returning.
 $SLICE assets/dahlia_ragdoll_b_sheet.png -o out/dahlia_ragdoll \
   --panels --components --component-min 4000 --tol 14 --glow-tol 0 --fill-holes 3 \
-  $CLEAN --single dahlia_ragdoll
+  $CLEAN_SMALL --single dahlia_ragdoll
 $BUILD out/dahlia_ragdoll/frames -o out/dahlia_ragdoll -n dahlia_ragdoll \
   --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27 \
-  --holds 4,2,2,2,2,3,4,10,3,3,3,3,3,4,4,4,4,4,4,5,5,5,5,6,6,6,8 \
+  --holds 4,2,2,2,2,2,3,7,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,5,5,7 \
   --fps 24 --breathe 0 --sway 0 --shake 6:5,7:3

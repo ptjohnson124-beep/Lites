@@ -13,17 +13,17 @@ sheet lands, at which point the same two commands rebuild them.
 | animation | source | result |
 | --- | --- | --- |
 | **idle** (canonical) | `assets/dahlia_idle_sheet.png`, 6 drawings | `out/dahlia_idle/` — 61 frames, 3.05 s |
-| **moving** | `assets/dahlia_move_v4_sheet.png`, 12 drawings | `out/dahlia_move/` — 24 frames, 1.0 s |
+| **moving** | `assets/dahlia_move_v4_sheet.png`, 12 drawings | `out/dahlia_move/` — 24 frames, 0.8 s |
 | **attack** | `assets/dahlia_attack_b_sheet.png`, 8 drawings | `out/dahlia_attack/` — 33 frames, 1.65 s |
 | **spin combo** | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
-| **ranged attack** | `assets/dahlia_ranged_v2_sheet.png`, 12 drawings | `out/dahlia_ranged/` — 48 frames, 2.4 s |
+| **ranged attack** | `assets/dahlia_ranged_v3_sheet.jpg`, 22 drawings | `out/dahlia_ranged/` — 72 frames, 3.0 s |
 | **soul attack** | `assets/dahlia_soul_sheet.png`, 16 drawings | `out/dahlia_soul/` — 64 frames, 2.67 s |
-| **skill / special** | `assets/dahlia_skill_v2_sheet.png`, 15 drawings | `out/dahlia_skill/` — 109 frames, 5.45 s |
+| **skill / special** | `assets/dahlia_skill_v3_sheet.jpg`, 25 drawings | `out/dahlia_skill/` — 90 frames, 3.75 s |
 | **block** | `assets/dahlia_block_v2_sheet.png`, 8 drawings | `out/dahlia_block/` — 44 frames, 2.2 s |
 | **counter** | `assets/dahlia_counter_v2_sheet.png`, 10 drawings | `out/dahlia_counter/` — 67 frames, 3.35 s |
 | **evasion** | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 56 frames, 2.8 s |
 | **getting hit** | `assets/dahlia_hit_v2_sheet.png`, 8 drawings | `out/dahlia_hit/` — 51 frames, 2.55 s |
-| **ragdoll** | `assets/dahlia_ragdoll_b_sheet.png`, 27 drawings | `out/dahlia_ragdoll/` — 114 frames, 4.75 s |
+| **ragdoll** | `assets/dahlia_ragdoll_b_sheet.png`, 27 drawings | `out/dahlia_ragdoll/` — 94 frames, 3.92 s |
 | **taunt** | `assets/dahlia_taunt_v2_sheet.png`, 12 drawings | `out/dahlia_taunt/` — 75 frames, 3.75 s |
 | **going insane** | `assets/dahlia_insane_b_sheet.png`, 16 drawings | `out/dahlia_insane/` — 68 frames, 3.4 s |
 | **insanity transformation** | `assets/dahlia_insanity_sheet.png`, 16 drawings | `out/dahlia_insanity/` — 79 frames, 3.95 s |
@@ -618,12 +618,32 @@ That sheet is cut on a forced 3x4 grid instead, verified to clip nothing.
 
 A forced grid brings its own problem back, though: a cell is a rectangle, and a
 pose that reaches a prop past its own cell leaves it lying in the neighbour's.
-On the ranged sheet pose 2 puts its gun barrel across the line, which is why a
+On the v2 ranged sheet pose 2 put its gun barrel across the line, which is why a
 disembodied muzzle floated behind Dahlia at the exact moment she fires, and pose
-3's blast reaches the same way into pose 4. Nothing distinguishes those pixels
+3's blast reached the same way into pose 4. Nothing distinguishes those pixels
 from artwork — they *are* artwork, just the pose next door's — so `--erase` takes
-sheet coordinates and paints the overspill out before anything is keyed. Two
-rectangles do it, and they are in `build.sh` with the reason beside them.
+sheet coordinates and paints the overspill out before anything is keyed.
+
+`dahlia_ranged_v3_sheet.jpg` fixes all of it at source: flat grey instead of a
+checkerboard, and poses spaced far enough apart to segment on their own. The
+forced grid, the `--checker` flatten and both `--erase` rectangles are gone with
+it, and `--erase` stays in the tool for the next sheet that needs it.
+
+## When a sheet is drawn at two sizes
+
+The v3 ranged sheet's last row is about 65% larger than its first, and cutting
+between them makes Dahlia balloon mid-action. This cannot be normalised
+automatically: the obvious measure, silhouette height, is exactly what the
+animation is *supposed* to vary — a crouch is genuinely shorter than a stance,
+and flattening that would turn the clip into a mannequin. So `--scale` takes the
+factor per pose. It resizes about the pose's own centre and keeps the canvas, so
+alignment and travel downstream are unaffected.
+
+That buys back the best drawing on the sheet — the gold gun-summon, pose 21 —
+which is used as the draw at 62%. The three plain stances beside it are dropped,
+since the first row already covers them, along with pose 5 (the gun blinks out
+of her hand for a single frame between two aiming poses) and pose 16, a figure
+tumbling head over heels: a ragdoll drawing that landed on the wrong sheet.
 
 ## Which ragdoll
 
@@ -663,12 +683,57 @@ cycle wants even spacing where an action wants beats. Built in place with no
 `--travel`, because whatever plays a locomotion clip supplies the ground speed;
 baking it in would have her dash out and slide back once per cycle.
 
+The cycle runs at 30fps rather than 24. With a fixed number of drawings the only
+thing that changes how a run *reads* is how long each drawing is on screen, and
+at 24fps these twelve took a full second for two strides — slow enough that she
+looked like she was wading. Twelve drawings at about 60 ms each is a normal run
+tempo, and the whole cycle now closes in 0.8 s.
+
 *(The older note here recorded that `dahlia_move_v2_sheet.png` would not build —
 seventeen sprites exported at 800x422, small enough that the anti-aliased
 outlines keyed away and each drawing arrived as two or three islands. The
 diagnosis still holds for any future export: at roughly 200x105 per sprite,
 component segmentation cannot find the drawings. Every other new-style sheet
 gives about 350x370.)*
+
+## Why some animations look softer than others
+
+Nothing in the pipeline downsamples. The difference is in the sheets, and it is
+large: measuring Dahlia's own height in the finished frames,
+
+| sheet | drawings | her height |
+| --- | --- | --- |
+| `dahlia_idle_sheet.png` | 6 | 354 px |
+| `dahlia_block_v2_sheet.png` | 8 | 343 px |
+| `dahlia_attack_b_sheet.png` | 8 | 342 px |
+| … | | |
+| `dahlia_skill_v3_sheet.jpg` | 25 | 168 px |
+| `dahlia_soul_sheet.png` | 16 | 167 px |
+| `dahlia_ragdoll_b_sheet.png` | 27 | 154 px |
+
+A sheet is exported at roughly one size whatever it holds, so the more poses it
+packs in, the fewer pixels each drawing gets. The idle has 2.3× the linear
+resolution of the ragdoll — 5× the pixels — and drawn at the same size on screen
+that gap is exactly what reads as a quality drop. Denser sheets also arrive as
+JPEG more often, which adds mottling on top.
+
+There is no recovering it after the fact; upscaling would only make the softness
+smoother. What helps is exporting a dense sheet larger — a 25-pose sheet needs
+about 2.3× the width and height of an 8-pose one to hold the same detail — and
+in the meantime the sheets whose sprites come out under 200 px get a stronger
+grain filter (`CLEAN_SMALL` in `build.sh`, `--denoise 14` against 8), because
+the same amount of grain covers proportionally more of a small character.
+
+### `--denoise` was doing nothing at all
+
+Worth recording, because it hid the problem above for the whole project. The
+filter ran on a copy of the sheet, but `--unmatte` — which every build uses —
+solves the aura's colour from the *working* pixel array and then rebuilds the
+sheet wholesale from the result, so every denoised pixel was thrown away
+immediately afterwards. Both flags reported success and the output was identical
+with `--denoise 0`. The filter now writes back into the array unmatte reads, and
+on the ragdoll sheet 14 takes 18% of the grain for 8% of the line work, with her
+eyes, mouth and hood strings intact.
 
 ## Slicing a sheet
 
@@ -693,6 +758,7 @@ background, so the alpha comes from a flood fill inward from the edges.
 | `--align silhouette` | fine-register frames to each other instead of anchoring on the feet |
 | `--rows N` / `--cols N` | force a uniform grid instead of detecting one |
 | `--erase X0,Y0,X1,Y1` | paint a rectangle of the sheet out before keying; for a prop one pose has lent across a cell boundary. Repeatable |
+| `--scale P:PCT` | resize given poses (assembler); for a sheet whose rows are drawn at different sizes |
 | `--tol N` | background colour tolerance; raise it on a noisy or JPEG-compressed sheet |
 | `--glow-tol N` | strip soft painted haze, up to this distance from the background |
 | `--glow-depth N` | how many pixels in from the silhouette `--glow-tol` may reach |
