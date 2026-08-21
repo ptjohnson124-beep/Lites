@@ -18,7 +18,7 @@ sheet lands, at which point the same two commands rebuild them.
 | **spin combo** | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
 | **ranged attack** | `assets/dahlia_ranged_v4_sheet.png`, 12 drawings | `out/dahlia_ranged/` — 56 frames, 2.33 s |
 | **soul attack** | `assets/dahlia_soul_sheet.png`, 16 drawings | `out/dahlia_soul/` — 64 frames, 2.67 s |
-| **skill / special** | `assets/dahlia_skill_v5_sheet.png`, 9 drawings | `out/dahlia_skill/` — 54 frames, 2.25 s |
+| **skill / special** | `assets/dahlia_skill_v6_sheet.png`, 10 drawings | `out/dahlia_skill/` — 52 frames, 2.17 s |
 | **block** | `assets/dahlia_block_v2_sheet.png`, 8 drawings | `out/dahlia_block/` — 44 frames, 2.2 s |
 | **counter** | `assets/dahlia_counter_v2_sheet.png`, 10 drawings | `out/dahlia_counter/` — 67 frames, 3.35 s |
 | **evasion** | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 56 frames, 2.8 s |
@@ -726,7 +726,7 @@ large: measuring Dahlia's own height in the finished frames,
 | `dahlia_block_v2_sheet.png` | 8 | 343 px |
 | `dahlia_attack_b_sheet.png` | 8 | 342 px |
 | … | | |
-| `dahlia_skill_v3_sheet.jpg` | 25 | 157 px |
+| `dahlia_skill_v6_sheet.png` | 10 | 207 px |
 | `dahlia_soul_sheet.png` | 16 | 167 px |
 | `dahlia_ragdoll_b_sheet.png` | 27 | 154 px |
 
@@ -741,13 +741,33 @@ smoother. Two things help. Exporting a dense sheet larger — a 25-pose sheet ne
 about 2.3× the width and height of an 8-pose one to hold the same detail. And
 drawing fewer poses on the same sheet, which is the same trade seen from the
 other side: the ranged animation went from 22 drawings to 12 and Dahlia grew
-from 169 px to 265, and the skill went 25 → 14 → 9 drawings while she went
-157 → 175 → 209 px. Both read better for it, so the extra drawings were not
+from 169 px to 265, and the skill went 25 → 14 → 9 → 10 drawings while she
+went 157 → 175 → 209 → 207 px. Both read better for it, so the extra drawings were not
 buying much.
 
 In the meantime the sheets whose sprites come out under 200 px get a stronger
 grain filter (`CLEAN_SMALL` in `build.sh`, `--denoise 14` against 8), because
 the same amount of grain covers proportionally more of a small character.
+
+### Tune the grain filter per sheet, by sweeping it
+
+The right strength is a property of the sheet, not a constant. Sweeping the v6
+skill sheet — the cleanest in the set, its background measuring a standard
+deviation of 0.6 levels where the JPEG-era sheets mottled — gives a clear
+optimum and a clear cliff:
+
+| `--denoise` | grain removed | line work kept |
+| --- | --- | --- |
+| 6 | 10% | 106% |
+| **10** | **19%** | **101%** |
+| 14 | 27% | 92% |
+| 24 | 42% | 71% |
+
+Above 100% is not a measurement error: flattening the noise *around* an edge
+raises that edge's measured contrast against its surroundings, so a correctly
+tuned bilateral filter leaves the drawing crisper rather than softer. The cliff
+is where it starts eating the drawing instead — everything past 10 on this
+sheet, where the earlier grainier sheets take 14.
 
 ### `--denoise` was doing nothing at all
 
@@ -802,13 +822,15 @@ measured rather than guessed.
 ## An effect that blinks off for a beat
 
 The skill sheet's pose 4 carries no effect at all, and in reading order it falls
-between the gold aura and the glitch ring — so the effect switches off for a beat
-and back on, which reads as a dropped frame rather than as an attack. Played
-after the beam it is part of the fade instead: beam, arm out, palm open, wisps,
-dagger. The v4 sheet had the same problem in a different place, and the same fix.
+between the thrust and the vortex — so the effect switches off for a beat and
+back on, which reads as a dropped frame rather than as an attack. Moved to the
+end of the cooldown, the whole clip fades monotonically instead: orb, vortex,
+peak, fading, wisps, faint wisps, nothing, ready.
 
-Worth checking on any sheet where the effect is drawn separately from the pose.
-Reading order is where the drawings sit, not necessarily the order they play in.
+Three skill sheets in a row have had this same defect in three different places,
+so it is worth checking on any sheet where the effect is drawn as a layer over
+the pose. Reading order is where the drawings sit, not necessarily the order
+they play in.
 
 ## Slicing a sheet
 
