@@ -18,7 +18,7 @@ sheet lands, at which point the same two commands rebuild them.
 | **spin combo** | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
 | **ranged attack** | `assets/dahlia_ranged_v4_sheet.png`, 12 drawings | `out/dahlia_ranged/` — 56 frames, 2.33 s |
 | **soul attack** | `assets/dahlia_soul_sheet.png`, 16 drawings | `out/dahlia_soul/` — 64 frames, 2.67 s |
-| **skill / special** | `assets/dahlia_skill_v4_sheet.png`, 14 drawings | `out/dahlia_skill/` — 64 frames, 2.67 s |
+| **skill / special** | `assets/dahlia_skill_v5_sheet.png`, 9 drawings | `out/dahlia_skill/` — 54 frames, 2.25 s |
 | **block** | `assets/dahlia_block_v2_sheet.png`, 8 drawings | `out/dahlia_block/` — 44 frames, 2.2 s |
 | **counter** | `assets/dahlia_counter_v2_sheet.png`, 10 drawings | `out/dahlia_counter/` — 67 frames, 3.35 s |
 | **evasion** | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 56 frames, 2.8 s |
@@ -729,8 +729,9 @@ smoother. Two things help. Exporting a dense sheet larger — a 25-pose sheet ne
 about 2.3× the width and height of an 8-pose one to hold the same detail. And
 drawing fewer poses on the same sheet, which is the same trade seen from the
 other side: the ranged animation went from 22 drawings to 12 and Dahlia grew
-from 169 px to 265, and the skill went from 25 to 14 and 157 px to 175. Both
-read better for it, so the extra drawings were not buying much.
+from 169 px to 265, and the skill went 25 → 14 → 9 drawings while she went
+157 → 175 → 209 px. Both read better for it, so the extra drawings were not
+buying much.
 
 In the meantime the sheets whose sprites come out under 200 px get a stronger
 grain filter (`CLEAN_SMALL` in `build.sh`, `--denoise 14` against 8), because
@@ -747,13 +748,42 @@ with `--denoise 0`. The filter now writes back into the array unmatte reads, and
 on the ragdoll sheet 14 takes 18% of the grain for 8% of the line work, with her
 eyes, mouth and hood strings intact.
 
+### The rest of what quality costs
+
+Three smaller losses sit on top of the source resolution, and all three are now
+measured rather than guessed.
+
+- **The GIF palette.** 255 colours and one bit of alpha is the format. It used
+  to be *one* palette stretched over every drawing in the animation, which
+  posterised the aura and the hair gradients; it is now one palette per distinct
+  drawing, which measures 5.4/255 mean error against the source rather than 6.5.
+  That is safe because the GIF writer collapses runs of identical frames into
+  one frame with a longer delay — a held pose is a single GIF frame and cannot
+  crawl within its hold. Drift on unchanged pixels went down, not up: 0.90/255
+  against 1.08.
+
+  Measure this on the written file, never on the frames in memory. The
+  collapsing means GIF frame *i* is not source frame *i*, and comparing them by
+  index reports errors of 70 or 100/255 that are pure misalignment — which is
+  exactly the mistake that nearly got per-frame palettes discarded as broken.
+
+- **The WebP was lossy.** Saved at quality 92 with a second lossy pass over
+  artwork that had already been keyed and cleaned. It is lossless now. This is
+  the high-quality deliverable; the GIF is a preview.
+
+- **`--breathe` resamples.** The breath is a sub-percent vertical stretch, so
+  every frame it touches goes through Lanczos and comes back slightly softer —
+  about 4% of edge energy. The idles keep it, because that is the whole
+  performance there. Action clips do not: the drawings carry the motion, and
+  `--bob`/`--sway` shift by whole pixels without resampling anything.
+
 ## An effect that blinks off for a beat
 
-The skill sheet's poses 8 and 9 are played out of reading order. As drawn the
-sequence runs beam, blurred follow-through, a clean arm with no effect on it at
-all, then the burst — so the beam switches off for a beat and back on, which
-reads as a dropped frame rather than as an attack. Played 7, 9, 10, 8 the effect
-fades instead: sharp beam, smear, burst, light blur, clean.
+The skill sheet's pose 4 carries no effect at all, and in reading order it falls
+between the gold aura and the glitch ring — so the effect switches off for a beat
+and back on, which reads as a dropped frame rather than as an attack. Played
+after the beam it is part of the fade instead: beam, arm out, palm open, wisps,
+dagger. The v4 sheet had the same problem in a different place, and the same fix.
 
 Worth checking on any sheet where the effect is drawn separately from the pose.
 Reading order is where the drawings sit, not necessarily the order they play in.

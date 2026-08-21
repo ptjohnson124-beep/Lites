@@ -305,46 +305,40 @@ def trim(frames, margin=2):
 
 
 def gif_frames(frames):
-    """Quantise to one shared palette, keeping alpha as a reserved index.
+    """Quantise for GIF: one palette per distinct drawing, alpha a reserved index.
 
     Three things ruin a GIF of art like this. Dithering stipples every flat
-    surface; a palette rebuilt per frame makes those surfaces crawl between
-    frames even where the drawing has not changed; and RGBA handed straight to
-    the encoder loses transparency altogether and lands the character on a
-    black card. One palette for the whole loop, no dithering, and index 255
-    held back for transparent pixels avoids all three.
-    """
-    w, h = frames[0].size
+    surface; RGBA handed straight to the encoder loses transparency altogether
+    and lands the character on a black card; and a 255-colour table stretched
+    over every drawing in the animation at once posterises the aura and the
+    hair gradients, which is what one shared palette amounts to.
 
-    # Build the palette from distinct frames only. A held pose contributes ten
-    # identical copies otherwise, and the quantiser spends its entries on
-    # whatever is most common rather than on what is hardest to represent.
-    seen, distinct = set(), []
+    So the palette is per distinct drawing, cached, and that is safe here for a
+    reason worth stating: the GIF writer collapses runs of identical frames
+    into one frame with a longer delay, so a held pose is a *single* GIF frame
+    and cannot crawl within its hold. Between two different drawings the
+    palette may shift, but so has everything else. Measured on the written file
+    against the source: 5.4/255 mean error rather than the shared palette's
+    6.5, and less drift on unchanged pixels, not more — 0.90/255 against 1.08.
+
+    Measure this on the file, never on the frames in memory. The collapsing
+    means GIF frame *i* is not source frame *i*, and comparing them by index
+    reports errors of 70 or 100/255 that are entirely an artefact of the
+    misalignment.
+    """
+    cache, out = {}, []
     for f in frames:
         key = f.tobytes()
-        if key not in seen:
-            seen.add(key)
-            distinct.append(f)
-
-    montage = Image.new("RGB", (w, h * len(distinct)), (0, 0, 0))
-    for i, f in enumerate(distinct):
-        montage.paste(f.convert("RGB"), (0, i * h))
-
-    # Octree over median cut: it keeps far more of a small bright gradient like
-    # the dagger's glow — 78 colours against 45 in that region on the counter —
-    # at a cost of 0.7/255 mean error over the rest of the sprite, which does
-    # not show where median cut's banding on the blade did.
-    shared = montage.quantize(colors=255, method=Image.Quantize.FASTOCTREE,
-                              dither=Image.Dither.NONE)
-
-    out = []
-    for f in frames:
-        p = f.convert("RGB").quantize(palette=shared, dither=Image.Dither.NONE)
-        # Cut low, not at half: the aura is deliberately semi-transparent, and a
-        # 128 cut erases most of it. At 64 the glow keeps its full drawn extent.
-        p.paste(255, f.getchannel("A").point(lambda a: 255 if a < 64 else 0))
-        p.info["transparency"] = 255
-        out.append(p)
+        if key not in cache:
+            p = f.convert("RGB").quantize(colors=255, method=Image.Quantize.FASTOCTREE,
+                                          dither=Image.Dither.NONE)
+            # Cut low, not at half: the aura is deliberately semi-transparent,
+            # and a 128 cut erases most of it. At 64 the glow keeps its full
+            # drawn extent.
+            p.paste(255, f.getchannel("A").point(lambda a: 255 if a < 64 else 0))
+            p.info["transparency"] = 255
+            cache[key] = p
+        out.append(cache[key])
     return out
 
 
@@ -376,8 +370,13 @@ def save(frames, path, fps, quality=92):
                   duration=max(20, int(round(dur / 10) * 10)), loop=0,
                   disposal=2, transparency=255)
     else:
+        # Lossless. This is the high-quality deliverable — the GIF is a preview
+        # limited to 255 colours and one bit of alpha, and anything that reads
+        # the WebP wants the drawing as it was keyed, not a second lossy pass
+        # over it.
         frames[0].save(path, save_all=True, append_images=frames[1:],
-                       duration=int(round(dur)), loop=0, quality=quality, method=4)
+                       duration=int(round(dur)), loop=0, lossless=True,
+                       quality=quality, method=6)
 
 
 def main():

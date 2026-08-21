@@ -170,26 +170,31 @@ $BUILD out/dahlia_fully_insane_idle/frames -o out/dahlia_fully_insane_idle -n da
   --holds 1,2,1,6,1,2,2,1,1,4,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,4,2,1,1,1,2,1,1,1,4,2,1,2,2,1,1,6,2,1 \
   --fps 20 --breathe 0 --sway 0 --despeckle 24
 
-# Special / skill, from the v4 sheet: 14 drawings, down from v3's 25, and the
-# fewer poses buy resolution — her stance measures 175px tall against v3's 157,
-# because the sheet spends the same area on half as many drawings. The arc is
-# rest, the charge gathering in her hand, the corruption taking her, a beat of
-# anticipation, the glitch ring at the peak, the beam strike, and a long
-# cooldown that ends with the dagger back in her hand.
+# Special / skill, from the v5 sheet: nine drawings, and the fewest poses yet
+# buy the most resolution — her stance measures 209px tall against v4's 175 and
+# v3's 157, on a sheet spending its area on nine drawings instead of 25. Rest,
+# the charge gathering, the corruption taking her, the glitch ring at the peak,
+# the beam, and a cooldown that ends with the dagger back in her hand.
 #
-# Poses 8 and 9 are swapped against reading order. As drawn, the sequence runs
-# beam, blurred follow-through, clean arm with no effect at all, then the burst
-# — so the effect blinks off for a beat and back on. Played 7, 9, 10, 8 it
-# fades instead: sharp beam, smear, burst, light blur, clean. Only the smear at
-# pose 7 is held short enough to read as speed rather than as a pose.
-$SLICE assets/dahlia_skill_v4_sheet.png -o out/dahlia_skill \
-  --components --tol 18 --glow-tol 0 --fill-holes 3 $CLEAN_SMALL --single dahlia_skill
+# Poses 4 and 7 are swapped against reading order. Pose 4 carries no effect at
+# all, and in reading order it falls between the gold aura and the glitch ring
+# — the effect switches off for a beat and back on, which reads as a dropped
+# frame rather than an attack. Played after the beam it is part of the fade
+# instead: beam, arm out, palm open, wisps, dagger.
+#
+# No --breathe here, only rigid --bob. The breath is a sub-percent vertical
+# resize, so every frame it touches is resampled and softened for motion an
+# action clip does not need; the idles keep it, this does not. Worth about 4%
+# of edge energy.
+$SLICE assets/dahlia_skill_v5_sheet.png -o out/dahlia_skill \
+  --components --tol 18 --glow-tol 0 --fill-holes 3 \
+  --despeckle 24 --denoise 10 --unmatte 45 --align silhouette --single dahlia_skill
 $BUILD out/dahlia_skill/frames -o out/dahlia_skill -n dahlia_skill \
-  --poses 1,2,3,4,5,6,7,9,10,8,11,12,13,14 \
-  --holds 6,4,4,5,8,4,2,5,3,4,4,4,4,7 \
-  --fps 24 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
-  --shake 5:6,6:4,9:6 \
-  --travel 1:0,2:0,3:0,4:0,5:0,6:10,7:26,9:20,10:14,8:8,11:3,12:0,13:0,14:0
+  --poses 1,2,3,5,6,7,4,8,9 \
+  --holds 6,5,6,9,7,4,4,5,8 \
+  --fps 24 --breathe 0 --bob 2 --sway 2 \
+  --shake 5:6,6:5 \
+  --travel 1:0,2:0,3:0,5:0,6:12,7:8,4:4,8:0,9:0
 
 # Moving. Built in place, with no --travel: a locomotion clip is translated by
 # whatever plays it, and baking the ground into the loop would have her dash out
