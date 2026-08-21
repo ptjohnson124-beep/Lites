@@ -251,6 +251,36 @@ $BUILD out/dahlia_soul/frames -o out/dahlia_soul -n dahlia_soul \
   --fps 24 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
   --shake 6:3,10:8,11:4 --travel 9:12,10:16,11:10,12:6,13:2
 
+# Grab: six drawings — rest, set, the lunging reach, the seize, the hold, the
+# release. The highest resolution in the whole set at 436px tall, because the
+# sheet spends 1091x976 on six poses.
+#
+# It needs a different key from every other sheet. The background here is dark
+# (49,54,60) rather than mid-grey, and her trousers average (37,37,42) and her
+# boots (39,42,47) — closer to that backdrop than her hair is to anything. At
+# the usual --tol 14 the flood walks down her outline and hollows out both legs.
+# The background is a flat fill, though, no gradient and no grain: 99% of the
+# sheet edge sits within 2 levels of one colour. So the tolerance goes down to
+# 3, which takes the backdrop and nothing else.
+#
+# That leaves the antialiased rim standing as a dark speckled fringe, invisible
+# against this sheet and obvious against anything lighter — which is what
+# --glow-tol is for. At 20 with --glow-depth 3 it clears the rim while staying
+# three pixels from the silhouette, so the trousers never come into range.
+#
+# Timed as a snatch: the reach and the seize are the two fastest beats in any
+# animation here, 0.13s and 0.17s, and the hold that follows is 0.58s. A grab
+# is not a swing — it is quick, quick, then nothing moves at all.
+$SLICE assets/dahlia_grab_sheet.png -o out/dahlia_grab \
+  --components --tol 3 --glow-tol 20 --glow-depth 3 --fill-holes 4 \
+  --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_grab
+$BUILD out/dahlia_grab/frames -o out/dahlia_grab -n dahlia_grab \
+  --poses 1,2,3,4,5,6 \
+  --holds 8,6,3,4,14,8 \
+  --fps 24 --breathe 0 --bob 2 --sway 2 \
+  --shake 4:6 \
+  --travel 1:0,2:0,3:26,4:14,5:8,6:2
+
 # Moving: a 12-drawing run cycle, replacing the 36-frame v3. Fewer drawings but
 # a much better cycle — v3 spent most of its length on stances and read as a
 # shuffle. These twelve are all stride. Uniform two-frame holds and no breathing

@@ -18,11 +18,12 @@ sheet lands, at which point the same two commands rebuild them.
 | **spin combo** | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
 | **ranged attack** | `assets/dahlia_ranged_v4_sheet.png`, 12 drawings | `out/dahlia_ranged/` — 56 frames, 2.33 s |
 | **soul attack** | `assets/dahlia_soul_sheet.png`, 16 drawings | `out/dahlia_soul/` — 64 frames, 2.67 s |
-| **skill / special** | `assets/dahlia_skill_v7_sheet.png`, 11 drawings | `out/dahlia_skill/` — 83 frames, 3.46 s |
+| **skill / special** | `assets/dahlia_skill_v7_sheet.png`, 11 drawings | `out/dahlia_skill/` — 88 frames, 3.67 s |
 | **block** | `assets/dahlia_block_v2_sheet.png`, 8 drawings | `out/dahlia_block/` — 44 frames, 2.2 s |
 | **counter** | `assets/dahlia_counter_v2_sheet.png`, 10 drawings | `out/dahlia_counter/` — 67 frames, 3.35 s |
 | **evasion** | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 56 frames, 2.8 s |
 | **getting hit** | `assets/dahlia_hit_v2_sheet.png`, 8 drawings | `out/dahlia_hit/` — 51 frames, 2.55 s |
+| **grab** | `assets/dahlia_grab_sheet.png`, 6 drawings | `out/dahlia_grab/` — 43 frames, 1.79 s |
 | **ragdoll** | `assets/dahlia_ragdoll_b_sheet.png`, 27 drawings | `out/dahlia_ragdoll/` — 94 frames, 3.92 s |
 | **taunt** | `assets/dahlia_taunt_v2_sheet.png`, 12 drawings | `out/dahlia_taunt/` — 75 frames, 3.75 s |
 | **going insane** | `assets/dahlia_insane_b_sheet.png`, 16 drawings | `out/dahlia_insane/` — 68 frames, 3.4 s |
@@ -832,6 +833,29 @@ runs none, glitch, orb, vortex, peak, wake, trail, none, none, straight down the
 reading order. Worth checking on any sheet where the effect is drawn as a layer
 over the pose — reading order is where the drawings sit, not necessarily the
 order they play in.
+
+## Keying a sheet drawn on a dark background
+
+Every other sheet here sits on mid-grey, comfortably far from anything Dahlia
+wears. The grab sheet does not: its backdrop is (49, 54, 60), her trousers
+average (37, 37, 42) and her boots (39, 42, 47). At the usual `--tol 14` the
+flood walks down her dark outline and hollows out both legs — the first slice
+came back with her wearing nothing below the waist.
+
+What saves it is that the backdrop is a flat fill rather than a photographed or
+gradient one: 99% of the sheet's edge strip sits within 2 levels of a single
+colour. So `--tol 3` is enough, and at 3 the trousers — 17 levels off — are
+never candidates.
+
+That leaves the antialiased rim standing as a dark speckled fringe. It is
+invisible against the sheet it came from and obvious against anything lighter,
+which is the trap: check a dark-background key composited onto white, never onto
+the background it was cut from. `--glow-tol 20 --glow-depth 3` clears the rim
+while staying three pixels out from the silhouette, so the trousers never come
+into range of it.
+
+The two flags pull in opposite directions here and that is the point: `--tol`
+decides what the flood may take, `--glow-tol` cleans up what it had to leave.
 
 ## What actually makes a clip smooth
 
