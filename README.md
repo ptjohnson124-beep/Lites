@@ -33,8 +33,22 @@ sheet lands, at which point the same two commands rebuild them.
 | **dagger twirl idle** | `assets/twirl_sheet.png`, 12 drawings | `out/dahlia_twirl/` — 150 frames, 7.5 s |
 | **dagger-flip idle** | `assets/dahlia_flip_idle_sheet.png`, 15 drawings | `out/dahlia_flip_idle/` — 59 frames, 2.95 s |
 
-Each output directory holds `NAME.gif`, `NAME.webp`, `NAME_strip.png` (a sprite
-strip for engine use) and `NAME.json` describing it.
+Each output directory holds `NAME.gif`, `NAME.webp`, `NAME.avif`,
+`NAME_strip.png` (a sprite strip for engine use) and `NAME.json` describing it.
+
+Which to use, measured on the skill against its source frames:
+
+| | size | error on opaque pixels | error including soft edges |
+| --- | --- | --- | --- |
+| `.webp` | 2093 KB | **0.00** | **0.00** |
+| `.avif` | 514 KB | 0.76 | 0.76 |
+| `.gif` | 831 KB | 5.43 | 20.35 |
+
+The WebP is lossless — bit-exact, and the reference. The AVIF is a quarter of
+its size for 0.76/255 of mean error, which is below anything an eye resolves;
+take it wherever size matters. The GIF is a preview: 255 colours and *one bit*
+of alpha, and that second number is where the alpha shows — the aura is drawn
+semi-transparent and GIF can only round it to on or off.
 
 ```sh
 pip install pillow numpy
@@ -769,7 +783,18 @@ measured rather than guessed.
 
 - **The WebP was lossy.** Saved at quality 92 with a second lossy pass over
   artwork that had already been keyed and cleaned. It is lossless now. This is
-  the high-quality deliverable; the GIF is a preview.
+  the reference deliverable; the GIF is a preview.
+
+- **AVIF, for size rather than quality.** Nothing beats the lossless WebP on
+  fidelity — there is no "better than bit-exact" — but AVIF reaches 0.76/255 of
+  mean error at a quarter of the size. It has to be asked for properly: left at
+  its default 4:2:0 it averages the chroma of every second pixel together, and
+  the cyan aura against her red hair goes to 120/255 of error. At `4:4:4` with
+  full range the same quality setting lands at 2/255 worst case.
+
+  Truly lossless AVIF is not available here. It needs identity matrix
+  coefficients, and libavif in this environment fails to encode the alpha plane
+  with them set — on every codec and premultiplication setting tried.
 
 - **`--breathe` resamples.** The breath is a sub-percent vertical stretch, so
   every frame it touches goes through Lanczos and comes back slightly softer —
