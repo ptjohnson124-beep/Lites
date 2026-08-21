@@ -26,7 +26,8 @@ sheet lands, at which point the same two commands rebuild them.
 | **grab** | `assets/dahlia_grab_sheet.png`, 6 drawings | `out/dahlia_grab/` — 43 frames, 1.79 s |
 | **throw** | `assets/dahlia_throw_sheet.png`, 8 drawings | `out/dahlia_throw/` — 66 frames, 2.75 s |
 | **stagger** | `assets/dahlia_stagger_sheet.png`, 6 drawings | `out/dahlia_stagger/` — 46 frames, 1.92 s |
-| **ragdoll** | `assets/dahlia_ragdoll_b_sheet.png`, 27 drawings | `out/dahlia_ragdoll/` — 94 frames, 3.92 s |
+| **ragdoll** | `assets/dahlia_knockdown_sheet.png`, 8 drawings | `out/dahlia_ragdoll/` — 47 frames, 1.96 s |
+| **get-up** | `assets/dahlia_getup_sheet.png`, 8 drawings | `out/dahlia_getup/` — 59 frames, 2.46 s |
 | **taunt** | `assets/dahlia_taunt_v2_sheet.png`, 12 drawings | `out/dahlia_taunt/` — 75 frames, 3.75 s |
 | **going insane** | `assets/dahlia_insane_b_sheet.png`, 16 drawings | `out/dahlia_insane/` — 68 frames, 3.4 s |
 | **insanity transformation** | `assets/dahlia_insanity_sheet.png`, 16 drawings | `out/dahlia_insanity/` — 79 frames, 3.95 s |
@@ -731,7 +732,7 @@ large: measuring Dahlia's own height in the finished frames,
 | … | | |
 | `dahlia_skill_v7_sheet.png` | 11 | 209 px |
 | `dahlia_soul_sheet.png` | 16 | 167 px |
-| `dahlia_ragdoll_b_sheet.png` | 27 | 154 px |
+| `dahlia_ragdoll_b_sheet.png` | 27 | 154 px *(retired)* |
 
 A sheet is exported at roughly one size whatever it holds, so the more poses it
 packs in, the fewer pixels each drawing gets. The idle has 2.3× the linear
@@ -874,6 +875,43 @@ colour rather than blended over the paper.
 Three backdrops now, three different keys. Mid-grey takes `--tol 14` and
 `--unmatte 45`; dark takes `--tol 3` and `--glow-tol 20` to clean the rim it
 leaves; white takes `--tol 12` and no unmatte at all.
+
+## Finding a ground line the sprites are standing on
+
+The knockdown and get-up sheets are ruled with a full-width line under each row
+of poses. It is useful to the artist — it is what keeps the footing consistent —
+and fatal to the segmenter, because it joins all four poses in a row into one
+component. `--panels` erases it, but two things in the detector had to change
+before it could see it at all.
+
+**An absolute darkness threshold means nothing on a dark sheet.** The first pass
+looks for ink below level 90, which works on every mid-grey sheet here. This
+backdrop is navy at (30, 40, 67) — its own brightest channel is *below* the
+threshold — so the test called 623 of 768 rows a grid line, and because it
+returned something, the relative fallback never ran. The background is now
+measured first, and a backdrop darker than the threshold skips the absolute test
+entirely.
+
+**Line uniformity has to be measured against the median.** A ruled line is one
+flat tone, which is what separates it from a column of shaded sprite, and that
+was tested by standard deviation. But the lines that matter most are exactly the
+ones sprites stand on: this ground line is uniform along nearly all its length
+and wild where eight pairs of boots cross it, which puts its deviation at 35–50
+— indistinguishable from a character. The share of ink sitting close to the
+line's *own median* ignores the crossings, and separates cleanly: 0.53–0.80 for
+the ground lines against 0.07–0.32 for rows of pure sprite.
+
+## Reading order is not play order
+
+The knockdown sheet draws the airborne tumble fifth and the skid third, so read
+straight through, Dahlia lands before she is thrown. The prop settles it without
+guesswork: counting teal pixels per pose, she holds the dagger in poses 1, 2, 5,
+4 and 3 and never again — so those five are the flight and the impact, in that
+order, and the three empty-handed poses are the aftermath.
+
+Worth doing on any sheet where the character carries something. A prop that
+appears, disappears and reappears is the cheapest possible check that the order
+is wrong, and it is a single measurement.
 
 ## Keying a sheet drawn on a dark background
 

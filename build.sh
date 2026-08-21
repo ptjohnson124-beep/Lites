@@ -348,18 +348,54 @@ $BUILD out/dahlia_move/frames -o out/dahlia_move -n dahlia_move \
   --holds 2,2,2,2,2,2,2,2,2,2,2,2 \
   --fps 30 --breathe 0 --sway 0
 
-# Ragdoll: knocked off her feet and back up again, the longest arc in the set at
-# 27 drawings — stance, the hit, the tumble, an airborne beat, the dust of the
-# landing, face down, then crawl, push-up, kneel and stand. Chosen over the two
-# other candidates because it is the only one that contains the blow that starts
-# it and the stance that ends it; the others open mid-air and stop at standing.
-# Timed as a knockdown: fast through the hit and the fall, a long hold face
-# down, then the recovery slow and laboured all the way up. Not a loop, so it
-# ends on the ready stance rather than returning.
-$SLICE assets/dahlia_ragdoll_b_sheet.png -o out/dahlia_ragdoll \
-  --panels --components --component-min 4000 --tol 14 --glow-tol 0 --fill-holes 3 \
-  $CLEAN_SMALL --single dahlia_ragdoll
+# Ragdoll and get-up: one action across two sheets, generated in two turns and
+# built as two clips, which is also how an engine wants them — play the
+# knockdown, hold the downed pose for as long as the character stays down, then
+# play the get-up. Replaces the 27-pose ragdoll sheet, on which Dahlia measured
+# 153px tall, the smallest in the project. On these she is 303px.
+#
+# Both sheets are ruled with a full-width ground line under each row, which
+# fuses every pose in the row into one component. --panels erases it, but two
+# things in the detector had to change before it could see it, both recorded in
+# the README: an absolute darkness threshold means nothing on a navy backdrop
+# darker than the threshold itself, and line uniformity has to be measured
+# against the median, because a ground line is uniform along its length and wild
+# where eight pairs of boots cross it.
+#
+# --tol 8: the backdrop is dark and her boots and trousers are darker still, so
+# the flood needs a tight leash, and the sheet is flat enough to give it one —
+# 99% of the edge strip sits within 7 levels. --unmatte 0, as on every sheet
+# that is not mid-grey.
+#
+# Pose order is not reading order. As drawn, the airborne tumble sits fifth and
+# the skid third, so read straight through she lands before she is thrown. The
+# dagger settles it: she holds it in 1, 2, 5, 4 and 3 and never again, so those
+# five are the flight and the impact in that order. Pose 7 is dropped — it is
+# the only frame where the fallen dagger lies inside her crop, so playing it
+# flashes the prop on for a quarter second and off again.
+$SLICE assets/dahlia_knockdown_sheet.png -o out/dahlia_ragdoll \
+  --panels --components --component-min 3000 --tol 8 --glow-tol 0 --fill-holes 4 \
+  --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_ragdoll
 $BUILD out/dahlia_ragdoll/frames -o out/dahlia_ragdoll -n dahlia_ragdoll \
-  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27 \
-  --holds 4,2,2,2,2,2,3,7,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,5,5,7 \
-  --fps 24 --breathe 0 --sway 0 --shake 6:5,7:3
+  --poses 1,2,5,4,3,6,8 \
+  --holds 6,3,4,5,4,7,18 \
+  --fps 24 --breathe 0 --bob 2 --sway 2 \
+  --shake 4:9,3:5 \
+  --travel 1:0,2:6,5:-26,4:-48,3:-66,6:-72,8:-76
+
+# The get-up needs no reordering — its eight drawings run in sequence, and the
+# stance it ends on measures 296px against the knockdown's 303, a 2% drift
+# across two separately generated sheets. That is what attaching the last pose
+# of sheet one as the reference for sheet two buys.
+#
+# Slow at the bottom and quickening as she rises: 0.42s face down, holds
+# shortening all the way up to the stance, then 0.5s to settle.
+$SLICE assets/dahlia_getup_sheet.png -o out/dahlia_getup \
+  --panels --components --component-min 3000 --tol 8 --glow-tol 0 --fill-holes 4 \
+  --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_getup
+$BUILD out/dahlia_getup/frames -o out/dahlia_getup -n dahlia_getup \
+  --poses 1,2,3,4,5,6,7,8 \
+  --holds 10,7,7,6,6,5,6,12 \
+  --fps 24 --breathe 0 --bob 2 --sway 2 \
+  --shake 6:3 \
+  --travel 1:0,2:0,3:4,4:8,5:10,6:8,7:4,8:0

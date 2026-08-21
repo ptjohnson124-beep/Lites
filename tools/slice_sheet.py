@@ -18,6 +18,7 @@ import argparse
 import json
 import os
 import shutil
+import warnings
 from collections import Counter
 
 import numpy as np
@@ -67,24 +68,32 @@ def spans(profile, coverage, limit, grow, thickest=0):
     return sorted(wide)
 
 
-def uniform(strip, axis, bg, tol=8, spread=12):
-    """Per-line flag: is this line's ink one flat colour along its length?
+def uniform(strip, axis, bg, tol=8, spread=14, share=0.45):
+    """Per-line flag: is most of this line's ink one flat colour?
 
     A ruled divider is drawn in a single tone, so the pixels along it barely
     vary. A column of sprite can cover a cell just as completely — hair, a
-    coat seam, a leg — but it is shaded, so its spread is several times wider.
+    coat seam, a leg — but it is shaded, so its tones are spread wide.
     Uniformity is what tells the two apart, and without it the grid eraser
     eventually cuts a stripe of transparency straight through a figure.
+
+    Measured against the median rather than by standard deviation, because
+    the lines that matter most are the ones sprites stand on. A ground line
+    ruled under a row of poses is uniform along nearly all its length and wild
+    where eight pairs of boots cross it, and one std over the whole line puts
+    it at 35-50 — indistinguishable from a sprite. The share of ink sitting
+    close to the line's own median ignores the crossings: on this sheet that
+    reads 0.53-0.80 for the ground lines against 0.07-0.32 for rows of pure
+    character.
     """
     lum = strip.astype(np.float32).mean(axis=2)
     ink = np.abs(lum - float(np.mean(bg))) > tol
-    n = ink.sum(axis=axis)
-    total = np.where(ink, lum, 0).sum(axis=axis)
-    sq = np.where(ink, lum * lum, 0).sum(axis=axis)
-    with np.errstate(invalid="ignore", divide="ignore"):
-        mean = total / np.maximum(n, 1)
-        var = sq / np.maximum(n, 1) - mean * mean
-    return np.sqrt(np.maximum(var, 0)) < spread
+    with np.errstate(invalid="ignore"), warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)   # lines with no ink at all
+        med = np.nanmedian(np.where(ink, lum, np.nan), axis=axis)
+    med = np.where(np.isnan(med), 0.0, med)
+    near = ink & (np.abs(lum - (med[:, None] if axis == 1 else med[None, :])) < spread)
+    return near.sum(axis=axis) / np.maximum(ink.sum(axis=axis), 1) > share
 
 
 def panel_border_lines(rgb, darkness=90, coverage=0.8, grow=3, bg=None):
@@ -100,8 +109,11 @@ def panel_border_lines(rgb, darkness=90, coverage=0.8, grow=3, bg=None):
         inks = [grid_ink(rgb, darkness, bg, sign=+1), grid_ink(rgb, darkness, bg, sign=-1)]
         # A ruled line is interrupted wherever a sprite crosses it, so demanding
         # near-total coverage misses exactly the lines that matter on a busy
-        # sheet. Two thirds is enough to be a line and far more than any sprite.
-        coverage, thickest = 0.62, 6
+        # sheet — a ground line ruled under a row of poses that are lying on it
+        # scores 0.54. Half is enough, because `uniform` below is what actually
+        # separates a line from a sprite, and it separates them by a wide
+        # margin; coverage only has to be loose enough not to veto the answer.
+        coverage, thickest = 0.50, 6
 
     h, w = rgb.shape[:2]
     flat_rows = uniform(rgb, 1, bg) if bg is not None else np.ones(h, bool)
@@ -866,10 +878,19 @@ def main():
         print(f"erased sheet rectangle {x0},{y0} to {x1},{y1}")
 
     if args.panels:
-        rows_, cols_ = panel_border_lines(rgb)
-        if not rows_ and not cols_:
-            # Fall back to a grid ruled in a grey close to the background.
-            rows_, cols_ = panel_border_lines(rgb, bg=background_color(rgb))
+        # The absolute darkness test only means anything on a sheet lighter than
+        # the ink it is looking for. On a dark navy backdrop the background
+        # itself passes it, and the detector called 623 of 768 rows a grid
+        # line. Where the backdrop is that dark, go straight to the relative
+        # test, which measures against the background instead of a constant.
+        probe = background_color(rgb)
+        if int(np.max(probe)) < 110:
+            rows_, cols_ = panel_border_lines(rgb, bg=probe)
+        else:
+            rows_, cols_ = panel_border_lines(rgb)
+            if not rows_ and not cols_:
+                # Fall back to a grid ruled in a tone close to the background.
+                rows_, cols_ = panel_border_lines(rgb, bg=probe)
         bg = background_color(rgb, skip_rows=rows_, skip_cols=cols_)
         rgb = rgb.copy()
         rgb[rows_, :] = bg          # paint the grid out so the gaps come back
