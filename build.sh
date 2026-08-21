@@ -170,30 +170,30 @@ $BUILD out/dahlia_fully_insane_idle/frames -o out/dahlia_fully_insane_idle -n da
   --holds 1,2,1,6,1,2,2,1,1,4,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,4,2,1,1,1,2,1,1,1,4,2,1,2,2,1,1,6,2,1 \
   --fps 20 --breathe 0 --sway 0 --despeckle 24
 
-# Special / skill, from the v6 sheet: ten drawings of a teal-and-glitch vortex.
-# The sheet is the cleanest in the set — its background measures a standard
-# deviation of 0.6 levels, against sheets earlier in the project that arrived
-# as JPEG and mottled — so the grain filter can be tuned by measurement rather
-# than by caution. Swept across the whole sheet, 10 takes 19% of the grain
-# while *raising* measured line contrast slightly (100.9%), because flattening
-# the noise around an edge makes the edge relatively crisper. At 14 it starts
-# cutting into the drawing (92%) and at 24 it is destructive (71%).
+# Special / skill, from the v7 sheet: eleven drawings, and the smoothest layout
+# of the seven. Measured as the mean pixel change between consecutive drawings,
+# its average step is 82 against v6's 93, and only 2 of its 10 transitions are
+# large where 4 of v6's 9 were — v6 crossed its whole vortex section in a run of
+# big jumps, this one spends four drawings climbing into the peak and six coming
+# down. It is also the first skill sheet whose effect never blinks in reading
+# order: none, glitch, orb, vortex, peak, wake, trail, none, none. Nothing has
+# to be reordered.
 #
-# Poses 4, 8 and 9 are reordered. Pose 4 carries no effect at all, and in
-# reading order it lands between the thrust and the vortex, so the effect
-# switches off for a beat and back on. Played 3, 5, 6, 7, 8, 9, 4, 10 the whole
-# clip fades monotonically instead: orb, vortex, peak, fading, wisps, faint
-# wisps, nothing, ready. No --breathe, only rigid --bob: the breath is a
-# sub-percent resize and it softens every frame it touches.
-$SLICE assets/dahlia_skill_v6_sheet.png -o out/dahlia_skill \
+# 3.46s, against v6's 2.17s. The skill had been getting shorter with every sheet
+# — 5.45, 3.75, 2.67, 2.25, 2.17 — and had run past deliberate into hurried.
+# The peak holds 0.58s on its own, which is what a special is for.
+#
+# Grain filter swept on this sheet as on v6: 10 takes 19% for no measurable loss
+# of line work (100.2%), 14 starts cutting into the drawing (94%).
+$SLICE assets/dahlia_skill_v7_sheet.png -o out/dahlia_skill \
   --components --tol 14 --glow-tol 0 --fill-holes 3 \
   --despeckle 24 --denoise 10 --unmatte 45 --align silhouette --single dahlia_skill
 $BUILD out/dahlia_skill/frames -o out/dahlia_skill -n dahlia_skill \
-  --poses 1,2,3,5,6,7,8,9,4,10 \
-  --holds 5,4,5,4,9,5,4,4,4,8 \
+  --poses 1,2,3,4,5,6,7,8,9,10,11 \
+  --holds 10,6,7,6,14,7,6,6,6,5,10 \
   --fps 24 --breathe 0 --bob 2 --sway 2 \
-  --shake 5:4,6:6,7:3 \
-  --travel 1:0,2:0,3:8,5:14,6:16,7:12,8:6,9:2,4:0,10:0
+  --shake 4:4,5:7,6:5 \
+  --travel 1:0,2:0,3:0,4:4,5:10,6:20,7:14,8:8,9:4,10:0,11:0
 
 # Moving. Built in place, with no --travel: a locomotion clip is translated by
 # whatever plays it, and baking the ground into the loop would have her dash out

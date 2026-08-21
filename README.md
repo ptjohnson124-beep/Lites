@@ -18,7 +18,7 @@ sheet lands, at which point the same two commands rebuild them.
 | **spin combo** | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
 | **ranged attack** | `assets/dahlia_ranged_v4_sheet.png`, 12 drawings | `out/dahlia_ranged/` — 56 frames, 2.33 s |
 | **soul attack** | `assets/dahlia_soul_sheet.png`, 16 drawings | `out/dahlia_soul/` — 64 frames, 2.67 s |
-| **skill / special** | `assets/dahlia_skill_v6_sheet.png`, 10 drawings | `out/dahlia_skill/` — 52 frames, 2.17 s |
+| **skill / special** | `assets/dahlia_skill_v7_sheet.png`, 11 drawings | `out/dahlia_skill/` — 83 frames, 3.46 s |
 | **block** | `assets/dahlia_block_v2_sheet.png`, 8 drawings | `out/dahlia_block/` — 44 frames, 2.2 s |
 | **counter** | `assets/dahlia_counter_v2_sheet.png`, 10 drawings | `out/dahlia_counter/` — 67 frames, 3.35 s |
 | **evasion** | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 56 frames, 2.8 s |
@@ -726,7 +726,7 @@ large: measuring Dahlia's own height in the finished frames,
 | `dahlia_block_v2_sheet.png` | 8 | 343 px |
 | `dahlia_attack_b_sheet.png` | 8 | 342 px |
 | … | | |
-| `dahlia_skill_v6_sheet.png` | 10 | 207 px |
+| `dahlia_skill_v7_sheet.png` | 11 | 209 px |
 | `dahlia_soul_sheet.png` | 16 | 167 px |
 | `dahlia_ragdoll_b_sheet.png` | 27 | 154 px |
 
@@ -741,8 +741,8 @@ smoother. Two things help. Exporting a dense sheet larger — a 25-pose sheet ne
 about 2.3× the width and height of an 8-pose one to hold the same detail. And
 drawing fewer poses on the same sheet, which is the same trade seen from the
 other side: the ranged animation went from 22 drawings to 12 and Dahlia grew
-from 169 px to 265, and the skill went 25 → 14 → 9 → 10 drawings while she
-went 157 → 175 → 209 → 207 px. Both read better for it, so the extra drawings were not
+from 169 px to 265, and the skill went 25 → 14 → 9 → 10 → 11 drawings while
+she went 157 → 175 → 209 → 207 → 209 px. Both read better for it, so the extra drawings were not
 buying much.
 
 In the meantime the sheets whose sprites come out under 200 px get a stronger
@@ -767,7 +767,7 @@ Above 100% is not a measurement error: flattening the noise *around* an edge
 raises that edge's measured contrast against its surroundings, so a correctly
 tuned bilateral filter leaves the drawing crisper rather than softer. The cliff
 is where it starts eating the drawing instead — everything past 10 on this
-sheet, where the earlier grainier sheets take 14.
+sheet and on v7, where the earlier grainier sheets take 14.
 
 ### `--denoise` was doing nothing at all
 
@@ -821,16 +821,34 @@ measured rather than guessed.
 
 ## An effect that blinks off for a beat
 
-The skill sheet's pose 4 carries no effect at all, and in reading order it falls
-between the thrust and the vortex — so the effect switches off for a beat and
-back on, which reads as a dropped frame rather than as an attack. Moved to the
-end of the cooldown, the whole clip fades monotonically instead: orb, vortex,
-peak, fading, wisps, faint wisps, nothing, ready.
+Three skill sheets in a row had a pose carrying no effect at all sitting in the
+middle of the effect's run — on v6, pose 4 fell between the thrust and the
+vortex, so the energy switched off for a beat and back on, which reads as a
+dropped frame rather than as an attack. Each was fixed by moving that pose into
+the cooldown, where it becomes part of the fade.
 
-Three skill sheets in a row have had this same defect in three different places,
-so it is worth checking on any sheet where the effect is drawn as a layer over
-the pose. Reading order is where the drawings sit, not necessarily the order
-they play in.
+`dahlia_skill_v7_sheet.png` is the first that needs no reordering: its effect
+runs none, glitch, orb, vortex, peak, wake, trail, none, none, straight down the
+reading order. Worth checking on any sheet where the effect is drawn as a layer
+over the pose — reading order is where the drawings sit, not necessarily the
+order they play in.
+
+## What actually makes a clip smooth
+
+Not the number of drawings — the *evenness* of the step between them. Measured
+as the mean pixel change from each drawing to the next:
+
+| | drawings | mean step | large steps |
+| --- | --- | --- | --- |
+| v6 | 10 | 93 | 4 of 9 |
+| v7 | 11 | 82 | 2 of 10 |
+
+One extra drawing, but a 12% smaller average step and half as many big jumps.
+The difference is where the drawings were spent: v6 crossed its whole vortex
+section in a run of four large steps, where v7 spends four drawings climbing
+into the peak and six coming down. A sheet with more poses concentrated in the
+part that moves fastest will always read smoother than one that spreads them
+evenly, and this is the measurement that shows it before anything is built.
 
 ## Slicing a sheet
 
