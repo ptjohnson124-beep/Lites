@@ -281,27 +281,31 @@ $BUILD out/dahlia_grab/frames -o out/dahlia_grab -n dahlia_grab \
   --shake 4:6 \
   --travel 1:0,2:0,3:26,4:14,5:8,6:2
 
-# Throw: the second half of the grab, from the same six drawings played in a
-# different order. Nothing about a pose fixes what it means — pose 3 is a full
-# forward extension with her hair streaming behind, which is the *reach* when
-# the arm is opening and the *release* when it is closing. Run 5, 4, 3, 2, 6, 1
-# it is a throw: she has them, she coils back, she hurls, she braces, she
-# settles.
+# Throw: its own eight-drawing sheet, replacing the version built by replaying
+# the grab sheet backwards. That trick worked — pose 3 there was the reach when
+# the arm was opening and the release when it was closing — but this sheet has
+# what a reordering cannot invent: a drawn motion-blur frame at the hurl, and a
+# separate arm-cocked-back pose to coil on. 374px tall.
 #
-# Timed on the coil rather than the release, which is what sells weight. The
-# wind-up holds 0.38s — the longest beat in either clip except the rests — and
-# the hurl itself is 0.13s. Travel goes negative first, 6px back on the coil,
-# before 30px forward on the release: the small move against the throw is what
-# makes the throw look like it cost something.
-$SLICE assets/dahlia_grab_sheet.png -o out/dahlia_throw \
-  --components --tol 3 --glow-tol 20 --glow-depth 3 --fill-holes 4 \
+# White background this time, which the keying handles at --tol 12 without help:
+# her hoodie is white too, but it is outlined all the way round, so the flood
+# has no path in. No --unmatte — there is nothing glowing on this sheet, and on
+# a white backdrop the "glow is brighter than the background" assumption it
+# rests on is meaningless.
+#
+# Timed on the coil, not the release. The wind-up holds 0.38s and the hurl is
+# 0.13s, and travel goes 8px backwards on the coil before 32px forward — a
+# small move against the throw is what makes the throw look like it cost
+# something.
+$SLICE assets/dahlia_throw_sheet.png -o out/dahlia_throw \
+  --components --tol 12 --glow-tol 0 --fill-holes 4 \
   --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_throw
 $BUILD out/dahlia_throw/frames -o out/dahlia_throw -n dahlia_throw \
-  --poses 5,4,3,2,6,1 \
-  --holds 10,9,3,6,8,12 \
+  --poses 3,5,6,4,7,2,1 \
+  --holds 10,9,3,5,6,7,12 \
   --fps 24 --breathe 0 --bob 2 --sway 2 \
-  --shake 3:6 \
-  --travel 5:0,4:-6,3:30,2:14,6:4,1:0
+  --shake 6:6 \
+  --travel 3:0,5:-8,6:32,4:22,7:14,2:6,1:0
 
 # Moving: a 12-drawing run cycle, replacing the 36-frame v3. Fewer drawings but
 # a much better cycle — v3 spent most of its length on stances and read as a
