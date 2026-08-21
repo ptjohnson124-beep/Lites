@@ -24,7 +24,8 @@ sheet lands, at which point the same two commands rebuild them.
 | **evasion** | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 56 frames, 2.8 s |
 | **getting hit** | `assets/dahlia_hit_v2_sheet.png`, 8 drawings | `out/dahlia_hit/` — 51 frames, 2.55 s |
 | **grab** | `assets/dahlia_grab_sheet.png`, 6 drawings | `out/dahlia_grab/` — 43 frames, 1.79 s |
-| **throw** | `assets/dahlia_throw_sheet.png`, 8 drawings | `out/dahlia_throw/` — 52 frames, 2.17 s |
+| **throw** | `assets/dahlia_throw_sheet.png`, 8 drawings | `out/dahlia_throw/` — 66 frames, 2.75 s |
+| **stagger** | `assets/dahlia_stagger_sheet.png`, 6 drawings | `out/dahlia_stagger/` — 46 frames, 1.92 s |
 | **ragdoll** | `assets/dahlia_ragdoll_b_sheet.png`, 27 drawings | `out/dahlia_ragdoll/` — 94 frames, 3.92 s |
 | **taunt** | `assets/dahlia_taunt_v2_sheet.png`, 12 drawings | `out/dahlia_taunt/` — 75 frames, 3.75 s |
 | **going insane** | `assets/dahlia_insane_b_sheet.png`, 16 drawings | `out/dahlia_insane/` — 68 frames, 3.4 s |
@@ -855,6 +856,24 @@ the coil: the wind-up holds 0.38s and the hurl is over in 0.13s. Travel does the
 same, going 8px *backwards* on the coil before 32px forward on the release. A
 small move against the throw is what makes the throw look like it cost
 something.
+
+## `--unmatte` is for grey sheets, not white ones
+
+The flag recovers an aura's real colour by treating each glow pixel as a mix of
+paint and backdrop, and it decides what counts as glow by one rule: glow emits,
+so it is brighter than what it was painted over. On the mid-grey sheets that is
+what separates the aura from her hair.
+
+Against a white sheet nothing is brighter than the background, and the rule
+inverts into a trap — the pixels nearest white are no longer the glow, they are
+her hoodie. Left at 45 on the stagger sheet it removed 8631 near-white pixels
+outright and turned 976 more half-transparent. It is off on every white-backdrop
+sheet here, and the daggers lose nothing by it: their teal is drawn in real
+colour rather than blended over the paper.
+
+Three backdrops now, three different keys. Mid-grey takes `--tol 14` and
+`--unmatte 45`; dark takes `--tol 3` and `--glow-tol 20` to clean the rim it
+leaves; white takes `--tol 12` and no unmatte at all.
 
 ## Keying a sheet drawn on a dark background
 

@@ -293,19 +293,46 @@ $BUILD out/dahlia_grab/frames -o out/dahlia_grab -n dahlia_grab \
 # a white backdrop the "glow is brighter than the background" assumption it
 # rests on is meaningless.
 #
-# Timed on the coil, not the release. The wind-up holds 0.38s and the hurl is
-# 0.13s, and travel goes 8px backwards on the coil before 32px forward — a
-# small move against the throw is what makes the throw look like it cost
-# something.
+# Timed on the coil and on the held release, not on the hurl. The wind-up holds
+# 0.54s and the extension after it 0.38s, while the hurl between them stays at
+# 0.13s: what sells a throw is the time either side of the fast frame, since the
+# fast frame is over before the eye resolves it. Travel goes 8px backwards on
+# the coil before 32px forward — a small move against the throw is what makes
+# the throw look like it cost something. 2.75s.
 $SLICE assets/dahlia_throw_sheet.png -o out/dahlia_throw \
   --components --tol 12 --glow-tol 0 --fill-holes 4 \
   --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_throw
 $BUILD out/dahlia_throw/frames -o out/dahlia_throw -n dahlia_throw \
   --poses 3,5,6,4,7,2,1 \
-  --holds 10,9,3,5,6,7,12 \
+  --holds 12,13,3,9,8,8,13 \
   --fps 24 --breathe 0 --bob 2 --sway 2 \
   --shake 6:6 \
   --travel 3:0,5:-8,6:32,4:22,7:14,2:6,1:0
+
+# Stagger: ready, the hit, the reel, dazed, recovering, ready. Six drawings and
+# no anticipation on the impact — you do not wind up to be hit, so pose 2 lands
+# straight out of the stance at 0.13s. The daze is where the time goes, 0.58s on
+# a single drawing, and the recovery is slower than the reel.
+#
+# --travel supplies what the sheet does not draw: she gives 22px of ground over
+# the reel and walks it back as she recovers. The drawings stay in place on
+# their sheet, so without it a stagger reads as a wobble rather than as being
+# knocked off balance.
+#
+# --unmatte 0, and that matters on a white sheet. The flag assumes glow is
+# brighter than the backdrop; against white nothing is, so instead of lifting
+# the aura it eats her hoodie — 8631 near-white pixels gone and 976 more turned
+# half-transparent when it was left at 45. The dagger's teal is drawn in real
+# colour here rather than blended over the paper, so it needs no help.
+$SLICE assets/dahlia_stagger_sheet.png -o out/dahlia_stagger \
+  --components --tol 12 --glow-tol 0 --fill-holes 4 \
+  --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_stagger
+$BUILD out/dahlia_stagger/frames -o out/dahlia_stagger -n dahlia_stagger \
+  --poses 1,2,3,4,5,6 \
+  --holds 6,3,5,14,8,10 \
+  --fps 24 --breathe 0 --bob 2 --sway 2 \
+  --shake 2:9,3:5,4:2 \
+  --travel 1:0,2:-14,3:-22,4:-18,5:-8,6:0
 
 # Moving: a 12-drawing run cycle, replacing the 36-frame v3. Fewer drawings but
 # a much better cycle — v3 spent most of its length on stances and read as a
