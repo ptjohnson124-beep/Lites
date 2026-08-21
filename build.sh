@@ -354,9 +354,10 @@ $BUILD out/dahlia_move/frames -o out/dahlia_move -n dahlia_move \
 # play the get-up. Replaces the 27-pose ragdoll sheet, on which Dahlia measured
 # 153px tall, the smallest in the project. On these she is 303px.
 #
-# The knockdown sheet was redrawn without the ground line the first version had,
-# so it needs no --panels at all. The get-up still carries one. The two detector
-# fixes that line forced are worth keeping either way, and are in the README: an
+# Both sheets were redrawn without the ground line the first versions carried,
+# so neither needs --panels — eight poses straight out of component
+# segmentation. The two detector fixes that line forced are worth keeping for
+# the next sheet that has one, and are in the README: an
 # absolute darkness threshold means nothing on a navy backdrop darker than the
 # threshold itself, and line uniformity has to be measured against the median,
 # because a ground line is uniform along its length and wild where eight pairs
@@ -391,7 +392,7 @@ $BUILD out/dahlia_ragdoll/frames -o out/dahlia_ragdoll -n dahlia_ragdoll \
 # Slow at the bottom and quickening as she rises: 0.42s face down, holds
 # shortening all the way up to the stance, then 0.5s to settle.
 $SLICE assets/dahlia_getup_sheet.png -o out/dahlia_getup \
-  --panels --components --component-min 3000 --tol 8 --glow-tol 0 --fill-holes 4 \
+  --components --component-min 3000 --tol 8 --glow-tol 0 --fill-holes 4 \
   --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_getup
 $BUILD out/dahlia_getup/frames -o out/dahlia_getup -n dahlia_getup \
   --poses 1,2,3,4,5,6,7,8 \
