@@ -190,27 +190,29 @@ $BUILD out/dahlia_skill/frames -o out/dahlia_skill -n dahlia_skill \
 # whatever plays it, and baking the ground into the loop would have her dash out
 # and slide back every cycle. The sheet gives one leap, one stride and one dash
 # smear; the rest are stances, so two of those close the loop.
-# Ranged attack, rebuilt from the v3 sheet, which fixes the problem at source:
-# it is drawn on flat grey rather than a checkerboard, its poses are spaced far
-# enough apart to segment on their own, and no pose lends a gun barrel into its
-# neighbour — so the forced grid, the --checker flatten and both --erase
-# rectangles the v2 build needed are all gone with it. 22 drawings against 12.
+# Ranged attack, from the v4 sheet: twelve drawings instead of v3's 22, and
+# nearly twice Dahlia's height in pixels because the sheet spends its area on
+# fewer poses. Rest, the gun summons out of her hand, two beats of aim, a dash,
+# the shot, the recoil, a grin, and back to rest. She carries 20px forward on
+# the dash and walks it back.
 #
-# Three are left out and one is resized. Pose 5 drops the gun for a single
-# frame between two aiming poses, which reads as the prop blinking. Pose 16 is a
-# figure tumbling head over heels: a ragdoll drawing that landed on the wrong
-# sheet. And the last row is drawn about 65% larger than the first — cutting
-# into it makes her balloon mid-action — so pose 21, the gold gun-summon and
-# the best drawing on the sheet, is scaled to match and used as the draw, while
-# 19, 20 and 22 are dropped as stances the first row already covers.
-$SLICE assets/dahlia_ranged_v3_sheet.jpg -o out/dahlia_ranged \
+# One --erase, seven pixels wide. Pose 2's gun barrel and pose 3's hair are
+# drawn overlapping — solidly, across six scanlines, so there is no gap for the
+# segmenter to find and the two poses arrive as a single island: one frame came
+# out empty and the other held two figures. Cutting the sheet on a forced 3x4
+# grid separates them but slices the muzzle blast off at the cell edge, which
+# is the one drawing on the sheet worth keeping whole. Severing the join
+# instead costs the outer rim of pose 2's muzzle on a motion-blurred frame and
+# nothing else: pose 3 keeps its hair, its blast, and no stray gun behind her.
+$SLICE assets/dahlia_ranged_v4_sheet.png -o out/dahlia_ranged \
+  --erase 571,110,578,170 \
   --components --tol 18 --glow-tol 0 --fill-holes 3 $CLEAN_SMALL --single dahlia_ranged
 $BUILD out/dahlia_ranged/frames -o out/dahlia_ranged -n dahlia_ranged \
-  --poses 1,21,2,3,4,6,7,8,9,10,11,12,13,14,15,17,18 \
-  --holds 6,6,3,3,3,3,3,3,3,4,2,8,4,4,4,5,8 \
-  --fps 24 --scale 21:62 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
-  --shake 12:8,13:4 \
-  --travel 1:0,21:0,2:0,3:0,4:0,6:0,7:2,8:6,9:8,10:10,11:20,12:24,13:16,14:10,15:6,17:2,18:0
+  --poses 9,7,1,5,2,3,4,8,6,10,11 \
+  --holds 8,5,4,4,2,7,4,5,4,5,8 \
+  --fps 24 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 3:8,4:4 \
+  --travel 9:0,7:0,1:0,5:0,2:14,3:20,4:12,8:6,6:2,10:0,11:0
 
 # Cyberpsychosis, new style, replacing the old-style build: eyes go, the face
 # corrupts, one flash of the double-headed glitch, a scream, then the gold surge

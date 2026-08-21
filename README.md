@@ -16,7 +16,7 @@ sheet lands, at which point the same two commands rebuild them.
 | **moving** | `assets/dahlia_move_v4_sheet.png`, 12 drawings | `out/dahlia_move/` — 24 frames, 0.8 s |
 | **attack** | `assets/dahlia_attack_b_sheet.png`, 8 drawings | `out/dahlia_attack/` — 33 frames, 1.65 s |
 | **spin combo** | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
-| **ranged attack** | `assets/dahlia_ranged_v3_sheet.jpg`, 22 drawings | `out/dahlia_ranged/` — 72 frames, 3.0 s |
+| **ranged attack** | `assets/dahlia_ranged_v4_sheet.png`, 12 drawings | `out/dahlia_ranged/` — 56 frames, 2.33 s |
 | **soul attack** | `assets/dahlia_soul_sheet.png`, 16 drawings | `out/dahlia_soul/` — 64 frames, 2.67 s |
 | **skill / special** | `assets/dahlia_skill_v3_sheet.jpg`, 25 drawings | `out/dahlia_skill/` — 90 frames, 3.75 s |
 | **block** | `assets/dahlia_block_v2_sheet.png`, 8 drawings | `out/dahlia_block/` — 44 frames, 2.2 s |
@@ -624,26 +624,33 @@ disembodied muzzle floated behind Dahlia at the exact moment she fires, and pose
 from artwork — they *are* artwork, just the pose next door's — so `--erase` takes
 sheet coordinates and paints the overspill out before anything is keyed.
 
-`dahlia_ranged_v3_sheet.jpg` fixes all of it at source: flat grey instead of a
-checkerboard, and poses spaced far enough apart to segment on their own. The
-forced grid, the `--checker` flatten and both `--erase` rectangles are gone with
-it, and `--erase` stays in the tool for the next sheet that needs it.
+The later ranged sheets fix most of it at source: flat grey instead of a
+checkerboard, so the `--checker` flatten is gone. `dahlia_ranged_v4_sheet.png`
+is the build — twelve drawings rather than v3's 22, and because a sheet is
+exported at roughly one size whatever it holds, spending its area on twelve
+poses puts Dahlia at 265 px tall against v3's 169. That is the single biggest
+quality gain available on this animation, and it comes from drawing fewer poses
+larger, not from anything the tools do.
+
+It still needs one `--erase`, seven pixels wide. Pose 2's gun barrel and pose
+3's hair are drawn overlapping — solidly, across six scanlines — so there is no
+gap for the segmenter to find and the two poses arrive as a single island: one
+frame came out empty and the other held two figures. Cutting on a forced 3x4
+grid separates them, but then the muzzle blast is sliced off at the cell edge,
+and that is the one drawing on the sheet worth keeping whole. Severing the join
+instead costs the outer rim of pose 2's muzzle on a motion-blurred frame and
+nothing else.
 
 ## When a sheet is drawn at two sizes
 
-The v3 ranged sheet's last row is about 65% larger than its first, and cutting
-between them makes Dahlia balloon mid-action. This cannot be normalised
+The v3 ranged sheet's last row was about 65% larger than its first, and cutting
+between them made Dahlia balloon mid-action. This cannot be normalised
 automatically: the obvious measure, silhouette height, is exactly what the
 animation is *supposed* to vary — a crouch is genuinely shorter than a stance,
 and flattening that would turn the clip into a mannequin. So `--scale` takes the
 factor per pose. It resizes about the pose's own centre and keeps the canvas, so
-alignment and travel downstream are unaffected.
-
-That buys back the best drawing on the sheet — the gold gun-summon, pose 21 —
-which is used as the draw at 62%. The three plain stances beside it are dropped,
-since the first row already covers them, along with pose 5 (the gun blinks out
-of her hand for a single frame between two aiming poses) and pose 16, a figure
-tumbling head over heels: a ragdoll drawing that landed on the wrong sheet.
+alignment and travel downstream are unaffected. The v4 sheet is drawn at one
+scale throughout and does not need it; the flag stays for the next one that does.
 
 ## Which ragdoll
 
