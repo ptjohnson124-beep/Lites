@@ -172,7 +172,7 @@ $BUILD out/dahlia_fully_insane_idle/frames -o out/dahlia_fully_insane_idle -n da
 
 # Special / skill: a frequency-wave dagger burst across three sheets and 22
 # drawings — the charge, the burst, the recovery. Replaces the 11-drawing v7
-# build. 4.29s.
+# build. 7.42s.
 #
 # Emphasis and fluidity are not in tension, as long as the right poses take the
 # extra time. What reads as choppy is a pose caught mid-movement and held; a
@@ -197,6 +197,15 @@ $BUILD out/dahlia_fully_insane_idle/frames -o out/dahlia_fully_insane_idle -n da
 # here is over 33000 body pixels, so the threshold can sit high enough to ignore
 # anything an --erase leaves behind.
 #
+# The beats, third pass. The three rings that gather on the dagger (poses 2, 3
+# and 4) each hold a full second, so each one is seen arriving on its own
+# rather than as one flicker of three; that puts three of the clip's seven and
+# a half seconds into the charge, which is deliberate. Against that the rings
+# sweeping around her body (5–7) drop to three frames each and the follow
+# through (13–15) to two, so the burst reads as fast as the charge is slow.
+# The dissipation runs the other way: 16–21 hold six to seven frames apiece,
+# 1.54s to fade where the previous cut took 0.79s.
+#
 # No --scale. The three sheets came back within a pixel of each other — her
 # effect-free stance measures 332px on the charge sheet and 332px on the
 # recovery sheet, which is the two-attachment continuity rule working as well as
@@ -218,7 +227,7 @@ python3 tools/merge_sheets.py out/dahlia_skill_charge/frames out/dahlia_skill_bu
   -o out/dahlia_skill -n dahlia_skill
 $BUILD out/dahlia_skill/frames -o out/dahlia_skill -n dahlia_skill \
   --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22 \
-  --holds 10,2,2,2,9,2,3,10,1,10,3,9,3,3,4,3,3,3,3,3,4,11 \
+  --holds 10,24,24,24,3,3,3,10,1,10,2,9,2,2,2,6,6,6,6,6,7,12 \
   --fps 24 --breathe 0 --bob 2 --sway 2 --stabilize none \
   --shake 10:6,11:8,12:5 \
   --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:6,10:14,11:18,12:16,13:12,14:8,15:4,16:2,17:0,18:0,19:0,20:0,21:0,22:0
