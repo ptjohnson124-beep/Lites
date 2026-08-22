@@ -1148,6 +1148,87 @@ the scaling and not from the sheet. Generate large and display small: the detail
 is kept and the steps still shrink. Generating small buys the same smoothness
 and throws away resolution that cannot be recovered.
 
+## The rig, which is not the animation pipeline
+
+`build_rig.sh` slices the three parts sheets, packs the pieces into one texture,
+and writes a Spine skeleton. It shares the slicer with everything else and
+nothing after it, because a rig piece wants the opposite of what an animation
+frame wants: its own tight crop and its own offset, not a shared canvas
+registered on her feet. So there is no `--align`, and `--component-min` drops
+from 20000 to a few thousand — a forearm is a fraction of a pose's ink. The head
+sheet needs it lower again, at 1200, because her eyes are two islands of about
+5000 pixels each and the threshold that stops a boot splitting drops them
+entirely.
+
+### Three coordinate systems, flipped in one place
+
+The pieces are described in image space, x right and **y down**, each anchor a
+fraction of that piece's own box. The layout in `rig/dahlia.json` is world
+space, x right and **y up**, origin on the ground between her boots — because
+that is the only frame a person can check. *Her knee is 504 pixels up* is
+verifiable; *her knee is 295 pixels along a bone rotated -90°* is not. Spine
+wants parent-relative, and a bone points along its own +X.
+
+Every flip happens in `attach()`. A limb gives two anchors — the joint it hangs
+from and the joint that hangs off it — and both the bone's length and the
+attachment's rotation fall out of them exactly: the proximal anchor must land on
+the bone's origin and the distal on its tip, which is one rotation and one
+translation with a closed-form solution. That is what lets a forearm drawn
+diagonally across its cell sit on a bone pointing straight down. The drawing's
+own angle is measured and then cancelled, and it is worth being clear that this
+rotation says nothing about which way the limb hangs — that is the bone's
+rotation, set separately from the layout, and confusing the two is what produced
+a first attempt with every limb lying horizontal.
+
+### The hierarchy has to be real
+
+The first version parented all 24 bones to root. It rendered a perfect bind
+pose and was not a skeleton: rotating the torso moved a rectangle of hoodie and
+left the head, the hair and both arms behind. Parent-relative transforms are a
+subtraction away from the world layout, so there is no reason to skip them:
+
+| turning the torso 20° moves | |
+| --- | --- |
+| head | 98.6 px |
+| hair tail | 195.2 px |
+| upper arm | 88.9 px |
+| hand | 87.6 px |
+| dagger | 112.3 px |
+| thigh, boot, hips | 0.0 px |
+
+The chain closes on itself as a check, too — `shin.x` is 295.0 against
+`thigh.length` 295.2, `boot.x` is 274.0 against `shin.length` 273.6. A child
+bone landing on its parent's tip is the arithmetic agreeing with itself.
+
+### Rendering the bind pose is the only real check
+
+A skeleton that is wrong by one rotation is perfectly plausible JSON. So
+`--preview` draws the bind pose with the same maths a runtime uses, and
+`--preview-anim` plays the generated idle through forward kinematics. Both
+caught real faults here that reading the file would not have.
+
+The idle is generated rather than keyed: one sine cycle per bone at different
+phase offsets and amplitudes, so the hair lags the shoulders and the shoulders
+lag the chest. That is the one kind of animation code is genuinely better at
+than a person, and it doubles as the cheapest possible proof that the skeleton
+imports and moves.
+
+### What comes out
+
+| file | for |
+| --- | --- |
+| `out/rig/dahlia.json` | Spine skeleton — File → Import Data in the editor |
+| `out/rig/images/` | 25 loose PNGs; Spine's JSON import resolves attachments against these |
+| `out/rig/dahlia.png` + `.atlas` | packed texture and libGDX atlas, for a runtime |
+| `out/rig/dahlia_bindpose.png` | the pose the numbers describe |
+| `out/rig/dahlia_idle.webp` | the generated idle, played through the hierarchy |
+
+What is *not* here is mesh deformation and weighting, which is what makes a
+Project Moon rig look like one, and which is hand work in the editor on a
+Professional licence. This gets the boring half done — 25 attachments placed,
+a hierarchy that carries, a bind pose that stands up — and leaves the half that
+needs judgement.
+
 ## Slicing a sheet
 
 `tools/slice_sheet.py` does not assume a uniform grid — these sheets have uneven
