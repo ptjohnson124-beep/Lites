@@ -20,3 +20,11 @@ $SLICE assets/dahlia_rig_legs_sheet.png -o out/rig_legs $KEY --component-min 400
 
 python3 tools/pack_atlas.py rig/dahlia.json -o out/rig -n dahlia
 python3 tools/rig_skeleton.py rig/dahlia.json -o out/rig -n dahlia --preview --preview-anim
+
+# The same file twice under two version claims. What this emits is the same
+# either way -- bones, slots, an array of skins, rotate timelines keyed on
+# "angle" -- so the only thing the version string changes is which editors
+# accept it without argument. 4.2 is what a current editor and current runtimes
+# expect; the 3.8 copy is there because a 4.x editor reads 3.8 and a 3.8 editor
+# cannot read 4.x, so one of the two always works.
+python3 tools/rig_skeleton.py rig/dahlia.json -o out/rig -n dahlia-3.8 --parts-name dahlia --spine 3.8.75

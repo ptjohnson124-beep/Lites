@@ -1207,17 +1207,53 @@ A skeleton that is wrong by one rotation is perfectly plausible JSON. So
 `--preview-anim` plays the generated idle through forward kinematics. Both
 caught real faults here that reading the file would not have.
 
-The idle is generated rather than keyed: one sine cycle per bone at different
-phase offsets and amplitudes, so the hair lags the shoulders and the shoulders
-lag the chest. That is the one kind of animation code is genuinely better at
-than a person, and it doubles as the cheapest possible proof that the skeleton
-imports and moves.
+### The idle: a dagger toss, and why the dagger had to leave the hand
+
+The idle is a standing flourish — she dips, flicks the dagger up past her head,
+watches it turn over, and catches it. It is generated, not keyed, and it forced
+one structural change.
+
+**A child bone inherits its parent's transform, so a dagger parented to the hand
+can never leave it.** No amount of animation fixes that; it is what parenting
+means. So the dagger hangs off the hip instead, and its timeline is *baked*:
+while she is holding it, every key is written from wherever the hand actually is
+that frame, and while it is in the air it follows a parabola between the release
+and the catch. Baking is the only way to hold a prop that is not parented to the
+hand holding it, and not parenting it is the only way to let go. Doing that by
+hand is 33 keyframes of hand-matching; here it is a function call, because the
+same forward kinematics that renders the preview can be asked where the hand
+will be.
+
+Three things fall out of generating it that are worth having:
+
+- **The loop closes exactly.** Measured at both ends: 0.000 px of gap between
+  hand and dagger, 0.000 px of height, 0.000° of rotation. An idle that does not
+  close pops every 2.5 seconds forever.
+- **The spin is unwrapped.** A runtime lerps whatever number it is given, so a
+  rotation crossing 360° has to keep counting rather than wrap, or the dagger
+  snaps backwards mid-flight. The generator carries the accumulated angle.
+- **Her hand opens.** The parts sheet drew an open hand as well as a fist, so a
+  slot timeline swaps them one frame after the release and back on the catch.
+
+The body underneath is the same sine-per-bone settle at different phase offsets,
+so the hair lags the shoulders and the shoulders lag the chest — the one kind of
+animation code is genuinely better at than a person.
+
+### Which Spine version
+
+Both. `dahlia.json` claims 4.2 and `dahlia-3.8.json` claims 3.8.75, and they are
+otherwise the same file. What this emits — bones, slots, an array of skins,
+rotate timelines keyed on `angle` — is unchanged across those versions, so the
+version string is the only thing that decides which editors accept it without
+argument. A 4.x editor reads 3.8 data and a 3.8 editor cannot read 4.x, so
+between the two one always imports.
 
 ### What comes out
 
 | file | for |
 | --- | --- |
-| `out/rig/dahlia.json` | Spine skeleton — File → Import Data in the editor |
+| `out/rig/dahlia.json` | Spine skeleton, 4.2 — File → Import Data in the editor |
+| `out/rig/dahlia-3.8.json` | the same skeleton claiming 3.8, for an older editor |
 | `out/rig/images/` | 25 loose PNGs; Spine's JSON import resolves attachments against these |
 | `out/rig/dahlia.png` + `.atlas` | packed texture and libGDX atlas, for a runtime |
 | `out/rig/dahlia_bindpose.png` | the pose the numbers describe |

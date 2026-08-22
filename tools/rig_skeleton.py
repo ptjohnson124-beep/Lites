@@ -143,41 +143,157 @@ def build(cfg, parts):
     return bones, slots, skin, geom
 
 
-def breathe(cfg, geom):
-    """A two-second idle, built out of numbers rather than keyed by hand.
+def curve(stops):
+    """Keyframes from (time, value) pairs, in the shape Spine's rotate wants."""
+    return [{"time": round(t, 4), "angle": round(v, 2)} for t, v in stops]
 
-    This is the one kind of animation code is better at than a person: a settle
-    that never quite repeats, made of the same cycle at different offsets per
-    bone so the hair lags the shoulders and the shoulders lag the chest. It is
-    also the cheapest possible proof that the skeleton imports and moves.
+
+def transforms(bones, order, timelines, t):
+    """Forward kinematics: every bone's world transform at time t.
+
+    The same composition a runtime performs — a bone's world transform is its
+    parent's, composed with its own setup transform plus whatever the timeline
+    adds this frame. Having it here is what makes a thrown weapon possible:
+    the hand's world position can be asked for at any instant, and the dagger
+    written to match it.
     """
-    lag = {"torso": 0.0, "head": 0.15, "hood": 0.1,
-           "hair-crown": 0.2, "hair-fringe": 0.25, "hair-tail": 0.35,
-           "hair-strand-l": 0.4, "hair-strand-r": 0.45,
-           "arm-upper": 0.2, "arm-fore": 0.35, "hand-fist": 0.45,
-           "arm-upper-far": 0.25, "arm-fore-far": 0.4}
-    amp = {"torso": 0.6, "head": 0.9, "hood": 1.2,
-           "hair-crown": 1.0, "hair-fringe": 1.4, "hair-tail": 2.6,
-           "hair-strand-l": 3.2, "hair-strand-r": 3.0,
-           "arm-upper": 1.1, "arm-fore": 1.6, "hand-fist": 1.9,
-           "arm-upper-far": 1.0, "arm-fore-far": 1.5}
-    period, steps = 2.0, 8
     out = {}
-    for name in cfg["draw_order"]:
-        if name not in lag:
+    for name in order:
+        b = bones[name]
+        lx, ly, lr = b.get("x", 0.0), b.get("y", 0.0), b.get("rotation", 0.0)
+        keys = timelines.get(name, {})
+        if "rotate" in keys:
+            lr += sample(keys["rotate"], t, ["angle"])[0]
+        if "translate" in keys:
+            dx, dy = sample(keys["translate"], t, ["x", "y"])
+            lx, ly = lx + dx, ly + dy
+        if "parent" not in b:
+            out[name] = {"pos": (0.0, 0.0), "rot": 0.0}
             continue
-        keys = []
-        for i in range(steps + 1):
-            t = period * i / steps
-            phase = 2 * math.pi * (i / steps - lag[name])
-            keys.append({"time": round(t, 3),
-                         "angle": round(amp[name] * math.sin(phase), 2)})
-        out[name] = {"rotate": keys}
-    lift = [{"time": 0.0, "x": 0, "y": 0},
-            {"time": 1.0, "x": 0, "y": -3},
-            {"time": 2.0, "x": 0, "y": 0}]
-    out.setdefault("torso", {})["translate"] = lift
-    return {"bones": out}
+        pw = out[b["parent"]]
+        off = rot((lx, ly), pw["rot"])
+        out[name] = {"pos": (pw["pos"][0] + off[0], pw["pos"][1] + off[1]),
+                     "rot": pw["rot"] + lr}
+    return out
+
+
+# The beat, in seconds. A trick is anticipation, release, flight, catch,
+# absorb, settle — and because this is an idle it has to close exactly on
+# itself, so the last value of every timeline equals the first.
+LOOP, TOSS, CATCH = 2.5, 0.65, 1.35
+APEX = 700.0            # how far above the hand the dagger gets
+FLIPS = 1               # whole turns in the air; a half turn lands blade-first
+
+
+def toss_animation(bones, order, fps=24):
+    """A standing idle with a dagger toss, generated rather than keyed.
+
+    Two halves. The body and arm are ordinary rotation curves. The dagger is
+    *baked*: while she is holding it, its timeline is written from wherever the
+    hand actually is that frame, and while it is in the air it follows a
+    parabola between the release and the catch. Baking is the only way to hold
+    a prop that is not parented to the hand holding it, and not parenting it is
+    the only way to let go.
+    """
+    lag = {"torso": 0.0, "head": 0.18, "hood": 0.12,
+           "hair-crown": 0.22, "hair-fringe": 0.28, "hair-tail": 0.38,
+           "hair-strand-l": 0.42, "hair-strand-r": 0.46,
+           "arm-upper-far": 0.25, "arm-fore-far": 0.4}
+    amp = {"torso": 0.5, "head": 0.8, "hood": 1.0,
+           "hair-crown": 0.9, "hair-fringe": 1.2, "hair-tail": 2.4,
+           "hair-strand-l": 2.8, "hair-strand-r": 2.6,
+           "arm-upper-far": 0.9, "arm-fore-far": 1.3}
+    tl = {}
+    steps = 10
+    for name in lag:
+        if name not in bones:
+            continue
+        tl[name] = {"rotate": curve(
+            [(LOOP * i / steps,
+              amp[name] * math.sin(2 * math.pi * (i / steps - lag[name])))
+             for i in range(steps + 1)])}
+
+    # The throwing arm. Down into the anticipation, up through the release,
+    # back to guard, up again to meet the dagger, and down as it is absorbed.
+    tl.setdefault("hand-fist", {})["rotate"] = curve([
+        (0.0, 0.0), (0.42, -18.0), (TOSS, 44.0), (0.85, 10.0), (1.15, 0.0),
+        (CATCH, 30.0), (1.58, -14.0), (1.95, 3.0), (LOOP, 0.0)])
+    tl.setdefault("arm-fore", {})["rotate"] = curve([
+        (0.0, 0.0), (0.42, -9.0), (TOSS, 24.0), (0.90, 5.0), (1.15, 0.0),
+        (CATCH, 16.0), (1.58, -8.0), (1.98, 1.0), (LOOP, 0.0)])
+    tl.setdefault("arm-upper", {})["rotate"] = curve([
+        (0.0, 0.0), (0.42, -4.0), (TOSS, 11.0), (1.00, 0.0),
+        (CATCH, 8.0), (1.58, -4.0), (2.05, 0.0), (LOOP, 0.0)])
+    # Her weight settles as the dagger leaves and again as it lands.
+    tl.setdefault("hip", {})["translate"] = [
+        {"time": 0.0, "x": 0, "y": 0}, {"time": TOSS, "x": 0, "y": 4},
+        {"time": 1.0, "x": 0, "y": 0}, {"time": 1.58, "x": 0, "y": -6},
+        {"time": 2.0, "x": 0, "y": 0}, {"time": LOOP, "x": 0, "y": 0}]
+    # She watches it go up and come down.
+    tl["head"]["rotate"] = curve([
+        (0.0, 0.0), (TOSS, -6.0), (1.0, -13.0), (CATCH, -3.0),
+        (1.7, 2.0), (LOOP, 0.0)])
+
+    # Where the dagger sits in the hand, measured once from the setup pose so
+    # the grip is wherever the art actually put it.
+    rest = transforms(bones, order, {}, 0.0)
+    hand, dag = rest["hand-fist"], rest["dagger"]
+    grip = rot((dag["pos"][0] - hand["pos"][0], dag["pos"][1] - hand["pos"][1]),
+               -hand["rot"])
+    grip_rot = dag["rot"] - hand["rot"]
+
+    def held(t):
+        w = transforms(bones, order, tl, t)["hand-fist"]
+        off = rot(grip, w["rot"])
+        return (w["pos"][0] + off[0], w["pos"][1] + off[1]), w["rot"] + grip_rot
+
+    launch, land = held(TOSS), held(CATCH)
+    span = CATCH - TOSS
+
+    def flight(t):
+        u = (t - TOSS) / span
+        x = launch[0][0] + (land[0][0] - launch[0][0]) * u
+        # A parabola through both hands with its apex APEX above the line
+        # between them: the arc a thrown thing actually takes.
+        y = launch[0][1] + (land[0][1] - launch[0][1]) * u + 4 * APEX * u * (1 - u)
+        # A whole number of turns so it arrives grip-first, the way it left.
+        turn = launch[1] + ((land[1] - launch[1]) + 360.0 * FLIPS) * u
+        return (x, y), turn
+
+    # Sample every frame in the air, every third while held: the arc needs the
+    # resolution and the hand-tracking does not.
+    times = []
+    n = int(round(LOOP * fps))
+    for i in range(n + 1):
+        t = min(i / fps, LOOP)
+        if TOSS <= t <= CATCH or i % 3 == 0 or i == n:
+            times.append(round(t, 4))
+    times = sorted(set(times))
+
+    dbone = bones["dagger"]
+    trans, rots, prev = [], [], None
+    for t in times:
+        pos, ang = flight(t) if TOSS < t < CATCH else held(t)
+        hip = transforms(bones, order, tl, t)["hip"]
+        local = rot((pos[0] - hip["pos"][0], pos[1] - hip["pos"][1]), -hip["rot"])
+        # Timelines carry the offset from the setup pose, not the pose itself.
+        trans.append({"time": t, "x": round(local[0] - dbone.get("x", 0.0), 2),
+                      "y": round(local[1] - dbone.get("y", 0.0), 2)})
+        a = ang - hip["rot"] - dbone.get("rotation", 0.0)
+        # Keep the curve continuous: a runtime lerps the number it is given, so
+        # unwrapping is what makes the spin turn one way instead of snapping.
+        if prev is not None:
+            a -= 360.0 * round((a - prev) / 360.0)
+        prev = a
+        rots.append({"time": t, "angle": round(a, 2)})
+    tl["dagger"] = {"translate": trans, "rotate": rots}
+
+    # Her hand opens the moment it lets go and closes on the catch.
+    slots = {"hand-fist": {"attachment": [
+        {"time": 0.0, "name": "hand-fist"},
+        {"time": round(TOSS + 1.0 / fps, 4), "name": "hand-open"},
+        {"time": round(CATCH, 4), "name": "hand-fist"}]}}
+    return {"bones": tl, "slots": slots}
 
 
 def preview(cfg, parts, geom, atlas_dir, out_path):
@@ -227,7 +343,7 @@ def sample(keys, t, fields):
     return [keys[-1].get(f, 0.0) for f in fields]
 
 
-def render_animation(skel, imgs, anim, path, fps=24, seconds=2.0, scale=1.0):
+def render_animation(skel, imgs, anim, path, fps=24, seconds=LOOP, scale=1.0):
     """Play the generated animation with the same forward kinematics a runtime uses.
 
     Every bone's world transform is its parent's, composed with its own local
@@ -238,34 +354,29 @@ def render_animation(skel, imgs, anim, path, fps=24, seconds=2.0, scale=1.0):
     order = [b["name"] for b in skel["bones"]]
     bones = {b["name"]: b for b in skel["bones"]}
     tl = skel["animations"][anim]["bones"]
+    swaps = skel["animations"][anim].get("slots", {})
+
+    def shown(slot, t):
+        keys = swaps.get(slot["name"], {}).get("attachment")
+        if not keys:
+            return slot["attachment"]
+        name = slot["attachment"]
+        for k in keys:
+            if k["time"] <= t:
+                name = k["name"]
+        return name
     W, H, GY = 1400, 2000, 1900
     frames = []
     for i in range(int(round(seconds * fps))):
         t = i / fps
-        wt = {}
-        for name in order:
-            b = bones[name]
-            lx, ly = b.get("x", 0.0), b.get("y", 0.0)
-            lr = b.get("rotation", 0.0)
-            keys = tl.get(name, {})
-            if "rotate" in keys:
-                lr += sample(keys["rotate"], t, ["angle"])[0]
-            if "translate" in keys:
-                dx, dy = sample(keys["translate"], t, ["x", "y"])
-                lx, ly = lx + dx, ly + dy
-            if "parent" not in b:
-                wt[name] = {"pos": (0.0, 0.0), "rot": 0.0}
-                continue
-            pw = wt[b["parent"]]
-            off = rot((lx, ly), pw["rot"])
-            wt[name] = {"pos": (pw["pos"][0] + off[0], pw["pos"][1] + off[1]),
-                        "rot": pw["rot"] + lr}
+        wt = transforms(bones, order, tl, t)
         canvas = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         for slot in skel["slots"]:
-            att = skel["skins"][0]["attachments"][slot["name"]][slot["attachment"]]
+            name = shown(slot, t)
+            att = skel["skins"][0]["attachments"][slot["name"]][name]
             w = wt[slot["bone"]]
-            turned = imgs[slot["attachment"]].rotate(w["rot"] + att["rotation"],
-                                                     expand=True, resample=Image.BICUBIC)
+            turned = imgs[name].rotate(w["rot"] + att["rotation"],
+                                       expand=True, resample=Image.BICUBIC)
             ox, oy = rot((att["x"], att["y"]), w["rot"])
             cx = W / 2 + w["pos"][0] + ox
             cy = GY - w["pos"][1] - oy
@@ -301,21 +412,31 @@ def main():
                     help="also render the bind pose the numbers describe")
     ap.add_argument("--preview-anim", action="store_true",
                     help="also play the generated animation through the hierarchy")
+    ap.add_argument("--parts-name",
+                    help="basename of the .parts.json to read; defaults to --name. "
+                         "Set it when writing a second skeleton beside the first.")
+    ap.add_argument("--spine", default="4.2.00",
+                    help="version string written into the skeleton; the format "
+                         "this emits is the same either way, only the claim differs")
     ap.add_argument("--preview-scale", type=float, default=0.4,
                     help="scale of the animated preview; the rig itself is unaffected")
     args = ap.parse_args()
 
     cfg = json.load(open(args.config, encoding="utf-8"))
-    parts = json.load(open(os.path.join(args.outdir, f"{args.name}.parts.json"),
+    parts = json.load(open(os.path.join(args.outdir,
+                                        f"{args.parts_name or args.name}.parts.json"),
                            encoding="utf-8"))
     bones, slots, skin, geom = build(cfg, parts)
+    by_name = {b["name"]: b for b in bones}
+    order = [b["name"] for b in bones]
+    anim = toss_animation(by_name, order)
 
     xs = [b["x"] for b in bones[1:]]
     ys = [b["y"] for b in bones[1:]]
     skel = {
         "skeleton": {
             "hash": hashlib.sha1(json.dumps(cfg, sort_keys=True).encode()).hexdigest()[:11],
-            "spine": "3.8.75",
+            "spine": args.spine,
             "x": round(min(xs) - 200, 2), "y": 0,
             "width": round(max(xs) - min(xs) + 400, 2),
             "height": round(max(ys) + 400, 2),
@@ -324,7 +445,7 @@ def main():
         "bones": bones,
         "slots": slots,
         "skins": [{"name": "default", "attachments": skin}],
-        "animations": {"idle": breathe(cfg, geom)},
+        "animations": {"idle": anim},
     }
     os.makedirs(args.outdir, exist_ok=True)
     path = os.path.join(args.outdir, f"{args.name}.json")

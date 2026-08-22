@@ -492,7 +492,7 @@
   "arm-upper": "torso",
   "arm-fore": "arm-upper",
   "hand-fist": "arm-fore",
-  "dagger": "hand-fist",
+  "dagger": "hip",
   "arm-upper-far": "torso",
   "arm-fore-far": "arm-upper-far"
  }
