@@ -17,7 +17,7 @@ sheet lands, at which point the same two commands rebuild them.
 | **attack** | `assets/dahlia_attack_b_sheet.png`, 8 drawings | `out/dahlia_attack/` — 33 frames, 1.65 s |
 | **spin combo** | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
 | **ranged attack** | `assets/dahlia_ranged_v4_sheet.png`, 12 drawings | `out/dahlia_ranged/` — 56 frames, 2.33 s |
-| **soul attack** | `assets/dahlia_soul_sheet.png`, 16 drawings | `out/dahlia_soul/` — 64 frames, 2.67 s |
+| **soul attack** | `assets/dahlia_soul_charge_sheet.png` + `..._slash_sheet.png`, 15 drawings | `out/dahlia_soul/` — 92 frames, 3.83 s |
 | **skill / special** | `assets/dahlia_skill_v7_sheet.png`, 11 drawings | `out/dahlia_skill/` — 88 frames, 3.67 s |
 | **block** | `assets/dahlia_block_v2_sheet.png`, 8 drawings | `out/dahlia_block/` — 44 frames, 2.2 s |
 | **counter** | `assets/dahlia_counter_v2_sheet.png`, 10 drawings | `out/dahlia_counter/` — 67 frames, 3.35 s |
@@ -731,7 +731,7 @@ large: measuring Dahlia's own height in the finished frames,
 | `dahlia_attack_b_sheet.png` | 8 | 342 px |
 | … | | |
 | `dahlia_skill_v7_sheet.png` | 11 | 209 px |
-| `dahlia_soul_sheet.png` | 16 | 167 px |
+| `dahlia_soul_charge_sheet.png` + slash | 15 | 363 px |
 | `dahlia_ragdoll_b_sheet.png` | 27 | 154 px *(retired)* |
 
 A sheet is exported at roughly one size whatever it holds, so the more poses it
@@ -875,6 +875,27 @@ colour rather than blended over the paper.
 Three backdrops now, three different keys. Mid-grey takes `--tol 14` and
 `--unmatte 45`; dark takes `--tol 3` and `--glow-tol 20` to clean the rim it
 leaves; white takes `--tol 12` and no unmatte at all.
+
+## Joining two sheets into one clip
+
+The knockdown and the get-up build as two clips because there is a state between
+them — the character stays down for as long as the game says. The soul attack
+has no such gap: the charge runs straight into the slash, so its two sheets
+build as one fifteen-drawing animation, and that needs both slices on a single
+canvas.
+
+Padding to the larger of the two is not enough. Each slice is centred on its own
+bounding box, and that box is dominated by whatever the effects are doing — a
+fire disc reaches a long way right, a slash crescent a long way left — so
+box-centred poses drag the character sideways at the seam. `tools/merge_sheets.py`
+anchors on her *body* instead: the horizontal mean and the lowest row of the
+pixels that are neither fire nor teal. All fifteen poses then land on the same
+anchor to the pixel.
+
+The residual scale difference is handled separately. Measured by body pixel
+count with the effects masked out, the two sheets are drawn 6% apart, so the
+charge — the larger — is scaled to 94%. Downscaling is the right direction: it
+sharpens where upscaling would soften.
 
 ## Finding a ground line the sprites are standing on
 
