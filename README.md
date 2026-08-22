@@ -21,7 +21,7 @@ sheet lands, at which point the same two commands rebuild them.
 | **skill / special** | `assets/dahlia_skill_charge_sheet.png` + burst + recover, 22 drawings | `out/dahlia_skill/` — 178 frames, 7.42 s |
 | **block** | `assets/dahlia_block_v2_sheet.png`, 8 drawings | `out/dahlia_block/` — 44 frames, 2.2 s |
 | **counter** | `assets/dahlia_counter_v2_sheet.png`, 10 drawings | `out/dahlia_counter/` — 67 frames, 3.35 s |
-| **evasion** | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 56 frames, 2.8 s |
+| **evasion** | `assets/dahlia_dodge_a_sheet.png` + b, 15 drawings | `out/dahlia_dodge/` — 56 frames, 2.33 s |
 | **getting hit** | `assets/dahlia_hit_v2_sheet.png`, 8 drawings | `out/dahlia_hit/` — 51 frames, 2.55 s |
 | **grab** | `assets/dahlia_grab_sheet.png`, 6 drawings | `out/dahlia_grab/` — 43 frames, 1.79 s |
 | **throw** | `assets/dahlia_throw_sheet.png`, 8 drawings | `out/dahlia_throw/` — 66 frames, 2.75 s |
@@ -102,9 +102,9 @@ rests at the ends and passes quickly through the action: the ratio between the
 longest and shortest hold is 10× on the counter, 6× on the evasion and 4× on the
 taunt, where before it was closer to 3×.
 
-**`dahlia_dodge`** — thirteen drawings, not twelve: the top row of that sheet
-holds five, which the segmenter found on its own. She gives 34 px of ground at
-the furthest point of the evade and walks it back over the recovery.
+**`dahlia_dodge`** — rebuilt from two sheets and fifteen drawings; see *The
+dodge, rebuilt* below. She gives 34 px of ground at the furthest point of the
+evade and walks it back over the recovery.
 
 **`dahlia_counter`** — she closes 29 px, the counter lands with a 6 px jolt, and
 the gold-aura frame holds 0.4 s at the peak. Its sheet needed a new tool: see
@@ -628,6 +628,23 @@ the wide one swallowed it, and one frame came out empty while another held two
 characters. The rule is now the *smallest* containing rect, which is always the
 one the figure belongs to.
 
+There is a third failure, and the dodge sheet found it. When two poses are
+bridged — her hair reaches from one into the next — they arrive as one island,
+and the valley split gives them a rect each. Ownership was still decided per
+*island*, by its centre, so both figures went to whichever rect the centre
+happened to land in and the other frame came out with **four pixels** in it. The
+frame was not empty because of overlap; it was empty because the split that
+separated the boxes never separated the ink.
+
+An island is now divided along the rects, but only when there is a second
+figure's worth of ink to divide. That qualifier is the whole rule: an effect
+spilling into a neighbour's cell overlaps exactly the same way, and dividing on
+overlap alone would hand a pose's own glow to the pose next door. The test is
+mass, not geometry — a spilled effect is a small share of its island, a fused
+figure is half of it — so the threshold is the same one the valley split uses,
+half a typical island. Every one of the fourteen sheets already in the project
+re-slices to byte-identical frames under the new rule.
+
 Where two poses genuinely fuse into one island — the ranged sheet's lunge and
 its muzzle blast — no ownership rule helps, because there is only one island.
 That sheet is cut on a forced 3x4 grid instead, verified to clip nothing.
@@ -656,6 +673,33 @@ grid separates them, but then the muzzle blast is sliced off at the cell edge,
 and that is the one drawing on the sheet worth keeping whole. Severing the join
 instead costs the outer rim of pose 2's muzzle on a motion-blurred frame and
 nothing else.
+
+## The dodge, rebuilt
+
+The v2 dodge drew Dahlia 219 px tall — the smallest sprite in the set and the
+last item on the redo list. Its replacement is two sheets and fifteen drawings.
+
+Sheet A is the spin, and it carries the clip: front, weight shift, push-off with
+smear streaks through her hair and legs, profile away, full back, profile
+returning, turning through her hair, front again. Eight drawings is what a 360
+costs. The two sheets came back 317 px and 309 px for the same stance, 2.6%
+apart — the closest any pair has landed, and close enough that no `--scale` is
+needed at all.
+
+Sheet B is thin, and it is worth being precise about why. Its poses 3 to 7
+measure 281x319, 299x326, 299x323, 305x323 and 309x323: one stance with the face
+changing. So a whole sheet buys four things — the landing, the rise, the wink,
+the drop of the guard — and the wink is the one that matters. It is built in
+whole anyway, because the near-copies still give the wink a beat of settle on
+either side, and the cost of keeping them is 0.3 s.
+
+Two faults are in the drawings and nothing in the pipeline can reach them. The
+landing crouch and the final pose come back with **zero** teal pixels where
+every neighbour carries about 2000 — her hand is simply empty, which is the
+prop-continuity failure the sheet prompt exists to prevent. And the landing
+crouch is pose 2 of sheet B, so it plays after she has already stood up out of
+the spin: she lands twice. At 24 fps the second reads as an absorb rather than
+an error, but the spin should have ended low.
 
 ## When a sheet is drawn at two sizes
 
@@ -732,6 +776,8 @@ large: measuring Dahlia's own height in the finished frames,
 | … | | |
 | `dahlia_skill_charge_sheet.png` + 2 | 22 | 332 px |
 | `dahlia_soul_charge_sheet.png` + slash | 15 | 363 px |
+| `dahlia_dodge_a_sheet.png` + b | 15 | 317 px |
+| `dahlia_dodge_v2_sheet.png` | 13 | 219 px *(retired)* |
 | `dahlia_ragdoll_b_sheet.png` | 27 | 154 px *(retired)* |
 
 A sheet is exported at roughly one size whatever it holds, so the more poses it

@@ -117,14 +117,45 @@ $BUILD out/dahlia_attack_spin/frames -o out/dahlia_attack_spin -n dahlia_attack_
 # Evasion, counter and taunt in the new style, replacing their old-style builds
 # at the same output paths.
 #
-# Evasion: thirteen drawings, not twelve — the top row of this sheet holds five.
-# She gives 34px of ground at the furthest point and walks it back.
-$SLICE assets/dahlia_dodge_v2_sheet.png -o out/dahlia_dodge \
-  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_dodge
+# Evasion is rebuilt from two sheets and 15 drawings. The v2 sheet it replaces
+# drew her 219px tall, the smallest in the set; these two are 317px and 309px
+# for the same stance, 2.6% apart, so no --scale is needed — the closest two
+# sheets have ever landed.
+#
+# Sheet A is the spin and carries the whole animation: front, weight shift,
+# push-off with smear streaks, profile away, full back, profile returning,
+# turning through her hair, front. Eight drawings is what a 360 costs; at seven
+# it snaps.
+#
+# Sheet B is thin. Its poses 3 to 7 measure 281x319, 299x326, 299x323, 305x323
+# and 309x323 — one stance with the face changing — so all it really adds is
+# the landing, the rise, the wink and the drop of the guard. It is built in
+# whole rather than trimmed because the near-copies still buy a half-frame of
+# settle either side of the wink, and the wink is the point of the clip.
+#
+# Two drawings are missing the dagger: the landing crouch and the last pose
+# come back with zero teal pixels where their neighbours carry about 2000. That
+# is the art, not the key, and there is nothing the pipeline can do about it.
+#
+# Her hair bridges the last two poses of sheet A into one island. The valley
+# split separates them; before the ownership fix in slice_sheet.py the whole
+# island went to the rect its centre fell in and pose 7 came out with four
+# pixels in it.
+$SLICE assets/dahlia_dodge_a_sheet.png -o out/dahlia_dodge_a \
+  --components --component-min 8000 --cluster-gap 14 --tol 3 --glow-tol 20 --glow-depth 3 \
+  --fill-holes 4 --despeckle 24 --denoise 10 --unmatte 0 --align silhouette \
+  --single dahlia_dodge_a
+$SLICE assets/dahlia_dodge_b_sheet.png -o out/dahlia_dodge_b \
+  --components --component-min 8000 --cluster-gap 14 --tol 3 --glow-tol 20 --glow-depth 3 \
+  --fill-holes 4 --despeckle 24 --denoise 10 --unmatte 0 --align silhouette \
+  --single dahlia_dodge_b
+python3 tools/merge_sheets.py out/dahlia_dodge_a/frames out/dahlia_dodge_b/frames \
+  --skip-first out/dahlia_dodge_b/frames -o out/dahlia_dodge -n dahlia_dodge
 $BUILD out/dahlia_dodge/frames -o out/dahlia_dodge -n dahlia_dodge \
-  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13 --holds 12,3,2,2,2,2,3,5,3,3,4,5,10 \
-  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
-  --travel 1:0,2:0,3:-8,4:-18,5:-28,6:-34,7:-30,8:-20,9:-12,10:-6,11:-2,12:0,13:0
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 \
+  --holds 8,2,2,2,2,2,2,3,4,2,2,3,9,3,10 \
+  --fps 24 --breathe 0 --bob 2 --sway 2 --stabilize none \
+  --travel 1:0,2:-4,3:-16,4:-28,5:-34,6:-30,7:-22,8:-14,9:-8,10:-4,11:-2,12:0,13:0,14:0,15:0
 
 # Counter: exported with transparency and saved as JPEG, so the editor's
 # checkerboard is baked into the pixels — --checker flattens it back to one

@@ -676,8 +676,32 @@ def frames_from_components(mask, min_px, gap=10):
                 area = (x1 - x0) * (y1 - y0)
                 if best_area is None or area < best_area:
                     best, best_area = n, area
-        if best:
-            owner[lab == lbl] = best
+        if not best:
+            continue
+
+        # Two poses joined by a wisp of hair are one island, and the valley
+        # split above has already given them a rect each. Handing the whole
+        # island to the rect its centre falls in then empties the other frame —
+        # on the dodge sheet her hair bridged the last two poses and the
+        # seventh came out with four pixels in it. An effect spilling into a
+        # neighbour's cell looks identical by box overlap alone, so the test is
+        # how much ink lands on the far side: a spilled effect is a small share
+        # of its island, a second figure is a whole figure's worth. Only then
+        # is the island divided along the rects instead of going whole.
+        here = lab == lbl
+        enough = max(min_px, typical * 0.5)
+        also = [n for n, (x0, y0, x1, y1) in enumerate(flat_rects, 1)
+                if n != best and here[y0:y1, x0:x1].sum() >= enough]
+        if not also:
+            owner[here] = best
+            continue
+        for n in sorted([best] + also,
+                        key=lambda n: ((flat_rects[n - 1][2] - flat_rects[n - 1][0]) *
+                                       (flat_rects[n - 1][3] - flat_rects[n - 1][1]))):
+            x0, y0, x1, y1 = flat_rects[n - 1]
+            mine = here[y0:y1, x0:x1] & (owner[y0:y1, x0:x1] == 0)
+            owner[y0:y1, x0:x1][mine] = n
+        owner[here & (owner == 0)] = best
     return ordered, owner
 
 
