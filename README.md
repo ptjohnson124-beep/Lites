@@ -18,7 +18,7 @@ sheet lands, at which point the same two commands rebuild them.
 | **spin combo** | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
 | **ranged attack** | `assets/dahlia_ranged_v4_sheet.png`, 12 drawings | `out/dahlia_ranged/` — 56 frames, 2.33 s |
 | **soul attack** | `assets/dahlia_soul_charge_sheet.png` + `..._slash_sheet.png`, 15 drawings | `out/dahlia_soul/` — 92 frames, 3.83 s |
-| **skill / special** | `assets/dahlia_skill_charge_sheet.png` + burst + recover, 22 drawings | `out/dahlia_skill/` — 81 frames, 3.38 s |
+| **skill / special** | `assets/dahlia_skill_charge_sheet.png` + burst + recover, 22 drawings | `out/dahlia_skill/` — 103 frames, 4.29 s |
 | **block** | `assets/dahlia_block_v2_sheet.png`, 8 drawings | `out/dahlia_block/` — 44 frames, 2.2 s |
 | **counter** | `assets/dahlia_counter_v2_sheet.png`, 10 drawings | `out/dahlia_counter/` — 67 frames, 3.35 s |
 | **evasion** | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 56 frames, 2.8 s |
@@ -888,10 +888,12 @@ Emphasis is then layered on top without spending that. Fluidity and emphasis
 only conflict if you slow the wrong poses: what reads as choppy is a pose caught
 *mid-movement* and held, while a pose already at rest can be held as long as the
 beat wants. So every transition stays at two frames and all the extra time goes
-into the extremes — 0.42 s on the peak of the charge, 0.29 s on the impact,
-0.25 s on the widest shockwave, 0.46 s on the settle. The clip runs 3.38 s
-against 2.04 s and is no less fluid for it. The smear goes the other way, down
-to a single frame.
+into the extremes — 0.42 s each on the opening idle, the peak of the charge and
+the impact, 0.38 s on the face going into shadow and on the widest shockwave,
+0.46 s on the settle, and 1.21 s across the nine poses of the rings dissipating.
+The clip runs 4.29 s against 2.04 s and is no less fluid for it, because not one
+of the moving transitions was touched. The smear goes the other way, down to a
+single frame.
 
 Every rule the earlier sheets forced was in the prompt for this one, and it
 shows. The three sheets came back within a pixel of each other — her effect-free
