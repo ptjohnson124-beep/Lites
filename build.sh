@@ -238,101 +238,45 @@ $BUILD out/dahlia_cyberpsychosis/frames -o out/dahlia_cyberpsychosis -n dahlia_c
   --poses 1,2,3,4,5,6,7,8,9,12,10,11 --holds 8,4,4,3,5,4,4,4,4,5,4,6 \
   --fps 20 --breathe 1.3 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 4:6,5:4,12:5
 
-# Soul attack: energy gathers, the flame peak, gold, then the lunge into the
-# vortex, lightning, and two slash frames before settling. Retimed from 4.0s to
-# 2.7s — at 20fps with eight- and ten-frame holds it dragged. The two extremes
-# still get the longest holds, the ignition and the burst; everything between
-# them now moves. Only the smear at pose 9 is short enough to read as speed.
-$SLICE assets/dahlia_soul_sheet.png -o out/dahlia_soul \
-  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN_SMALL --single dahlia_soul
+# Soul attack: one continuous action across two sheets and fifteen drawings —
+# the charge, then the slash. Unlike the knockdown and the get-up, there is no
+# state to hold between the halves, so this builds as one clip rather than two.
+# Replaces the 16-pose soul sheet, on which Dahlia measured 167px; here she is
+# 363px, and the effect goes from a single spark to a fire disc taller than she
+# is and out again.
+#
+# Two --erase strips on the charge sheet. Its last three poses have flames wider
+# than she is and they touch, fusing into one 795px component — seven poses and
+# a fragment out of a straight slice. The cuts are twelve pixels wide and land
+# where the flame density between poses bottoms out, so nothing of either pose
+# is lost. The slash sheet needs none: it was regenerated in landscape with the
+# spacing rule stated effect-to-effect rather than body-to-body.
+#
+# merge_sheets puts both slices on one canvas, anchored on her feet and her
+# body's centre line rather than on the bounding box — the effects reach much
+# further on some poses than others, so a box centre would drag her sideways at
+# the seam. All fifteen poses land on the same anchor. --skip-first drops the
+# slash sheet's opening pose, which repeats the charge sheet's last.
+#
+# --scale 94 on the charge poses. The two sheets are drawn 6% apart, measured by
+# body pixel count with the fire and teal masked out; the charge is the larger,
+# so it scales down, which sharpens rather than softens.
+$SLICE assets/dahlia_soul_charge_sheet.png -o out/dahlia_soul_charge \
+  --erase 516,500,527,976 --erase 796,500,807,976 \
+  --components --component-min 3000 --tol 8 --glow-tol 0 --fill-holes 4 \
+  --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_soul_charge
+$SLICE assets/dahlia_soul_slash_sheet.png -o out/dahlia_soul_slash \
+  --components --component-min 3000 --tol 8 --glow-tol 0 --fill-holes 4 \
+  --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_soul_slash
+python3 tools/merge_sheets.py out/dahlia_soul_charge/frames out/dahlia_soul_slash/frames \
+  --skip-first out/dahlia_soul_slash/frames -o out/dahlia_soul -n dahlia_soul
 $BUILD out/dahlia_soul/frames -o out/dahlia_soul -n dahlia_soul \
-  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 \
-  --holds 4,3,3,3,3,7,3,5,2,8,3,3,3,4,4,6 \
-  --fps 24 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
-  --shake 6:3,10:8,11:4 --travel 9:12,10:16,11:10,12:6,13:2
-
-# Grab: six drawings — rest, set, the lunging reach, the seize, the hold, the
-# release. The highest resolution in the whole set at 436px tall, because the
-# sheet spends 1091x976 on six poses.
-#
-# It needs a different key from every other sheet. The background here is dark
-# (49,54,60) rather than mid-grey, and her trousers average (37,37,42) and her
-# boots (39,42,47) — closer to that backdrop than her hair is to anything. At
-# the usual --tol 14 the flood walks down her outline and hollows out both legs.
-# The background is a flat fill, though, no gradient and no grain: 99% of the
-# sheet edge sits within 2 levels of one colour. So the tolerance goes down to
-# 3, which takes the backdrop and nothing else.
-#
-# That leaves the antialiased rim standing as a dark speckled fringe, invisible
-# against this sheet and obvious against anything lighter — which is what
-# --glow-tol is for. At 20 with --glow-depth 3 it clears the rim while staying
-# three pixels from the silhouette, so the trousers never come into range.
-#
-# Timed as a snatch: the reach and the seize are the two fastest beats in any
-# animation here, 0.13s and 0.17s, and the hold that follows is 0.58s. A grab
-# is not a swing — it is quick, quick, then nothing moves at all.
-$SLICE assets/dahlia_grab_sheet.png -o out/dahlia_grab \
-  --components --tol 3 --glow-tol 20 --glow-depth 3 --fill-holes 4 \
-  --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_grab
-$BUILD out/dahlia_grab/frames -o out/dahlia_grab -n dahlia_grab \
-  --poses 1,2,3,4,5,6 \
-  --holds 8,6,3,4,14,8 \
-  --fps 24 --breathe 0 --bob 2 --sway 2 \
-  --shake 4:6 \
-  --travel 1:0,2:0,3:26,4:14,5:8,6:2
-
-# Throw: its own eight-drawing sheet, replacing the version built by replaying
-# the grab sheet backwards. That trick worked — pose 3 there was the reach when
-# the arm was opening and the release when it was closing — but this sheet has
-# what a reordering cannot invent: a drawn motion-blur frame at the hurl, and a
-# separate arm-cocked-back pose to coil on. 374px tall.
-#
-# White background this time, which the keying handles at --tol 12 without help:
-# her hoodie is white too, but it is outlined all the way round, so the flood
-# has no path in. No --unmatte — there is nothing glowing on this sheet, and on
-# a white backdrop the "glow is brighter than the background" assumption it
-# rests on is meaningless.
-#
-# Timed on the coil and on the held release, not on the hurl. The wind-up holds
-# 0.54s and the extension after it 0.38s, while the hurl between them stays at
-# 0.13s: what sells a throw is the time either side of the fast frame, since the
-# fast frame is over before the eye resolves it. Travel goes 8px backwards on
-# the coil before 32px forward — a small move against the throw is what makes
-# the throw look like it cost something. 2.75s.
-$SLICE assets/dahlia_throw_sheet.png -o out/dahlia_throw \
-  --components --tol 12 --glow-tol 0 --fill-holes 4 \
-  --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_throw
-$BUILD out/dahlia_throw/frames -o out/dahlia_throw -n dahlia_throw \
-  --poses 3,5,6,4,7,2,1 \
-  --holds 12,13,3,9,8,8,13 \
-  --fps 24 --breathe 0 --bob 2 --sway 2 \
-  --shake 6:6 \
-  --travel 3:0,5:-8,6:32,4:22,7:14,2:6,1:0
-
-# Stagger: ready, the hit, the reel, dazed, recovering, ready. Six drawings and
-# no anticipation on the impact — you do not wind up to be hit, so pose 2 lands
-# straight out of the stance at 0.13s. The daze is where the time goes, 0.58s on
-# a single drawing, and the recovery is slower than the reel.
-#
-# --travel supplies what the sheet does not draw: she gives 22px of ground over
-# the reel and walks it back as she recovers. The drawings stay in place on
-# their sheet, so without it a stagger reads as a wobble rather than as being
-# knocked off balance.
-#
-# --unmatte 0, and that matters on a white sheet. The flag assumes glow is
-# brighter than the backdrop; against white nothing is, so instead of lifting
-# the aura it eats her hoodie — 8631 near-white pixels gone and 976 more turned
-# half-transparent when it was left at 45. The dagger's teal is drawn in real
-# colour here rather than blended over the paper, so it needs no help.
-$SLICE assets/dahlia_stagger_sheet.png -o out/dahlia_stagger \
-  --components --tol 12 --glow-tol 0 --fill-holes 4 \
-  --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_stagger
-$BUILD out/dahlia_stagger/frames -o out/dahlia_stagger -n dahlia_stagger \
-  --poses 1,2,3,4,5,6 \
-  --holds 6,3,5,14,8,10 \
-  --fps 24 --breathe 0 --bob 2 --sway 2 \
-  --shake 2:9,3:5,4:2 \
-  --travel 1:0,2:-14,3:-22,4:-18,5:-8,6:0
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 \
+  --holds 8,5,5,5,6,5,5,10,3,8,5,5,5,5,12 \
+  --fps 24 --breathe 0 --bob 2 --sway 2 --stabilize none \
+  --scale 1:94,2:94,3:94,4:94,5:94,6:94,7:94,8:94 \
+  --shake 8:4,9:6,10:9 \
+  --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:10,10:24,11:20,12:14,13:8,14:3,15:0
 
 # Moving: a 12-drawing run cycle, replacing the 36-frame v3. Fewer drawings but
 # a much better cycle — v3 spent most of its length on stances and read as a
