@@ -18,7 +18,7 @@ sheet lands, at which point the same two commands rebuild them.
 | **spin combo** | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
 | **ranged attack** | `assets/dahlia_ranged_v4_sheet.png`, 12 drawings | `out/dahlia_ranged/` — 56 frames, 2.33 s |
 | **soul attack** | `assets/dahlia_soul_charge_sheet.png` + `..._slash_sheet.png`, 15 drawings | `out/dahlia_soul/` — 92 frames, 3.83 s |
-| **skill / special** | `assets/dahlia_skill_charge_sheet.png` + burst + recover, 22 drawings | `out/dahlia_skill/` — 178 frames, 7.42 s |
+| **skill / special** | `assets/dahlia_skill_charge_sheet.png` + burst + recover, 22 drawings | `out/dahlia_skill/` — 204 frames, 8.50 s |
 | **block** | `assets/dahlia_block_v2_sheet.png`, 8 drawings | `out/dahlia_block/` — 44 frames, 2.2 s |
 | **counter** | `assets/dahlia_counter_v2_sheet.png`, 10 drawings | `out/dahlia_counter/` — 67 frames, 3.35 s |
 | **evasion** | `assets/dahlia_dodge_a_sheet.png` + b, 15 drawings | `out/dahlia_dodge/` — 56 frames, 2.33 s |
@@ -701,6 +701,37 @@ crouch is pose 2 of sheet B, so it plays after she has already stood up out of
 the spin: she lands twice. At 24 fps the second reads as an absorb rather than
 an error, but the spin should have ended low.
 
+## A prop that reaches into the next cell
+
+Two animations in this set shipped with a second dagger in a frame that should
+have held one, and the cause is the same in both: a prop drawn reaching out of
+its own cell and into the neighbour's. It is not the overlap problem the
+ownership rules solve — those decide *which* pose a piece of ink belongs to, and
+here the answer is unambiguous. The ink belongs to the pose next door, and the
+pose next door cannot have it, because its own crop starts at the cell edge.
+Whatever is left over is stranded, and it is stranded inside a frame that has no
+use for it.
+
+On the skill's burst sheet, pose 8's dagger crosses behind pose 7's shockwave
+crescent. There is no density minimum between them to cut on — the two drawings
+genuinely overlap — so the existing cell-edge strip severed the blade and left
+its tip floating point-first out of the crescent for the whole beat. On the
+dodge's sheet A, pose 8's dagger points down-left far enough to touch pose 7's
+trouser leg, so a disembodied blade hung off her hip through the turn.
+
+The fix in both cases is an `--erase` fitted to the stranded piece rather than
+to a gap, and the useful detail is where its far edge goes. Take it to the
+neighbour's own boundary and no further: every pixel past that line is ink the
+neighbour still has, and cutting there costs the neighbour a tip it was keeping.
+The dodge strip stops at x=784 and pose 8 loses 27 pixels to rounding; an
+earlier one that ran 8 px past took 499.
+
+Neither is visible on the sheet it came from — a teal blade against a dark navy
+backdrop next to another teal blade reads as one drawing. Both were found by
+counting **teal islands per frame**: a frame with two daggers in it has two, and
+that is a one-line check worth running on any sheet where she is holding
+something.
+
 ## When a sheet is drawn at two sizes
 
 The v3 ranged sheet's last row was about 65% larger than its first, and cutting
@@ -938,16 +969,28 @@ went into poses that are already at rest — 0.42 s each on the opening idle, th
 peak of the charge and the impact, 0.38 s on the widest shockwave, 0.50 s on the
 settle. The smear goes the other way, down to a single frame.
 
-Three passes of retiming later the clip runs 7.42 s against the 2.04 s it was
-first cut at, and the two halves of it now pull in opposite directions on
-purpose. The charge is slow to the point of being a separate beat: the three
-rings that gather on the dagger (poses 2, 3 and 4) hold a full second each, so
-each is seen arriving on its own instead of as one flicker of three. That is
-three of the seven and a half seconds spent before she has swung. Everything
-after it is quick — the rings sweeping round her body drop to three frames
-apiece and the follow-through to two — and then the dissipation stretches again,
-1.54 s across six poses where the previous cut faded in 0.79 s. Slow, fast,
-slow: the burst only reads as fast because of what sits either side of it.
+Four passes of retiming later the clip runs 8.50 s against the 2.04 s it was
+first cut at, and the halves of it pull in opposite directions on purpose. The
+charge is slow to the point of being a separate beat: the three rings that
+gather on the dagger (poses 2, 3 and 4) hold a full second each, so each is seen
+arriving on its own instead of as one flicker of three. That is three of the
+eight and a half seconds spent before she has swung.
+
+Two of the later fixes are worth naming because they are the same mistake in
+different places. **Pose 7 is where the ring closes**, and it was going by in
+125 ms — the completion of the shape was cheaper than the frame that merely
+lights it brighter. It holds 0.58 s now, longer than the peak that follows it,
+because the event is the ring closing and the peak is only its brightest frame.
+And **poses 11, 12 and 13 are the pulses** after impact, cut 2, 9, 2 frames:
+flash, hold, flash. Three equal beats are what a pulse is, so they are 8 frames
+each.
+
+The dissipation is the one place where more drawings would help and there are
+only six. Held evenly they step, however long you make them — 250 ms a drawing
+against the 83 ms the sheets were drawn for. So poses 16 to 21 ease out instead:
+3, 4, 5, 7, 8, 10 frames. It leaves the burst at 125 ms a drawing and arrives at
+417 ms by the last ring, which reads as a fade slowing to a stop rather than six
+equal chunks, and it costs nothing — the total is the same 1.54 s it was.
 
 Every rule the earlier sheets forced was in the prompt for this one, and it
 shows. The three sheets came back within a pixel of each other — her effect-free

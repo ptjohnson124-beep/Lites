@@ -137,11 +137,19 @@ $BUILD out/dahlia_attack_spin/frames -o out/dahlia_attack_spin -n dahlia_attack_
 # come back with zero teal pixels where their neighbours carry about 2000. That
 # is the art, not the key, and there is nothing the pipeline can do about it.
 #
+# One --erase, 758,780 to 784,860. Pose 8's dagger points down-left and its tip
+# crosses into pose 7's cell, close enough to touch her trouser leg — so it
+# arrives as part of pose 7 and a disembodied blade hangs off her hip through
+# the turn. The strip stops at x=784, pose 8's own edge, so pose 8 keeps every
+# pixel it already had; only the 26 columns that were never going to reach it
+# are cleared.
+#
 # Her hair bridges the last two poses of sheet A into one island. The valley
 # split separates them; before the ownership fix in slice_sheet.py the whole
 # island went to the rect its centre fell in and pose 7 came out with four
 # pixels in it.
 $SLICE assets/dahlia_dodge_a_sheet.png -o out/dahlia_dodge_a \
+  --erase 758,780,784,860 \
   --components --component-min 8000 --cluster-gap 14 --tol 3 --glow-tol 20 --glow-depth 3 \
   --fill-holes 4 --despeckle 24 --denoise 10 --unmatte 0 --align silhouette \
   --single dahlia_dodge_a
@@ -216,26 +224,46 @@ $BUILD out/dahlia_fully_insane_idle/frames -o out/dahlia_fully_insane_idle -n da
 # the other way, down to a single frame, because a smear reads as speed when it
 # flashes and as a pose when it is held.
 #
-# Two --erase strips, both twelve to forty pixels wide and both placed where the
-# ink density between two poses bottoms out. The burst sheet's last two poses
+# Three --erase strips now. Two are placed where the ink density between two
+# poses bottoms out; the third is different, and worth the note. The burst sheet's last two poses
 # touch through their shockwave rings, and the recovery sheet's first two touch
 # through the wave arcs — one fused component each, so seven poses out of eight
 # without the cut. The recovery strip has to be the wider of the two: a narrower
 # one severed the poses but left a sliver standing, which then counted as a
 # ninth pose of four pixels.
 #
+# The third strip, 1039,586 to 1090,660, is not on a gap at all. Burst pose 8's
+# dagger is drawn reaching left out of its own cell and into pose 7's, where it
+# crosses behind the shockwave crescent — there is no density minimum between
+# them because the two drawings genuinely overlap. Cutting at the cell edge, as
+# the first strip does, only severed the blade and left its tip stranded in
+# pose 7, floating point-first out of the crescent for the whole beat. The
+# strip has to take the stranded piece itself, so it is fitted to the tip
+# rather than to a gap: it costs about 1500 pixels, nearly all of them the tip,
+# and the crescent's outline is unchanged either side of it.
+#
 # --component-min 20000, an order of magnitude above the usual: every real pose
 # here is over 33000 body pixels, so the threshold can sit high enough to ignore
 # anything an --erase leaves behind.
 #
-# The beats, third pass. The three rings that gather on the dagger (poses 2, 3
-# and 4) each hold a full second, so each one is seen arriving on its own
-# rather than as one flicker of three; that puts three of the clip's seven and
-# a half seconds into the charge, which is deliberate. Against that the rings
-# sweeping around her body (5–7) drop to three frames each and the follow
-# through (13–15) to two, so the burst reads as fast as the charge is slow.
-# The dissipation runs the other way: 16–21 hold six to seven frames apiece,
-# 1.54s to fade where the previous cut took 0.79s.
+# The beats, fourth pass. The three rings that gather on the dagger (poses 2, 3
+# and 4) each hold a full second, so each is seen arriving on its own rather
+# than as one flicker of three — three of the clip's eight and a half seconds
+# spent before she has swung, which is deliberate.
+#
+# Pose 7 is where the ring first closes, and it was going by in 125ms; it now
+# holds 0.58s, longer than the peak that follows it, because a ring completing
+# is the event and the peak is only its brightest frame. Poses 11, 12 and 13
+# are the pulses after impact and were cut 2, 9, 2 — one flash, one hold, one
+# flash, which read as a stutter rather than a rhythm. They are 8 frames each
+# now: same beat three times is what a pulse is.
+#
+# The dissipation is the one place more drawings would help and there are only
+# six. Held evenly they step, however long you make them, so 16-21 ease out
+# instead: 3, 4, 5, 7, 8, 10 frames. It leaves the burst at 125ms a drawing —
+# near the 83ms the sheets were drawn for — and arrives at 417ms by the last
+# ring, which is the fade slowing to a stop rather than six equal chunks. The
+# total is the same 1.54s it took before.
 #
 # No --scale. The three sheets came back within a pixel of each other — her
 # effect-free stance measures 332px on the charge sheet and 332px on the
@@ -245,7 +273,7 @@ $SLICE assets/dahlia_skill_charge_sheet.png -o out/dahlia_skill_charge \
   --components --component-min 20000 --cluster-gap 14 --tol 8 --glow-tol 0 --fill-holes 4 \
   --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_skill_charge
 $SLICE assets/dahlia_skill_burst_sheet.png -o out/dahlia_skill_burst \
-  --erase 1070,390,1088,768 \
+  --erase 1070,390,1088,768 --erase 1039,586,1090,660 \
   --components --component-min 20000 --cluster-gap 14 --tol 8 --glow-tol 0 --fill-holes 4 \
   --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_skill_burst
 $SLICE assets/dahlia_skill_recover_sheet.png -o out/dahlia_skill_recover \
@@ -258,7 +286,7 @@ python3 tools/merge_sheets.py out/dahlia_skill_charge/frames out/dahlia_skill_bu
   -o out/dahlia_skill -n dahlia_skill
 $BUILD out/dahlia_skill/frames -o out/dahlia_skill -n dahlia_skill \
   --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22 \
-  --holds 10,24,24,24,3,3,3,10,1,10,2,9,2,2,2,6,6,6,6,6,7,12 \
+  --holds 10,24,24,24,3,3,14,10,1,10,8,8,8,3,3,3,4,5,7,8,10,14 \
   --fps 24 --breathe 0 --bob 2 --sway 2 --stabilize none \
   --shake 10:6,11:8,12:5 \
   --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:6,10:14,11:18,12:16,13:12,14:8,15:4,16:2,17:0,18:0,19:0,20:0,21:0,22:0

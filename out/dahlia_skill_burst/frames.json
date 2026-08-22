@@ -15,7 +15,7 @@
     {
       "name": "dahlia_skill_burst",
       "canvas": [
-        414,
+        407,
         407
       ],
       "align": "silhouette",
@@ -71,7 +71,7 @@
         {
           "x": 694,
           "y": 397,
-          "w": 376,
+          "w": 365,
           "h": 371,
           "dx": 23,
           "dy": 32
