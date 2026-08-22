@@ -256,7 +256,7 @@
   "hips": {
    "anchor": [
     0.5,
-    0.22
+    0.1
    ]
   },
   "holster": {
@@ -382,21 +382,21 @@
  },
  "pose": {
   "hip": 0,
-  "thigh": -138,
-  "shin": -100,
-  "boot": -88,
-  "thigh-far": -46,
-  "shin-far": -88,
-  "boot-far": -95,
-  "torso": 96,
-  "head": 87,
-  "arm-upper": -150,
-  "arm-fore": -163,
-  "hand-fist": -167,
+  "thigh": -132,
+  "shin": -118,
+  "boot": -90,
+  "thigh-far": -42,
+  "shin-far": -80,
+  "boot-far": -92,
+  "torso": 82,
+  "head": 89,
+  "arm-upper": -162,
+  "arm-fore": -172,
+  "hand-fist": -174,
   "arm-upper-far": -42,
-  "arm-fore-far": -84,
-  "dagger": -158,
-  "hand-far": -88
+  "arm-fore-far": -112,
+  "dagger": -150,
+  "hand-far": -116
  },
  "pose_rel": {
   "hips": 0,
@@ -404,7 +404,7 @@
   "hood": -90,
   "hair-crown": -90,
   "hair-fringe": -90,
-  "hair-tail": -90,
+  "hair-tail": -74,
   "hair-strand-l": -90,
   "hair-strand-r": -90
  },
@@ -412,7 +412,7 @@
   "hip": {
    "world": [
     0,
-    690
+    640
    ]
   },
   "thigh": {
