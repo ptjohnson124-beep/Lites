@@ -314,108 +314,11 @@
    ]
   }
  },
- "place": {
-  "torso": [
-   0,
-   780
-  ],
-  "head": [
-   0,
-   1064
-  ],
-  "thigh": [
-   38,
-   799
-  ],
-  "shin": [
-   38,
-   504
-  ],
-  "thigh-far": [
-   -38,
-   799
-  ],
-  "shin-far": [
-   -38,
-   504
-  ],
-  "arm-upper": [
-   86,
-   1021
-  ],
-  "arm-fore": [
-   86,
-   724
-  ],
-  "arm-upper-far": [
-   -86,
-   1021
-  ],
-  "arm-fore-far": [
-   -86,
-   724
-  ],
-  "hips": [
-   0,
-   799
-  ],
-  "holster": [
-   74,
-   742
-  ],
-  "hood": [
-   0,
-   1062
-  ],
-  "hair-crown": [
-   0,
-   1358
-  ],
-  "hair-fringe": [
-   0,
-   1392
-  ],
-  "hair-tail": [
-   0,
-   1342
-  ],
-  "hair-strand-l": [
-   -80,
-   1288
-  ],
-  "hair-strand-r": [
-   84,
-   1288
-  ],
-  "eye-l": [
-   -24,
-   1238
-  ],
-  "eye-r": [
-   26,
-   1238
-  ],
-  "dagger": [
-   92,
-   470
-  ],
-  "boot": [
-   38,
-   230
-  ],
-  "boot-far": [
-   -38,
-   230
-  ],
-  "hand-fist": [
-   92,
-   545
-  ]
- },
  "draw_order": [
   "hair-tail",
   "arm-upper-far",
   "arm-fore-far",
+  "hand-far",
   "thigh-far",
   "shin-far",
   "boot-far",
@@ -428,8 +331,6 @@
   "torso",
   "hood",
   "head",
-  "eye-l",
-  "eye-r",
   "hair-strand-l",
   "hair-strand-r",
   "hair-fringe",
@@ -442,22 +343,6 @@
   "hand-fist": [
    "hand-open"
   ]
- },
- "direction": {
-  "thigh": -90,
-  "shin": -90,
-  "boot": -90,
-  "thigh-far": -90,
-  "shin-far": -90,
-  "boot-far": -90,
-  "torso": 90,
-  "head": 90,
-  "arm-upper": -96,
-  "arm-fore": -92,
-  "hand-fist": -90,
-  "arm-upper-far": -84,
-  "arm-fore-far": -88,
-  "dagger": 172
  },
  "control_bones": [
   {
@@ -487,13 +372,185 @@
   "hair-tail": "head",
   "hair-strand-l": "head",
   "hair-strand-r": "head",
-  "eye-l": "head",
-  "eye-r": "head",
   "arm-upper": "torso",
   "arm-fore": "arm-upper",
   "hand-fist": "arm-fore",
   "dagger": "hip",
   "arm-upper-far": "torso",
-  "arm-fore-far": "arm-upper-far"
+  "arm-fore-far": "arm-upper-far",
+  "hand-far": "arm-fore-far"
+ },
+ "pose": {
+  "hip": 0,
+  "thigh": -138,
+  "shin": -100,
+  "boot": -88,
+  "thigh-far": -46,
+  "shin-far": -88,
+  "boot-far": -95,
+  "torso": 96,
+  "head": 87,
+  "arm-upper": -150,
+  "arm-fore": -163,
+  "hand-fist": -167,
+  "arm-upper-far": -42,
+  "arm-fore-far": -84,
+  "dagger": -158,
+  "hand-far": -88
+ },
+ "pose_rel": {
+  "hips": 0,
+  "holster": 90,
+  "hood": -90,
+  "hair-crown": -90,
+  "hair-fringe": -90,
+  "hair-tail": -90,
+  "hair-strand-l": -90,
+  "hair-strand-r": -90
+ },
+ "joint": {
+  "hip": {
+   "world": [
+    0,
+    690
+   ]
+  },
+  "thigh": {
+   "from": "hip",
+   "offset": [
+    -34,
+    0
+   ]
+  },
+  "shin": {
+   "from": "thigh",
+   "at": "tip"
+  },
+  "boot": {
+   "from": "shin",
+   "at": "tip"
+  },
+  "thigh-far": {
+   "from": "hip",
+   "offset": [
+    34,
+    0
+   ]
+  },
+  "shin-far": {
+   "from": "thigh-far",
+   "at": "tip"
+  },
+  "boot-far": {
+   "from": "shin-far",
+   "at": "tip"
+  },
+  "hips": {
+   "from": "hip",
+   "offset": [
+    0,
+    0
+   ]
+  },
+  "holster": {
+   "from": "thigh",
+   "offset": [
+    118,
+    -28
+   ]
+  },
+  "torso": {
+   "from": "hip",
+   "offset": [
+    0,
+    -18
+   ]
+  },
+  "head": {
+   "from": "torso",
+   "at": "tip"
+  },
+  "hood": {
+   "from": "torso",
+   "offset": [
+    252,
+    6
+   ]
+  },
+  "arm-upper": {
+   "from": "torso",
+   "offset": [
+    224,
+    58
+   ]
+  },
+  "arm-fore": {
+   "from": "arm-upper",
+   "at": "tip"
+  },
+  "hand-fist": {
+   "from": "arm-fore",
+   "at": "tip"
+  },
+  "arm-upper-far": {
+   "from": "torso",
+   "offset": [
+    214,
+    -72
+   ]
+  },
+  "arm-fore-far": {
+   "from": "arm-upper-far",
+   "at": "tip"
+  },
+  "dagger": {
+   "from": "hand-fist",
+   "at": "tip"
+  },
+  "hair-crown": {
+   "from": "head",
+   "offset": [
+    252,
+    4
+   ]
+  },
+  "hair-fringe": {
+   "from": "head",
+   "offset": [
+    292,
+    6
+   ]
+  },
+  "hair-tail": {
+   "from": "head",
+   "offset": [
+    238,
+    10
+   ]
+  },
+  "hair-strand-l": {
+   "from": "head",
+   "offset": [
+    182,
+    78
+   ]
+  },
+  "hair-strand-r": {
+   "from": "head",
+   "offset": [
+    182,
+    -84
+   ]
+  },
+  "hand-far": {
+   "from": "arm-fore-far",
+   "at": "tip"
+  }
+ },
+ "attachment_of": {
+  "hand-far": "hand-fist"
+ },
+ "slot_color": {
+  "hand-far": "b4b4b4ff"
  }
 }

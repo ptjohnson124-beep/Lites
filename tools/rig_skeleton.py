@@ -66,35 +66,61 @@ def attach(part, anchors):
 
 
 def build(cfg, parts):
-    place, anchors = cfg["place"], cfg["anchors"]
+    anchors = cfg["anchors"]
     # Only a piece that is drawn needs a place in the world; a swap shares the
     # bone of the slot it swaps into, so it needs an offset and nothing else.
+    shows0 = cfg.get("attachment_of", {})
     geom = {}
     for name in cfg["draw_order"]:
-        if name not in place:
-            raise SystemExit(f"{name}: no place given in the layout")
-        x, y, r, length = attach(parts[name], anchors[name])
-        geom[name] = {"x": x, "y": y, "rotation": r, "length": length,
-                      "world": place[name]}
+        att = shows0.get(name, name)
+        x, y, r, length = attach(parts[att], anchors[att])
+        geom[name] = {"x": x, "y": y, "rotation": r, "length": length}
 
-    # The layout is written in world space because that is the only frame a
-    # person can reason about — "her knee is 504 pixels up" is checkable, "her
-    # knee is 295 pixels along a bone rotated -90 degrees" is not. Spine wants
-    # parent-relative, so the conversion happens here, once, and the hierarchy
-    # is real: rotating the torso carries the head, the hair and both arms,
-    # which is the entire reason to have a skeleton rather than a pile of
-    # sprites with the same numbers on them.
-    direction = cfg.get("direction", {})
+    # The bind pose is authored as angles, not coordinates. Typing a world
+    # position for twenty-four joints cannot produce a stance — the numbers do
+    # not say anything a person can picture, and any of them being slightly
+    # wrong shows up as a limb detached from its own joint. Angles do say
+    # something ("the front thigh goes down and forward at 138 degrees"), and
+    # the joints then fall exactly where the bone lengths put them, so a chain
+    # cannot come apart no matter how she is posed.
+    pose = cfg.get("pose", {})
+    pose_rel = cfg.get("pose_rel", {})
+    joint = cfg.get("joint", {})
     parent = dict(cfg.get("parent", {}))
-    world = {"root": {"pos": (0.0, 0.0), "rot": 0.0}}
     for ctrl in cfg.get("control_bones", []):
-        world[ctrl["name"]] = {"pos": tuple(ctrl["place"]),
-                               "rot": float(ctrl.get("direction", 0))}
         parent.setdefault(ctrl["name"], ctrl.get("parent", "root"))
-    for name in cfg["draw_order"]:
-        geom[name]["bone_rotation"] = float(direction.get(name, 0))
-        world[name] = {"pos": tuple(geom[name]["world"]),
-                       "rot": geom[name]["bone_rotation"]}
+
+    world = {"root": {"pos": (0.0, 0.0), "rot": 0.0}}
+    pending = [n for n in list(joint) if n != "root"]
+    while pending:
+        ready = False
+        for name in list(pending):
+            spec = joint[name]
+            if "world" in spec:
+                src, base = None, {"pos": tuple(spec["world"]), "rot": 0.0}
+            else:
+                src = spec["from"]
+                if src not in world:
+                    continue
+                pw = world[src]
+                if spec.get("at") == "tip":
+                    off = (geom[src]["length"] if src in geom else 0.0, 0.0)
+                else:
+                    off = tuple(spec.get("offset", (0.0, 0.0)))
+                d = rot(off, pw["rot"])
+                base = {"pos": (pw["pos"][0] + d[0], pw["pos"][1] + d[1]), "rot": 0.0}
+            if name in pose:
+                base["rot"] = float(pose[name])
+            elif name in pose_rel:
+                base["rot"] = world[src]["rot"] + float(pose_rel[name]) if src else 0.0
+            world[name] = base
+            if name in geom:
+                geom[name]["bone_rotation"] = base["rot"]
+            pending.remove(name)
+            ready = True
+        if not ready:
+            raise SystemExit("joints reference a bone that is never placed: "
+                             + ", ".join(pending))
 
     def emit(name):
         pname = parent.get(name, "root")
@@ -130,17 +156,28 @@ def build(cfg, parts):
         rest = [b for b in rest if b["name"] not in seen]
     bones = ordered
 
+    # A slot usually shows the attachment it is named for, but not always: the
+    # far-side hand is the same drawing as the near one, shown on its own bone
+    # and tinted a step darker, which is what the shading pairs on the parts
+    # sheet do for the limbs. Spine tints per slot, so no second drawing is
+    # needed for it.
+    shows = cfg.get("attachment_of", {})
+    tint = cfg.get("slot_color", {})
     slots, skin = [], {}
     for name in cfg["draw_order"]:
-        slots.append({"name": name, "bone": name, "attachment": name})
+        att0 = shows.get(name, name)
+        slot = {"name": name, "bone": name, "attachment": att0}
+        if name in tint:
+            slot["color"] = tint[name]
+        slots.append(slot)
         entry = {}
-        for att in [name] + cfg["alternates"].get(name, []):
+        for att in [att0] + cfg["alternates"].get(name, []):
             x, y, r, _ = attach(parts[att], anchors[att])
             entry[att] = {"x": round(x, 2), "y": round(y, 2),
                           "rotation": round(r, 2),
                           "width": parts[att]["width"], "height": parts[att]["height"]}
         skin[name] = entry
-    return bones, slots, skin, geom
+    return bones, slots, skin, geom, world
 
 
 def curve(stops):
@@ -296,7 +333,7 @@ def toss_animation(bones, order, fps=24):
     return {"bones": tl, "slots": slots}
 
 
-def preview(cfg, parts, geom, atlas_dir, out_path):
+def preview(cfg, parts, geom, world, atlas_dir, out_path):
     """Render the bind pose the numbers describe, not the one that was meant.
 
     A skeleton that is wrong by a rotation looks perfectly plausible as JSON.
@@ -312,17 +349,18 @@ def preview(cfg, parts, geom, atlas_dir, out_path):
         bb = im.getbbox()
         imgs[entry["name"]] = im.crop(bb)
 
-    W, H, GY = 1400, 2000, 1900
+    W, H, GY = 1900, 2000, 1880
     canvas = Image.new("RGBA", (W, H), (255, 255, 255, 255))
+    shows = cfg.get("attachment_of", {})
     for name in cfg["draw_order"]:
-        g, im = geom[name], imgs[name]
+        g, im = geom[name], imgs[shows.get(name, name)]
         # The bone's own rotation and the attachment's compose, exactly as a
         # runtime composes them: the image ends up turned by their sum, and its
         # offset is measured in the bone's frame, so it turns with the bone.
-        theta = g["bone_rotation"]
+        theta = world[name]["rot"]
         turned = im.rotate(theta + g["rotation"], expand=True, resample=Image.BICUBIC)
         ox, oy = rot((g["x"], g["y"]), theta)
-        bx, by = g["world"]
+        bx, by = world[name]["pos"]
         cx = W / 2 + bx + ox
         cy = GY - by - oy
         canvas.alpha_composite(turned, (int(cx - turned.width / 2),
@@ -426,7 +464,7 @@ def main():
     parts = json.load(open(os.path.join(args.outdir,
                                         f"{args.parts_name or args.name}.parts.json"),
                            encoding="utf-8"))
-    bones, slots, skin, geom = build(cfg, parts)
+    bones, slots, skin, geom, world = build(cfg, parts)
     by_name = {b["name"]: b for b in bones}
     order = [b["name"] for b in bones]
     anim = toss_animation(by_name, order)
@@ -456,7 +494,7 @@ def main():
           f"{sum(len(v) for v in skin.values())} attachments -> {path}")
     if args.preview:
         root = os.path.dirname(os.path.abspath(args.config))
-        out = preview(cfg, parts, geom, root,
+        out = preview(cfg, parts, geom, world, root,
                       os.path.join(args.outdir, f"{args.name}_bindpose.png"))
         print(f"  bind pose rendered -> {out}")
     if args.preview_anim:

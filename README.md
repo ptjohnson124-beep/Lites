@@ -1160,6 +1160,30 @@ sheet needs it lower again, at 1200, because her eyes are two islands of about
 5000 pixels each and the threshold that stops a boot splitting drops them
 entirely.
 
+### The bind pose is authored as angles
+
+The first layout gave every joint a world coordinate, and what came out was a
+mannequin standing to attention with its feet 76 px apart — nothing like her
+idle, which is a wide low guard with the dagger out front. Typing world
+coordinates cannot produce a stance: the numbers say nothing a person can
+picture, and any one of them being slightly off shows up as a limb detached
+from its own joint.
+
+So the pose is angles. `pose` gives each bone a world direction, `joint` says
+where it starts — `"at": "tip"` for a limb that continues its parent, or an
+offset in the parent's own frame for a shoulder that has to stay on the shoulder
+when she leans — and the joints then fall exactly where the bone lengths put
+them. A chain cannot come apart however she is posed, and the stance is now
+543 px wide at the ankles instead of 76.
+
+Two smaller things the reference forced. The bald head is drawn **with her eyes
+on it**, so the separate eye pieces were a second pair painted over the first;
+they stay in the atlas for expression work and are out of the draw order. And
+the far arm ended in a bare wrist, because the sheets have no far-side hand — so
+it shows the same fist on its own bone with the slot tinted a step darker, which
+is exactly what the sheets do for the far thigh, shin and boot. Spine tints per
+slot, so that costs no drawing at all.
+
 ### Three coordinate systems, flipped in one place
 
 The pieces are described in image space, x right and **y down**, each anchor a
