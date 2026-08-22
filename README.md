@@ -1102,6 +1102,52 @@ into the peak and six coming down. A sheet with more poses concentrated in the
 part that moves fastest will always read smoother than one that spreads them
 evenly, and this is the measurement that shows it before anything is built.
 
+## A sheet that carries its own alpha
+
+Everything in this file about backgrounds — the flat navy, `--tol`, `--glow-tol`,
+`--unmatte`, three different keys for three different backdrops — is
+*reconstruction*. It exists because a sheet arrives as flat pixels with the
+transparency already flattened out of it, and the silhouette has to be worked
+out again from colour. A sheet exported with a real alpha channel has answered
+that question exactly, and `--keyed` takes the answer instead of recomputing it.
+
+The first such sheet came through with **32,699 soft-edge pixels across 66 alpha
+levels**, all of which survive the slice. That is the part worth having.
+`--unmatte` exists to solve an aura's true colour back out of the grey it was
+painted over, and it gets close — but close is its ceiling, and here there is
+nothing to solve. A teal aura or a shockwave ring keeps the edge it was drawn
+with rather than one inferred from it. There is no JPEG speckle to remove
+either, so `--denoise` has nothing to do.
+
+`--keyed` refuses `--unmatte`, `--glow-tol` and `--checker` rather than let them
+quietly rebuild what is already present, and refuses a fully opaque sheet rather
+than silently keying nothing out of it. `alpha` is still a hard mask deciding
+which pixels are kept — the despeckle and hole-filling stages want one — but the
+pixels that survive take their opacity from the sheet's own channel, so the
+antialiasing is passed through rather than re-derived.
+
+## Bigger source, smaller display
+
+A small sprite does animate more smoothly, and the reason matters because the
+obvious conclusion from it is wrong.
+
+Choppiness is how far an edge jumps between two frames, in *screen* pixels, and
+perception has an absolute threshold there — about 4 px reads as continuous,
+past roughly 9 px reads as a step. Scaling the sprite down scales every jump
+with it, which can carry a clip across that threshold with no drawing changed:
+
+| skill, 22 drawings | mean edge move | worst step |
+| --- | --- | --- |
+| as built (330 px tall) | 3.46 px | 14.02 px |
+| shown at 50% | 1.98 px | 8.26 px |
+| shown at 44% (146 px) | 1.75 px | 7.27 px |
+
+But this is *display* size, not source size. The 330 px build shown at 44% gives
+the same figures as art drawn at 146 px natively, so the smoothness comes from
+the scaling and not from the sheet. Generate large and display small: the detail
+is kept and the steps still shrink. Generating small buys the same smoothness
+and throws away resolution that cannot be recovered.
+
 ## Slicing a sheet
 
 `tools/slice_sheet.py` does not assume a uniform grid — these sheets have uneven
@@ -1123,6 +1169,7 @@ background, so the alpha comes from a flood fill inward from the edges.
 | `--fill-holes N` | seal and fill holes the flood punched through blurred poses |
 | `--single NAME` | treat every frame on the sheet as one sequence, in reading order |
 | `--align silhouette` | fine-register frames to each other instead of anchoring on the feet |
+| `--keyed` | the sheet already carries its own alpha; use it instead of keying a backdrop |
 | `--rows N` / `--cols N` | force a uniform grid instead of detecting one |
 | `--erase X0,Y0,X1,Y1` | paint a rectangle of the sheet out before keying; for a prop one pose has lent across a cell boundary. Repeatable |
 | `--scale P:PCT` | resize given poses (assembler); for a sheet whose rows are drawn at different sizes |

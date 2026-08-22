@@ -881,7 +881,16 @@ def main():
     ap.add_argument("--min-gap", type=int, default=4, help="smallest background gap that splits frames")
     ap.add_argument("--min-size", type=int, default=16, help="smallest accepted frame width/height")
     ap.add_argument("--opaque", action="store_true", help="keep the sheet background instead of cutting it out")
+    ap.add_argument("--keyed", action="store_true",
+                    help="the sheet already carries its own alpha; use it instead of keying a backdrop")
+    ap.add_argument("--keyed-min", type=int, default=8,
+                    help="with --keyed, the alpha level at or below which a pixel counts as empty")
     args = ap.parse_args()
+
+    if args.keyed and (args.unmatte or args.glow_tol or args.checker):
+        raise SystemExit("--keyed rebuilds nothing: --unmatte, --glow-tol and "
+                         "--checker all reconstruct an alpha channel this sheet "
+                         "already has. Drop them.")
 
     sheet = load_sheet(args.sheet)
     rgb = np.array(sheet)[:, :, :3]
@@ -901,78 +910,99 @@ def main():
         rgb[y0:y1, x0:x1] = forced_bg if forced_bg is not None else background_color(rgb)
         print(f"erased sheet rectangle {x0},{y0} to {x1},{y1}")
 
-    if args.panels:
-        # The absolute darkness test only means anything on a sheet lighter than
-        # the ink it is looking for. On a dark navy backdrop the background
-        # itself passes it, and the detector called 623 of 768 rows a grid
-        # line. Where the backdrop is that dark, go straight to the relative
-        # test, which measures against the background instead of a constant.
-        probe = background_color(rgb)
-        if int(np.max(probe)) < 110:
-            rows_, cols_ = panel_border_lines(rgb, bg=probe)
-        else:
-            rows_, cols_ = panel_border_lines(rgb)
-            if not rows_ and not cols_:
-                # Fall back to a grid ruled in a tone close to the background.
-                rows_, cols_ = panel_border_lines(rgb, bg=probe)
-        bg = background_color(rgb, skip_rows=rows_, skip_cols=cols_)
-        rgb = rgb.copy()
-        rgb[rows_, :] = bg          # paint the grid out so the gaps come back
-        rgb[:, cols_] = bg
-        # Then again per row of cells, which is the only way to see a divider
-        # that exists in one row and nowhere else on the sheet.
-        banded = banded_column_lines(rgb, rows_, bg) if rows_ else []
-        extra = 0
-        for y0, y1, cols in banded:
-            fresh = [c for c in cols if c not in set(cols_)]
-            rgb[y0:y1, fresh] = bg
-            extra += len(fresh)
-        print(f"panelled sheet: erased {len(rows_)} row and {len(cols_) + extra} "
-              f"column border lines")
-        if args.strip_captions:
-            rgb, n = strip_captions(rgb, bg, rows_)
-            print(f"stripped captions under {n} row(s) of cells")
+    native_alpha = None
+    if args.keyed:
+        # A sheet exported with real transparency has already answered the
+        # question the whole keying stage exists to answer, and answered it
+        # exactly. Every backdrop rule below — the flood from the sheet edge,
+        # --tol, --glow-tol, --unmatte, the sealed-background test — is
+        # reconstruction of an alpha channel that was thrown away on export.
+        # Where one survived, reconstructing it can only lose: --unmatte solves
+        # the aura's colour out of the grey it was painted over and gets close;
+        # the alpha channel simply has it.
+        native_alpha = np.array(sheet)[:, :, 3]
+        if int(native_alpha.min()) > args.keyed_min:
+            raise SystemExit("--keyed: this sheet is fully opaque — it has no "
+                             "alpha channel to use. Key it with --tol instead.")
+        mask = alpha = native_alpha > args.keyed_min
+        bg = np.zeros(3, dtype=np.int16)
+        soft = int(((native_alpha > args.keyed_min) & (native_alpha < 255)).sum())
+        print(f"keyed sheet: {int(mask.sum())} opaque pixels, {soft} soft-edge, "
+              f"{len(np.unique(native_alpha))} alpha levels")
     else:
-        bg = background_color(rgb)
-    if forced_bg is not None:
-        bg = forced_bg
-    mask = foreground_mask(rgb, bg, args.tol)
+        if args.panels:
+            # The absolute darkness test only means anything on a sheet lighter than
+            # the ink it is looking for. On a dark navy backdrop the background
+            # itself passes it, and the detector called 623 of 768 rows a grid
+            # line. Where the backdrop is that dark, go straight to the relative
+            # test, which measures against the background instead of a constant.
+            probe = background_color(rgb)
+            if int(np.max(probe)) < 110:
+                rows_, cols_ = panel_border_lines(rgb, bg=probe)
+            else:
+                rows_, cols_ = panel_border_lines(rgb)
+                if not rows_ and not cols_:
+                    # Fall back to a grid ruled in a tone close to the background.
+                    rows_, cols_ = panel_border_lines(rgb, bg=probe)
+            bg = background_color(rgb, skip_rows=rows_, skip_cols=cols_)
+            rgb = rgb.copy()
+            rgb[rows_, :] = bg          # paint the grid out so the gaps come back
+            rgb[:, cols_] = bg
+            # Then again per row of cells, which is the only way to see a divider
+            # that exists in one row and nowhere else on the sheet.
+            banded = banded_column_lines(rgb, rows_, bg) if rows_ else []
+            extra = 0
+            for y0, y1, cols in banded:
+                fresh = [c for c in cols if c not in set(cols_)]
+                rgb[y0:y1, fresh] = bg
+                extra += len(fresh)
+            print(f"panelled sheet: erased {len(rows_)} row and {len(cols_) + extra} "
+                  f"column border lines")
+            if args.strip_captions:
+                rgb, n = strip_captions(rgb, bg, rows_)
+                print(f"stripped captions under {n} row(s) of cells")
+        else:
+            bg = background_color(rgb)
 
-    alpha = ~outside(~mask)
+        if forced_bg is not None:
+            bg = forced_bg
+        mask = foreground_mask(rgb, bg, args.tol)
 
-    # Background sealed inside a ring is still background. Keying treats
-    # anything not reachable from the sheet edge as interior, which is what
-    # keeps mid-grey shading on her face — but a ring-shaped effect encloses a
-    # whole disc of backdrop, and that came out as a grey card in the middle of
-    # the sprite. Large enclosed regions that are still background-coloured go;
-    # small ones are real shading and stay.
-    off_bg = np.abs(rgb.astype(np.int16) - bg).max(axis=2)
-    sealed_bg = alpha & (off_bg < args.tol)
-    if sealed_bg.any():
-        lab = label_components(sealed_bg)
-        ids, counts = np.unique(lab[sealed_bg], return_counts=True)
-        big = ids[counts > alpha.size * args.max_hole]
-        if len(big):
-            alpha &= ~np.isin(lab, big)
+        alpha = ~outside(~mask)
 
-    if args.glow_tol:
-        # The sheet paints a soft warm aura around the character. It is real
-        # ink, so the keying tolerance leaves it in place, where it reads as a
-        # blurred halo tracing the whole silhouette. A second flood inward at a
-        # much looser tolerance eats haze that shades off into the background
-        # while genuine line work, hair and the blade trail stop it.
-        haze = outside(np.abs(rgb.astype(np.int16) - bg).max(axis=2) < args.glow_tol)
+        # Background sealed inside a ring is still background. Keying treats
+        # anything not reachable from the sheet edge as interior, which is what
+        # keeps mid-grey shading on her face — but a ring-shaped effect encloses a
+        # whole disc of backdrop, and that came out as a grey card in the middle of
+        # the sprite. Large enclosed regions that are still background-coloured go;
+        # small ones are real shading and stay.
+        off_bg = np.abs(rgb.astype(np.int16) - bg).max(axis=2)
+        sealed_bg = alpha & (off_bg < args.tol)
+        if sealed_bg.any():
+            lab = label_components(sealed_bg)
+            ids, counts = np.unique(lab[sealed_bg], return_counts=True)
+            big = ids[counts > alpha.size * args.max_hole]
+            if len(big):
+                alpha &= ~np.isin(lab, big)
 
-        # Depth matters as much as tolerance. Unbounded, this flood does not
-        # stop at the halo: it pours through the gold swing trail and hollows
-        # it out, and keeps going into the hand holding the dagger. Limiting it
-        # to a band of a few pixels around the existing silhouette trims the
-        # halo and leaves anything with real body to it alone.
-        band = ~alpha
-        for _ in range(args.glow_depth):
-            band |= (np.roll(band, 1, 0) | np.roll(band, -1, 0) |
-                     np.roll(band, 1, 1) | np.roll(band, -1, 1))
-        alpha &= ~(haze & band)
+        if args.glow_tol:
+            # The sheet paints a soft warm aura around the character. It is real
+            # ink, so the keying tolerance leaves it in place, where it reads as a
+            # blurred halo tracing the whole silhouette. A second flood inward at a
+            # much looser tolerance eats haze that shades off into the background
+            # while genuine line work, hair and the blade trail stop it.
+            haze = outside(np.abs(rgb.astype(np.int16) - bg).max(axis=2) < args.glow_tol)
+
+            # Depth matters as much as tolerance. Unbounded, this flood does not
+            # stop at the halo: it pours through the gold swing trail and hollows
+            # it out, and keeps going into the hand holding the dagger. Limiting it
+            # to a band of a few pixels around the existing silhouette trims the
+            # halo and leaves anything with real body to it alone.
+            band = ~alpha
+            for _ in range(args.glow_depth):
+                band |= (np.roll(band, 1, 0) | np.roll(band, -1, 0) |
+                         np.roll(band, 1, 1) | np.roll(band, -1, 1))
+            alpha &= ~(haze & band)
 
     alpha = despeckle(fill_holes(alpha, args.fill_holes, args.max_hole), args.despeckle)
 
@@ -1007,7 +1037,13 @@ def main():
     os.makedirs(frame_dir, exist_ok=True)
 
     soft_alpha = None
-    if args.unmatte:
+    if args.keyed:
+        # `alpha` is a hard mask, and cutting with it would throw away the one
+        # thing this sheet has that the others do not: a real antialiased edge.
+        # So the mask decides which pixels are kept and the sheet's own channel
+        # decides how opaque each of them is.
+        soft_alpha = np.where(alpha, native_alpha, 0).astype(np.uint8)
+    elif args.unmatte:
         rgb_lifted, soft_alpha = unmatte(rgb, bg, alpha, args.tol, args.unmatte,
                                          args.unmatte_depth)
         sheet = Image.fromarray(np.dstack([rgb_lifted, np.array(sheet)[:, :, 3]]))
