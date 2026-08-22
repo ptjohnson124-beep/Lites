@@ -18,7 +18,7 @@ sheet lands, at which point the same two commands rebuild them.
 | **spin combo** | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
 | **ranged attack** | `assets/dahlia_ranged_v4_sheet.png`, 12 drawings | `out/dahlia_ranged/` — 56 frames, 2.33 s |
 | **soul attack** | `assets/dahlia_soul_charge_sheet.png` + `..._slash_sheet.png`, 15 drawings | `out/dahlia_soul/` — 92 frames, 3.83 s |
-| **skill / special** | `assets/dahlia_skill_charge_sheet.png` + burst + recover, 22 drawings | `out/dahlia_skill/` — 49 frames, 2.04 s |
+| **skill / special** | `assets/dahlia_skill_charge_sheet.png` + burst + recover, 22 drawings | `out/dahlia_skill/` — 81 frames, 3.38 s |
 | **block** | `assets/dahlia_block_v2_sheet.png`, 8 drawings | `out/dahlia_block/` — 44 frames, 2.2 s |
 | **counter** | `assets/dahlia_counter_v2_sheet.png`, 10 drawings | `out/dahlia_counter/` — 67 frames, 3.35 s |
 | **evasion** | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 56 frames, 2.8 s |
@@ -878,11 +878,20 @@ leaves; white takes `--tol 12` and no unmatte at all.
 
 ## Three sheets, and what it buys
 
-The skill is the densest animation in the set: 22 drawings across three sheets,
-held two frames each at 24fps. That is 83 ms a drawing, against the run cycle's
-67 ms and the 11-drawing skill it replaces at 333 ms — and 83 ms is the number
-the three sheets exist to buy. Two sheets would have been 16 drawings and 125 ms,
-which reads as a series of poses rather than a movement.
+The skill is the densest animation in the set: 22 drawings across three sheets.
+83 ms a drawing is the number the third sheet exists to buy — the run cycle
+reads smooth at 67 ms and the 11-drawing skill it replaces sat at 333 ms, and
+two sheets would have been 16 drawings at 125 ms, which reads as a series of
+poses rather than a movement.
+
+Emphasis is then layered on top without spending that. Fluidity and emphasis
+only conflict if you slow the wrong poses: what reads as choppy is a pose caught
+*mid-movement* and held, while a pose already at rest can be held as long as the
+beat wants. So every transition stays at two frames and all the extra time goes
+into the extremes — 0.42 s on the peak of the charge, 0.29 s on the impact,
+0.25 s on the widest shockwave, 0.46 s on the settle. The clip runs 3.38 s
+against 2.04 s and is no less fluid for it. The smear goes the other way, down
+to a single frame.
 
 Every rule the earlier sheets forced was in the prompt for this one, and it
 shows. The three sheets came back within a pixel of each other — her effect-free

@@ -172,9 +172,16 @@ $BUILD out/dahlia_fully_insane_idle/frames -o out/dahlia_fully_insane_idle -n da
 
 # Special / skill: a frequency-wave dagger burst across three sheets and 22
 # drawings — the charge, the burst, the recovery. Replaces the 11-drawing v7
-# build. Held two frames a drawing at 24fps, which is 83ms each and the whole
-# point of spending three sheets on it: the run cycle reads smooth at 67ms and
-# the old 11-drawing skill sat at 333ms. 2.04s.
+# build. 3.38s.
+#
+# Emphasis and fluidity are not in tension, as long as the right poses take the
+# extra time. What reads as choppy is a pose caught mid-movement and held; a
+# pose that is already at rest can be held as long as the beat needs. So every
+# transition here stays at two frames — 83ms, the fluid number the three sheets
+# were spent to buy — and the time goes entirely into the extremes: 0.42s on the
+# peak of the charge, 0.29s on the impact, 0.25s on the widest shockwave, 0.46s
+# on the settle. The smear at pose 9 goes the other way, down to a single frame,
+# because a smear reads as speed when it flashes and as a pose when it is held.
 #
 # Two --erase strips, both twelve to forty pixels wide and both placed where the
 # ink density between two poses bottoms out. The burst sheet's last two poses
@@ -209,7 +216,7 @@ python3 tools/merge_sheets.py out/dahlia_skill_charge/frames out/dahlia_skill_bu
   -o out/dahlia_skill -n dahlia_skill
 $BUILD out/dahlia_skill/frames -o out/dahlia_skill -n dahlia_skill \
   --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22 \
-  --holds 4,2,2,2,2,2,2,3,1,2,2,2,2,2,2,2,2,2,2,2,2,5 \
+  --holds 7,2,2,2,5,2,3,10,1,7,3,6,2,2,3,2,2,2,2,2,3,11 \
   --fps 24 --breathe 0 --bob 2 --sway 2 --stabilize none \
   --shake 10:6,11:8,12:5 \
   --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:6,10:14,11:18,12:16,13:12,14:8,15:4,16:2,17:0,18:0,19:0,20:0,21:0,22:0
