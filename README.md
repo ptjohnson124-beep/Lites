@@ -1126,6 +1126,25 @@ which pixels are kept — the despeckle and hole-filling stages want one — but
 pixels that survive take their opacity from the sheet's own channel, so the
 antialiasing is passed through rather than re-derived.
 
+## A near-white checkerboard is not recoverable
+
+`--checker` exists because an editor draws "empty" as a grey chequer and some
+exports bake it into the pixels. It works when the chequer is mid-grey. It
+cannot work when the chequer is nearly white and the character is wearing
+white.
+
+Two A-pose exports arrived flattened onto a chequer of 239 and 255. Her hoodie
+is 245 to 255. There is no tolerance that separates those: keyed back, the
+result keeps **0 near-white pixels** — the hoodie and the trousers go with the
+background and what survives is her hair, her skin and a few outlines. The
+flood fill is not at fault. The two things are genuinely the same colour, and
+the information that told them apart was the alpha channel that the export
+discarded.
+
+So the rule in the sheet spec is not a preference. On a light chequer against
+light clothing, a flattened export is lost work, and the only fix is to export
+it again with the transparency intact.
+
 ## Bigger source, smaller display
 
 A small sprite does animate more smoothly, and the reason matters because the
