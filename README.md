@@ -1160,6 +1160,35 @@ sheet needs it lower again, at 1200, because her eyes are two islands of about
 5000 pixels each and the threshold that stops a boot splitting drops them
 entirely.
 
+### The sheets that finally worked
+
+Third set of parts sheets, drawn from an A-pose rather than from a stance, and
+the difference is in the numbers rather than in anyone's opinion:
+
+| | first attempt | second | this one |
+| --- | --- | --- | --- |
+| upper arm, sheet to sheet | 124% | 106% | **100.0%** |
+| forearm, sheet to sheet | 84% | — | **100.0%** |
+| assembled proportion | — | — | **4.3 heads** (reference 4.1) |
+| legs as separate thigh and shin | no | yes | yes |
+| far-side set a true shading pair | no | yes | yes |
+| joints carry overlap | no | yes | yes |
+
+The calibration pieces are drawn on two different sheets and came back
+*pixel-identical* — 55×110 and 50×100 on both. That is the check paying for
+itself: the same measurement caught a 24% drift on the first set and now
+certifies there is none.
+
+She assembles to 589 px at the crown, which is smaller than the previous
+1450 px rig. That is the one thing worth knowing about these sheets: the pieces
+are drawn at roughly 40% of the A-pose's own resolution, so the rig is about
+twice the size of a pose-sheet sprite rather than four times.
+
+It also caught a scaling bug in the generated idle. The dagger toss had a
+700 px apex, tuned by eye against the tall rig; the same constant against a
+620 px one threw the dagger clean off the top of her. It is measured from her
+hand to the top of her head now, so a throw is proportional to the thrower.
+
 ### The bind pose is authored as angles
 
 The first layout gave every joint a world coordinate, and what came out was a

@@ -1,152 +1,152 @@
 {
  "head": {
-  "width": 207,
-  "height": 313,
-  "axis": 93.52,
-  "length": 312.0
+  "width": 127,
+  "height": 199,
+  "axis": 89.94,
+  "length": 198.0
  },
  "hair-fringe": {
-  "width": 278,
-  "height": 282,
-  "axis": 170.04,
-  "length": 277.3
+  "width": 164,
+  "height": 161,
+  "axis": 178.66,
+  "length": 163.0
  },
  "hair-crown": {
-  "width": 231,
-  "height": 255,
-  "axis": 88.45,
-  "length": 255.3
+  "width": 146,
+  "height": 162,
+  "axis": 90.74,
+  "length": 161.2
  },
  "hair-tail": {
-  "width": 266,
-  "height": 544,
-  "axis": 90.03,
-  "length": 543.0
+  "width": 152,
+  "height": 310,
+  "axis": 90.08,
+  "length": 309.0
  },
  "hair-strand-l": {
-  "width": 65,
-  "height": 321,
-  "axis": 94.0,
-  "length": 319.0
+  "width": 62,
+  "height": 227,
+  "axis": 99.39,
+  "length": 226.9
  },
  "hair-strand-r": {
-  "width": 71,
-  "height": 326,
-  "axis": 85.42,
-  "length": 323.5
+  "width": 61,
+  "height": 225,
+  "axis": 80.63,
+  "length": 224.6
  },
  "hood": {
-  "width": 257,
-  "height": 243,
-  "axis": -154.3,
-  "length": 260.7
+  "width": 147,
+  "height": 82,
+  "axis": 179.94,
+  "length": 146.0
  },
  "eye-l": {
-  "width": 94,
-  "height": 71,
-  "axis": -175.16,
-  "length": 93.6
+  "width": 55,
+  "height": 60,
+  "axis": 82.05,
+  "length": 63.7
  },
  "eye-r": {
-  "width": 81,
-  "height": 71,
-  "axis": 146.27,
-  "length": 87.7
+  "width": 55,
+  "height": 59,
+  "axis": 97.95,
+  "length": 62.4
  },
  "torso": {
-  "width": 285,
-  "height": 334,
-  "axis": 83.75,
-  "length": 338.0
+  "width": 175,
+  "height": 155,
+  "axis": 90.26,
+  "length": 154.2
  },
  "hips": {
-  "width": 361,
-  "height": 311,
-  "axis": 176.39,
-  "length": 359.9
+  "width": 155,
+  "height": 70,
+  "axis": 179.42,
+  "length": 154.3
  },
  "arm-upper": {
-  "width": 175,
-  "height": 345,
-  "axis": 74.52,
-  "length": 353.6
+  "width": 55,
+  "height": 110,
+  "axis": 89.61,
+  "length": 109.1
  },
  "arm-fore": {
-  "width": 217,
-  "height": 168,
-  "axis": -151.33,
-  "length": 231.8
+  "width": 50,
+  "height": 100,
+  "axis": 91.15,
+  "length": 99.3
  },
  "hand-fist": {
-  "width": 153,
-  "height": 141,
-  "axis": -146.14,
-  "length": 167.8
+  "width": 50,
+  "height": 55,
+  "axis": 125.09,
+  "length": 58.9
  },
  "hand-open": {
-  "width": 163,
-  "height": 178,
-  "axis": 51.51,
-  "length": 197.7
+  "width": 55,
+  "height": 60,
+  "axis": 80.24,
+  "length": 60.5
  },
  "holster": {
-  "width": 228,
-  "height": 208,
-  "axis": -171.9,
-  "length": 233.3
+  "width": 100,
+  "height": 85,
+  "axis": 162.24,
+  "length": 112.9
  },
  "dagger": {
-  "width": 399,
-  "height": 149,
-  "axis": 177.11,
-  "length": 399.5
+  "width": 145,
+  "height": 45,
+  "axis": 179.18,
+  "length": 144.1
  },
  "thigh": {
-  "width": 165,
-  "height": 328,
-  "axis": 99.84,
-  "length": 333.9
+  "width": 60,
+  "height": 125,
+  "axis": 88.91,
+  "length": 124.3
  },
  "shin": {
-  "width": 116,
-  "height": 304,
-  "axis": 93.16,
-  "length": 303.8
+  "width": 50,
+  "height": 110,
+  "axis": 88.01,
+  "length": 109.4
  },
  "boot": {
-  "width": 171,
-  "height": 243,
-  "axis": 74.2,
-  "length": 264.6
+  "width": 70,
+  "height": 90,
+  "axis": 72.11,
+  "length": 98.8
  },
  "thigh-far": {
-  "width": 158,
-  "height": 318,
-  "axis": 99.43,
-  "length": 325.7
+  "width": 60,
+  "height": 125,
+  "axis": 88.92,
+  "length": 124.3
  },
  "shin-far": {
-  "width": 114,
-  "height": 299,
-  "axis": 93.07,
-  "length": 298.9
+  "width": 50,
+  "height": 110,
+  "axis": 87.99,
+  "length": 109.4
  },
  "boot-far": {
-  "width": 170,
-  "height": 238,
-  "axis": 73.69,
-  "length": 258.8
+  "width": 70,
+  "height": 90,
+  "axis": 72.11,
+  "length": 98.8
  },
  "arm-upper-far": {
-  "width": 167,
-  "height": 335,
-  "axis": 76.21,
-  "length": 340.4
+  "width": 55,
+  "height": 110,
+  "axis": 89.6,
+  "length": 109.1
  },
  "arm-fore-far": {
-  "width": 233,
-  "height": 192,
-  "axis": -147.52,
-  "length": 253.2
+  "width": 50,
+  "height": 100,
+  "axis": 91.11,
+  "length": 99.3
  }
 }

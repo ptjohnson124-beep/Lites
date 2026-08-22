@@ -218,7 +218,12 @@ def transforms(bones, order, timelines, t):
 # absorb, settle — and because this is an idle it has to close exactly on
 # itself, so the last value of every timeline equals the first.
 LOOP, TOSS, CATCH = 2.5, 0.65, 1.35
-APEX = 700.0            # how far above the hand the dagger gets
+# How far above the hand the dagger gets, as a fraction of her standing
+# height rather than a pixel count. The first version was 700px, tuned by eye
+# against a rig that stood 1450px tall; the same number against a 620px rig
+# threw the dagger clean off the top of her. A throw is proportional to the
+# thrower.
+APEX_CLEARANCE = 1.10
 FLIPS = 1               # whole turns in the air; a half turn lands blade-first
 
 
@@ -286,13 +291,17 @@ def toss_animation(bones, order, fps=24):
 
     launch, land = held(TOSS), held(CATCH)
     span = CATCH - TOSS
+    # Measured from the hand to the top of her head, so the throw reads the same
+    # whatever size the rig is: the dagger always rises a little past her crown.
+    top = max(t["pos"][1] for t in rest.values())
+    apex = (top - launch[0][1]) * APEX_CLEARANCE
 
     def flight(t):
         u = (t - TOSS) / span
         x = launch[0][0] + (land[0][0] - launch[0][0]) * u
         # A parabola through both hands with its apex APEX above the line
         # between them: the arc a thrown thing actually takes.
-        y = launch[0][1] + (land[0][1] - launch[0][1]) * u + 4 * APEX * u * (1 - u)
+        y = launch[0][1] + (land[0][1] - launch[0][1]) * u + 4 * apex * u * (1 - u)
         # A whole number of turns so it arrives grip-first, the way it left.
         turn = launch[1] + ((land[1] - launch[1]) + 360.0 * FLIPS) * u
         return (x, y), turn

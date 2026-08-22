@@ -12,11 +12,14 @@
 # keeps a boot from splitting will drop them entirely.
 set -e
 SLICE="python3 tools/slice_sheet.py"
-KEY="--components --cluster-gap 8 --tol 6 --glow-tol 0 --fill-holes 3 --despeckle 24 --unmatte 0"
+KEY="--components --tol 6 --glow-tol 0 --unmatte 0"
 
-$SLICE assets/dahlia_rig_head_sheet.png -o out/rig_head $KEY --component-min 1200 --single head
-$SLICE assets/dahlia_rig_body_sheet.png -o out/rig_body $KEY --component-min 4000 --single body
-$SLICE assets/dahlia_rig_legs_sheet.png -o out/rig_legs $KEY --component-min 4000 --single legs
+$SLICE assets/dahlia_rig_head_sheet.png -o out/rig_head $KEY \
+  --component-min 600 --cluster-gap 2 --fill-holes 2 --despeckle 12 --single head
+$SLICE assets/dahlia_rig_body_sheet.png -o out/rig_body $KEY \
+  --component-min 900 --cluster-gap 6 --fill-holes 3 --despeckle 16 --single body
+$SLICE assets/dahlia_rig_legs_sheet.png -o out/rig_legs $KEY \
+  --component-min 900 --cluster-gap 6 --fill-holes 3 --despeckle 16 --single legs
 
 python3 tools/pack_atlas.py rig/dahlia.json -o out/rig -n dahlia
 python3 tools/rig_skeleton.py rig/dahlia.json -o out/rig -n dahlia --preview --preview-anim

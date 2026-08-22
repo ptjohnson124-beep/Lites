@@ -1,180 +1,180 @@
 dahlia.png
-size: 2048,2048
+size: 1024,1024
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
 head
   rotate: false
-  xy: 1386, 2
-  size: 207, 313
-  orig: 207, 313
+  xy: 289, 2
+  size: 127, 199
+  orig: 127, 199
   offset: 0, 0
   index: -1
 hair-fringe
   rotate: false
-  xy: 240, 550
-  size: 278, 282
-  orig: 278, 282
+  xy: 570, 2
+  size: 164, 161
+  orig: 164, 161
   offset: 0, 0
   index: -1
 hair-crown
   rotate: false
-  xy: 522, 550
-  size: 231, 255
-  orig: 231, 255
+  xy: 420, 2
+  size: 146, 162
+  orig: 146, 162
   offset: 0, 0
   index: -1
 hair-tail
   rotate: false
   xy: 2, 2
-  size: 266, 544
-  orig: 266, 544
+  size: 152, 310
+  orig: 152, 310
   offset: 0, 0
   index: -1
 hair-strand-l
   rotate: false
-  xy: 1155, 2
-  size: 65, 321
-  orig: 65, 321
+  xy: 158, 2
+  size: 62, 227
+  orig: 62, 227
   offset: 0, 0
   index: -1
 hair-strand-r
   rotate: false
-  xy: 1080, 2
-  size: 71, 326
-  orig: 71, 326
+  xy: 224, 2
+  size: 61, 225
+  orig: 61, 225
   offset: 0, 0
   index: -1
 hood
   rotate: false
-  xy: 757, 550
-  size: 257, 243
-  orig: 257, 243
+  xy: 652, 316
+  size: 147, 82
+  orig: 147, 82
   offset: 0, 0
   index: -1
 eye-l
   rotate: false
-  xy: 783, 858
-  size: 94, 71
-  orig: 94, 71
+  xy: 962, 316
+  size: 55, 60
+  orig: 55, 60
   offset: 0, 0
   index: -1
 eye-r
   rotate: false
-  xy: 881, 858
-  size: 81, 71
-  orig: 81, 71
+  xy: 61, 445
+  size: 55, 59
+  orig: 55, 59
   offset: 0, 0
   index: -1
 torso
   rotate: false
-  xy: 622, 2
-  size: 285, 334
-  orig: 285, 334
+  xy: 738, 2
+  size: 175, 155
+  orig: 175, 155
   offset: 0, 0
   index: -1
 hips
   rotate: false
-  xy: 1597, 2
-  size: 361, 311
-  orig: 361, 311
+  xy: 803, 316
+  size: 155, 70
+  orig: 155, 70
   offset: 0, 0
   index: -1
 arm-upper
   rotate: false
-  xy: 272, 2
-  size: 175, 345
-  orig: 175, 345
+  xy: 66, 316
+  size: 55, 110
+  orig: 55, 110
   offset: 0, 0
   index: -1
 arm-fore
   rotate: false
-  xy: 2, 858
-  size: 217, 168
-  orig: 217, 168
+  xy: 292, 316
+  size: 50, 100
+  orig: 50, 100
   offset: 0, 0
   index: -1
 hand-fist
   rotate: false
-  xy: 626, 858
-  size: 153, 141
-  orig: 153, 141
+  xy: 120, 445
+  size: 50, 55
+  orig: 50, 55
   offset: 0, 0
   index: -1
 hand-open
   rotate: false
-  xy: 1836, 550
-  size: 163, 178
-  orig: 163, 178
+  xy: 2, 445
+  size: 55, 60
+  orig: 55, 60
   offset: 0, 0
   index: -1
 holster
   rotate: false
-  xy: 1367, 550
-  size: 228, 208
-  orig: 228, 208
+  xy: 548, 316
+  size: 100, 85
+  orig: 100, 85
   offset: 0, 0
   index: -1
 dagger
   rotate: false
-  xy: 223, 858
-  size: 399, 149
-  orig: 399, 149
+  xy: 174, 445
+  size: 145, 45
+  orig: 145, 45
   offset: 0, 0
   index: -1
 thigh
   rotate: false
-  xy: 911, 2
-  size: 165, 328
-  orig: 165, 328
+  xy: 917, 2
+  size: 60, 125
+  orig: 60, 125
   offset: 0, 0
   index: -1
 shin
   rotate: false
-  xy: 2, 550
-  size: 116, 304
-  orig: 116, 304
+  xy: 125, 316
+  size: 50, 110
+  orig: 50, 110
   offset: 0, 0
   index: -1
 boot
   rotate: false
-  xy: 1018, 550
-  size: 171, 243
-  orig: 171, 243
+  xy: 400, 316
+  size: 70, 90
+  orig: 70, 90
   offset: 0, 0
   index: -1
 thigh-far
   rotate: false
-  xy: 1224, 2
-  size: 158, 318
-  orig: 158, 318
+  xy: 2, 316
+  size: 60, 125
+  orig: 60, 125
   offset: 0, 0
   index: -1
 shin-far
   rotate: false
-  xy: 122, 550
-  size: 114, 299
-  orig: 114, 299
+  xy: 179, 316
+  size: 50, 110
+  orig: 50, 110
   offset: 0, 0
   index: -1
 boot-far
   rotate: false
-  xy: 1193, 550
-  size: 170, 238
-  orig: 170, 238
+  xy: 474, 316
+  size: 70, 90
+  orig: 70, 90
   offset: 0, 0
   index: -1
 arm-upper-far
   rotate: false
-  xy: 451, 2
-  size: 167, 335
-  orig: 167, 335
+  xy: 233, 316
+  size: 55, 110
+  orig: 55, 110
   offset: 0, 0
   index: -1
 arm-fore-far
   rotate: false
-  xy: 1599, 550
-  size: 233, 192
-  orig: 233, 192
+  xy: 346, 316
+  size: 50, 100
+  orig: 50, 100
   offset: 0, 0
   index: -1
