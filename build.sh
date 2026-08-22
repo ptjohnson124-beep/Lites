@@ -170,36 +170,49 @@ $BUILD out/dahlia_fully_insane_idle/frames -o out/dahlia_fully_insane_idle -n da
   --holds 1,2,1,6,1,2,2,1,1,4,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,4,2,1,1,1,2,1,1,1,4,2,1,2,2,1,1,6,2,1 \
   --fps 20 --breathe 0 --sway 0 --despeckle 24
 
-# Special / skill, from the v7 sheet: eleven drawings, and the smoothest layout
-# of the seven. Measured as the mean pixel change between consecutive drawings,
-# its average step is 82 against v6's 93, and only 2 of its 10 transitions are
-# large where 4 of v6's 9 were — v6 crossed its whole vortex section in a run of
-# big jumps, this one spends four drawings climbing into the peak and six coming
-# down. It is also the first skill sheet whose effect never blinks in reading
-# order: none, glitch, orb, vortex, peak, wake, trail, none, none. Nothing has
-# to be reordered.
+# Special / skill: a frequency-wave dagger burst across three sheets and 22
+# drawings — the charge, the burst, the recovery. Replaces the 11-drawing v7
+# build. Held two frames a drawing at 24fps, which is 83ms each and the whole
+# point of spending three sheets on it: the run cycle reads smooth at 67ms and
+# the old 11-drawing skill sat at 333ms. 2.04s.
 #
-# 3.67s, against v6's 2.17s. The skill had been getting shorter with every sheet
-# — 5.45, 3.75, 2.67, 2.25, 2.17 — and had run past deliberate into hurried.
+# Two --erase strips, both twelve to forty pixels wide and both placed where the
+# ink density between two poses bottoms out. The burst sheet's last two poses
+# touch through their shockwave rings, and the recovery sheet's first two touch
+# through the wave arcs — one fused component each, so seven poses out of eight
+# without the cut. The recovery strip has to be the wider of the two: a narrower
+# one severed the poses but left a sliver standing, which then counted as a
+# ninth pose of four pixels.
 #
-# The release and the recovery are timed against each other rather than evenly.
-# Poses 4 to 6 — the vortex closing, the beam, the punch through it — run 0.63s
-# together, half what they held before: an unleash reads as force when it snaps
-# and as a slideshow when it is savoured. Everything after it slows down and
-# keeps slowing, 0.33s to 0.58s per drawing across the five recovery poses, so
-# the clip lands heavily instead of stopping.
+# --component-min 20000, an order of magnitude above the usual: every real pose
+# here is over 33000 body pixels, so the threshold can sit high enough to ignore
+# anything an --erase leaves behind.
 #
-# Grain filter swept on this sheet as on v6: 10 takes 19% for no measurable loss
-# of line work (100.2%), 14 starts cutting into the drawing (94%).
-$SLICE assets/dahlia_skill_v7_sheet.png -o out/dahlia_skill \
-  --components --tol 14 --glow-tol 0 --fill-holes 3 \
-  --despeckle 24 --denoise 10 --unmatte 45 --align silhouette --single dahlia_skill
+# No --scale. The three sheets came back within a pixel of each other — her
+# effect-free stance measures 332px on the charge sheet and 332px on the
+# recovery sheet, which is the two-attachment continuity rule working as well as
+# it ever has.
+$SLICE assets/dahlia_skill_charge_sheet.png -o out/dahlia_skill_charge \
+  --components --component-min 20000 --cluster-gap 14 --tol 8 --glow-tol 0 --fill-holes 4 \
+  --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_skill_charge
+$SLICE assets/dahlia_skill_burst_sheet.png -o out/dahlia_skill_burst \
+  --erase 1070,390,1088,768 \
+  --components --component-min 20000 --cluster-gap 14 --tol 8 --glow-tol 0 --fill-holes 4 \
+  --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_skill_burst
+$SLICE assets/dahlia_skill_recover_sheet.png -o out/dahlia_skill_recover \
+  --erase 375,40,415,375 \
+  --components --component-min 20000 --cluster-gap 14 --tol 8 --glow-tol 0 --fill-holes 4 \
+  --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_skill_recover
+python3 tools/merge_sheets.py out/dahlia_skill_charge/frames out/dahlia_skill_burst/frames \
+  out/dahlia_skill_recover/frames \
+  --skip-first out/dahlia_skill_burst/frames --skip-first out/dahlia_skill_recover/frames \
+  -o out/dahlia_skill -n dahlia_skill
 $BUILD out/dahlia_skill/frames -o out/dahlia_skill -n dahlia_skill \
-  --poses 1,2,3,4,5,6,7,8,9,10,11 \
-  --holds 10,6,7,4,7,4,8,9,10,9,14 \
-  --fps 24 --breathe 0 --bob 2 --sway 2 \
-  --shake 4:4,5:7,6:5 \
-  --travel 1:0,2:0,3:0,4:4,5:10,6:20,7:14,8:8,9:4,10:0,11:0
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22 \
+  --holds 4,2,2,2,2,2,2,3,1,2,2,2,2,2,2,2,2,2,2,2,2,5 \
+  --fps 24 --breathe 0 --bob 2 --sway 2 --stabilize none \
+  --shake 10:6,11:8,12:5 \
+  --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:6,10:14,11:18,12:16,13:12,14:8,15:4,16:2,17:0,18:0,19:0,20:0,21:0,22:0
 
 # Moving. Built in place, with no --travel: a locomotion clip is translated by
 # whatever plays it, and baking the ground into the loop would have her dash out

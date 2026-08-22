@@ -18,7 +18,7 @@ sheet lands, at which point the same two commands rebuild them.
 | **spin combo** | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
 | **ranged attack** | `assets/dahlia_ranged_v4_sheet.png`, 12 drawings | `out/dahlia_ranged/` — 56 frames, 2.33 s |
 | **soul attack** | `assets/dahlia_soul_charge_sheet.png` + `..._slash_sheet.png`, 15 drawings | `out/dahlia_soul/` — 92 frames, 3.83 s |
-| **skill / special** | `assets/dahlia_skill_v7_sheet.png`, 11 drawings | `out/dahlia_skill/` — 88 frames, 3.67 s |
+| **skill / special** | `assets/dahlia_skill_charge_sheet.png` + burst + recover, 22 drawings | `out/dahlia_skill/` — 49 frames, 2.04 s |
 | **block** | `assets/dahlia_block_v2_sheet.png`, 8 drawings | `out/dahlia_block/` — 44 frames, 2.2 s |
 | **counter** | `assets/dahlia_counter_v2_sheet.png`, 10 drawings | `out/dahlia_counter/` — 67 frames, 3.35 s |
 | **evasion** | `assets/dahlia_dodge_v2_sheet.png`, 13 drawings | `out/dahlia_dodge/` — 56 frames, 2.8 s |
@@ -730,7 +730,7 @@ large: measuring Dahlia's own height in the finished frames,
 | `dahlia_block_v2_sheet.png` | 8 | 343 px |
 | `dahlia_attack_b_sheet.png` | 8 | 342 px |
 | … | | |
-| `dahlia_skill_v7_sheet.png` | 11 | 209 px |
+| `dahlia_skill_charge_sheet.png` + 2 | 22 | 332 px |
 | `dahlia_soul_charge_sheet.png` + slash | 15 | 363 px |
 | `dahlia_ragdoll_b_sheet.png` | 27 | 154 px *(retired)* |
 
@@ -875,6 +875,27 @@ colour rather than blended over the paper.
 Three backdrops now, three different keys. Mid-grey takes `--tol 14` and
 `--unmatte 45`; dark takes `--tol 3` and `--glow-tol 20` to clean the rim it
 leaves; white takes `--tol 12` and no unmatte at all.
+
+## Three sheets, and what it buys
+
+The skill is the densest animation in the set: 22 drawings across three sheets,
+held two frames each at 24fps. That is 83 ms a drawing, against the run cycle's
+67 ms and the 11-drawing skill it replaces at 333 ms — and 83 ms is the number
+the three sheets exist to buy. Two sheets would have been 16 drawings and 125 ms,
+which reads as a series of poses rather than a movement.
+
+Every rule the earlier sheets forced was in the prompt for this one, and it
+shows. The three sheets came back within a pixel of each other — her effect-free
+stance measures 332 px on the charge sheet and 332 px on the recovery sheet — so
+no `--scale` was needed at all, where the soul attack's two sheets were 6% apart
+and the one before that 9%. All 22 poses land with her boots on the same line.
+
+What the rules did not prevent was contact between poses at the ends of a row,
+which needed two `--erase` strips, both placed where the ink density between two
+poses bottoms out. One of them is worth recording: a narrow strip severed the
+poses but left a sliver of one standing, which then counted as a ninth pose of
+four pixels. The cut has to be wide enough to take the whole overlap, not just
+enough to break the connection.
 
 ## Joining two sheets into one clip
 
