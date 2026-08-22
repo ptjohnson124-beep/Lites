@@ -246,24 +246,23 @@ $BUILD out/dahlia_fully_insane_idle/frames -o out/dahlia_fully_insane_idle -n da
 # here is over 33000 body pixels, so the threshold can sit high enough to ignore
 # anything an --erase leaves behind.
 #
-# The beats, fourth pass. The three rings that gather on the dagger (poses 2, 3
-# and 4) each hold a full second, so each is seen arriving on its own rather
-# than as one flicker of three — three of the clip's eight and a half seconds
-# spent before she has swung, which is deliberate.
+# The beats, fifth pass, and it undoes the four before it. Every earlier pass
+# added weight somewhere; what came out was an 8.5s special in which the rate
+# the sheets were actually drawn for never appeared once. This one runs at that
+# rate and buys its emphasis out of it rather than on top of it.
 #
-# Pose 7 is where the ring first closes, and it was going by in 125ms; it now
-# holds 0.58s, longer than the peak that follows it, because a ring completing
-# is the event and the peak is only its brightest frame. Poses 11, 12 and 13
-# are the pulses after impact and were cut 2, 9, 2 — one flash, one hold, one
-# flash, which read as a stutter rather than a rhythm. They are 8 frames each
-# now: same beat three times is what a pulse is.
+# 22 drawings, 2.54s, 116ms a drawing on average. The floor is two frames —
+# 83ms, what these sheets were drawn for, near the run cycle's 67ms — and only
+# four poses rise off it: the ring closing at 208ms, the peak at 167ms, the
+# impact at 208ms, the settle at 208ms. Four beats is what two and a half
+# seconds has room for. The three pulses stay even at 125ms each, because
+# evenness is what makes them read as pulses, and the smear stays at one frame.
 #
-# The dissipation is the one place more drawings would help and there are only
-# six. Held evenly they step, however long you make them, so 16-21 ease out
-# instead: 3, 4, 5, 7, 8, 10 frames. It leaves the burst at 125ms a drawing —
-# near the 83ms the sheets were drawn for — and arrives at 417ms by the last
-# ring, which is the fade slowing to a stop rather than six equal chunks. The
-# total is the same 1.54s it took before.
+# Readability was never a function of duration here. All 22 drawings differ, so
+# at 83ms each they all register; what stopped registering was a beat held long
+# enough for the eye to leave it. The three seconds spent on three drawings of
+# a ring gathering was the clearest case — nothing in those three moves except
+# the ring itself, so most of it was a still image with a countdown on it.
 #
 # No --scale. The three sheets came back within a pixel of each other — her
 # effect-free stance measures 332px on the charge sheet and 332px on the
@@ -286,7 +285,7 @@ python3 tools/merge_sheets.py out/dahlia_skill_charge/frames out/dahlia_skill_bu
   -o out/dahlia_skill -n dahlia_skill
 $BUILD out/dahlia_skill/frames -o out/dahlia_skill -n dahlia_skill \
   --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22 \
-  --holds 10,24,24,24,3,3,14,10,1,10,8,8,8,3,3,3,4,5,7,8,10,14 \
+  --holds 3,2,2,2,2,2,5,4,1,5,3,3,3,2,2,2,2,2,2,3,4,5 \
   --fps 24 --breathe 0 --bob 2 --sway 2 --stabilize none \
   --shake 10:6,11:8,12:5 \
   --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:6,10:14,11:18,12:16,13:12,14:8,15:4,16:2,17:0,18:0,19:0,20:0,21:0,22:0

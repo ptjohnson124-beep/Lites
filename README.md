@@ -18,7 +18,7 @@ sheet lands, at which point the same two commands rebuild them.
 | **spin combo** | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
 | **ranged attack** | `assets/dahlia_ranged_v4_sheet.png`, 12 drawings | `out/dahlia_ranged/` — 56 frames, 2.33 s |
 | **soul attack** | `assets/dahlia_soul_charge_sheet.png` + `..._slash_sheet.png`, 15 drawings | `out/dahlia_soul/` — 92 frames, 3.83 s |
-| **skill / special** | `assets/dahlia_skill_charge_sheet.png` + burst + recover, 22 drawings | `out/dahlia_skill/` — 204 frames, 8.50 s |
+| **skill / special** | `assets/dahlia_skill_charge_sheet.png` + burst + recover, 22 drawings | `out/dahlia_skill/` — 61 frames, 2.54 s |
 | **block** | `assets/dahlia_block_v2_sheet.png`, 8 drawings | `out/dahlia_block/` — 44 frames, 2.2 s |
 | **counter** | `assets/dahlia_counter_v2_sheet.png`, 10 drawings | `out/dahlia_counter/` — 67 frames, 3.35 s |
 | **evasion** | `assets/dahlia_dodge_a_sheet.png` + b, 15 drawings | `out/dahlia_dodge/` — 56 frames, 2.33 s |
@@ -969,28 +969,27 @@ went into poses that are already at rest — 0.42 s each on the opening idle, th
 peak of the charge and the impact, 0.38 s on the widest shockwave, 0.50 s on the
 settle. The smear goes the other way, down to a single frame.
 
-Four passes of retiming later the clip runs 8.50 s against the 2.04 s it was
-first cut at, and the halves of it pull in opposite directions on purpose. The
-charge is slow to the point of being a separate beat: the three rings that
-gather on the dagger (poses 2, 3 and 4) hold a full second each, so each is seen
-arriving on its own instead of as one flicker of three. That is three of the
-eight and a half seconds spent before she has swung.
+Then four passes of retiming took it to 8.50 s, and the fifth undid all four.
+Each pass had added weight somewhere and every addition was individually
+defensible, but the sum was a special in which the rate the sheets were drawn
+for never appeared once. Three of those eight seconds were three drawings of a
+ring gathering on the dagger, held a second each — and nothing moves in those
+three except the ring, so most of that was a still image with a countdown on it.
+A beat held past the point where the eye leaves it does not read as emphasis; it
+reads as a pause.
 
-Two of the later fixes are worth naming because they are the same mistake in
-different places. **Pose 7 is where the ring closes**, and it was going by in
-125 ms — the completion of the shape was cheaper than the frame that merely
-lights it brighter. It holds 0.58 s now, longer than the peak that follows it,
-because the event is the ring closing and the peak is only its brightest frame.
-And **poses 11, 12 and 13 are the pulses** after impact, cut 2, 9, 2 frames:
-flash, hold, flash. Three equal beats are what a pulse is, so they are 8 frames
-each.
+The build is 61 frames, 2.54 s, 116 ms a drawing. The floor is two frames — the
+83 ms these sheets were drawn for, near the run cycle's 67 ms — and only four
+poses rise off it: the ring closing at 208 ms, the peak of the charge at 167 ms,
+the impact at 208 ms, the settle at 208 ms. Four beats is what two and a half
+seconds has room for, and emphasis now comes out of the running rate rather than
+being stacked on top of it.
 
-The dissipation is the one place where more drawings would help and there are
-only six. Held evenly they step, however long you make them — 250 ms a drawing
-against the 83 ms the sheets were drawn for. So poses 16 to 21 ease out instead:
-3, 4, 5, 7, 8, 10 frames. It leaves the burst at 125 ms a drawing and arrives at
-417 ms by the last ring, which reads as a fade slowing to a stop rather than six
-equal chunks, and it costs nothing — the total is the same 1.54 s it was.
+Readability was never a function of duration. All 22 drawings differ, so at
+83 ms each every one of them registers — which is the whole reason the third
+sheet exists. The three pulses after the impact stay even at 125 ms apiece
+because evenness is what makes them read as pulses at all, and the smear stays
+at a single frame.
 
 Every rule the earlier sheets forced was in the prompt for this one, and it
 shows. The three sheets came back within a pixel of each other — her effect-free
