@@ -574,14 +574,14 @@ $BUILD out/dahlia_attack/frames -o out/dahlia_attack -n dahlia_attack \
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  -o out/atlas -n dahlia --preview --preview-scale 0.5
+  out/dahlia_block -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
 # bytes matter. --format webp here is a STILL image, not an animation: the
 # atlas is one picture either way, and WebP stores it in a third of the PNG's
 # bytes with the same pixels and the same alpha. 8.8MB becomes 1.0MB.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  -o out/web -n dahlia --scale 0.5 --format webp
+  out/dahlia_block -o out/web -n dahlia --scale 0.5 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 
 # Put the sprite feed into the combat tracker. Re-runnable: the injected block
@@ -593,3 +593,43 @@ cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 # blocks it -- and it is inlined as a data URI, which is how that file already
 # carries its battle-map backdrops.
 # python3 tools/inject_sprite_panel.py path/to/BLACKBOX_MERC_OS.html -a out/web
+
+# The block: panicked, played off cool. Three sheets, 24 drawings, 22 played --
+# both duplicated attachment poses came back this time, scoring 34 and 17
+# against a silhouette where a different drawing scores 45 or more, and the
+# second is the closest copy any sheet has returned.
+#
+# Which is just as well, because the playoff sheet is drawn 11% smaller than
+# the impact sheet and only the overlap pose could have measured that. The
+# correction cross-checks: at 109.5% her standing height on that sheet lands
+# within a few per cent of her standing height on the flinch sheet, which is
+# the one drawing the two sheets do not share.
+#
+# Timing is the inverse of the attack -- fast at the front, slow at the back.
+# Being caught out is quick; pretending it did not happen takes its time.
+#
+# Pose 20 is held for three frames where 19 and 21 get seven and six. The
+# playoff sheet compressed the rise and the hair flick into single drawings, so
+# 18->19 and 19->20 are both hard cuts with nothing drawn in between. A pose
+# held as long as its neighbours reads as a third pose and the cut looks like a
+# dropped frame; held short it reads as the movement between two, which is what
+# it has to carry. The real fix is four more drawings on the rise, not timing.
+$SLICE assets/dahlia_block_flinch_sheet.png -o out/blk_flinch \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single flinch
+$SLICE assets/dahlia_block_impact_sheet.png -o out/blk_impact \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single impact
+$SLICE assets/dahlia_block_playoff_sheet.png -o out/blk_playoff \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single playoff
+python3 tools/merge_sheets.py out/blk_flinch/frames out/blk_impact/frames \
+  out/blk_playoff/frames \
+  --skip-first out/blk_impact/frames --skip-first out/blk_playoff/frames \
+  --match-scale -o out/dahlia_block -n dahlia_block
+$BUILD out/dahlia_block/frames -o out/dahlia_block -n dahlia_block \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22 \
+  --holds 6,3,2,2,2,2,2,3,3,2,2,3,2,2,4,5,4,6,7,3,6,10 \
+  --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:10,10:26,11:38,12:44,13:46,14:46,15:46,16:44,17:40,18:34,19:18,20:8,21:3,22:0 \
+  --shake 9:9,10:5 \
+  --fps 24 --breathe 0 --bob 0 --sway 0

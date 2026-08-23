@@ -20,7 +20,8 @@
  const ATLAS = __ATLAS_MANIFEST__;
  const ATLAS_SRC = "data:image/webp;base64," + __ATLAS_B64__;
 
- const IDLE = "dahlia_twirl", HIT = "dahlia_hit", ATTACK = "dahlia_attack";
+ const IDLE = "dahlia_twirl", HIT = "dahlia_hit",
+       ATTACK = "dahlia_attack", BLOCK = "dahlia_block";
  const isDahlia = u => !!(u && u.name && u.name.indexOf("Dahlia") >= 0);
  const fielded = () => {
   try { return (S.eng.units || []).some(u => u.side === "team" && isDahlia(u)); }
@@ -65,7 +66,7 @@
  panel.innerHTML =
    '<div class="dsp-head"><span class="dsp-title">Sprite Feed — Dahlia Ishmael</span>' +
    '<span class="dsp-state" id="dspState">idle</span></div>' +
-   '<div class="dsp-sub" id="dspSub">Fielded. Reacting to anything that lands on her, and to anything she lands.</div>' +
+   '<div class="dsp-sub" id="dspSub">Fielded. A hit she soaks entirely plays the block; anything that gets through plays the hit.</div>' +
    '<div class="dsp-stage" id="dspStage"><canvas class="dsp-canvas" id="dspCanvas"></canvas></div>';
 
  const anchor = document.getElementById("passivesPanel") ||
@@ -186,8 +187,19 @@
     hit she deals never also reads as a hit she takes. */
  const _damage = damage;
  damage = function(u, v){
-  if (v > 0 && isDahlia(u) && u.side === "team" && !u.dead) play(HIT, "struck");
-  return _damage.apply(this, arguments);
+  const mine = v > 0 && isDahlia(u) && u.side === "team" && !u.dead;
+  const hp = mine ? u.hp : 0;
+  const r = _damage.apply(this, arguments);
+  // Which of the two defensive clips plays is read off real state rather than
+  // guessed. Inside damage() the shield and the grafts drain before anything
+  // reaches her, so a hit she soaked whole leaves her HP untouched and is the
+  // block, and a hit that moved it is the hit -- including one only partly
+  // soaked, which did get through. It has to be measured after the call.
+  if (mine) {
+   const through = u.hp < hp;
+   play(through ? HIT : BLOCK, through ? "struck" : "blocked");
+  }
+  return r;
  };
 
  const _applyDamageToTarget = applyDamageToTarget;
@@ -205,6 +217,7 @@
  window.dahliaSprite = {
   play: (name) => play(ATLAS.clips[name] ? name : IDLE),
   hit: () => play(HIT, "struck"),
+  block: () => play(BLOCK, "blocked"),
   attack: () => play(ATTACK, "striking"),
   idle: () => play(IDLE, "idle"),
   panel, get fielded(){ return fielded(); }
