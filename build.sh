@@ -583,3 +583,13 @@ python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
   -o out/web -n dahlia --scale 0.5 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
+
+# Put the sprite feed into the combat tracker. Re-runnable: the injected block
+# is bounded by two markers and any earlier copy is removed first, so adding an
+# animation to the atlas means re-running this and nothing else. Deleting the
+# block between the markers restores the tracker byte for byte.
+#
+# The tracker is opened off disk, so the atlas cannot be fetched -- file://
+# blocks it -- and it is inlined as a data URI, which is how that file already
+# carries its battle-map backdrops.
+# python3 tools/inject_sprite_panel.py path/to/BLACKBOX_MERC_OS.html -a out/web

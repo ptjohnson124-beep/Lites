@@ -1,0 +1,215 @@
+
+/* ==== BEGIN DAHLIA SPRITE FEED — injected block, delete to the END marker ====
+   -------------------------------------------------------------------
+   A black-grid panel under the battle map that shows Dahlia animating.
+   It appears only while a Dahlia unit is fielded on the party side and
+   removes itself the moment she is not.
+
+   Everything below is additive: no existing function is edited, three
+   are wrapped in the same way this file already wraps renderCmd. Delete
+   from this comment to the matching end marker and the tracker is
+   exactly as it was.
+
+   The frames are drawn cell by cell out of one atlas rather than played
+   as an animated GIF or WebP, because an <img> cannot be driven: it
+   starts when it loads, loops forever, and offers script no way to run
+   a clip once or to learn that it has finished. A hit has to play once
+   and hand back to the idle, so the frames are drawn by hand.
+   =================================================================== */
+(function(){
+ const ATLAS = __ATLAS_MANIFEST__;
+ const ATLAS_SRC = "data:image/webp;base64," + __ATLAS_B64__;
+
+ const IDLE = "dahlia_twirl", HIT = "dahlia_hit", ATTACK = "dahlia_attack";
+ const isDahlia = u => !!(u && u.name && u.name.indexOf("Dahlia") >= 0);
+ const fielded = () => {
+  try { return (S.eng.units || []).some(u => u.side === "team" && isDahlia(u)); }
+  catch (e) { return false; }
+ };
+
+ /* ---- the panel ---------------------------------------------------- */
+ const css = document.createElement("style");
+ css.textContent = `
+ .dsp-panel{background:var(--panel);border:1px solid var(--line);border-radius:3px;
+   padding:10px 11px;margin-bottom:14px}
+ .dsp-head{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:4px}
+ .dsp-title{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+   color:var(--cyand);text-transform:uppercase}
+ .dsp-state{font-family:var(--mono);font-size:9px;letter-spacing:.1em;
+   color:var(--ember);text-transform:uppercase;margin-left:auto}
+ .dsp-sub{font-family:var(--mono);font-size:9px;color:var(--dim);margin-bottom:8px}
+ .dsp-stage{position:relative;display:grid;place-items:center;border:1px solid var(--line);
+   border-radius:2px;overflow:hidden;background:#000;padding:10px 0}
+ /* the grid she stands on: 24px cells, one brighter line every fourth */
+ .dsp-stage::before{content:"";position:absolute;inset:0;pointer-events:none;
+   background-image:
+     linear-gradient(rgba(35,48,66,.55) 1px,transparent 1px),
+     linear-gradient(90deg,rgba(35,48,66,.55) 1px,transparent 1px),
+     linear-gradient(rgba(57,211,232,.14) 1px,transparent 1px),
+     linear-gradient(90deg,rgba(57,211,232,.14) 1px,transparent 1px);
+   background-size:24px 24px,24px 24px,96px 96px,96px 96px}
+ /* a floor line under her boots, at the anchor the atlas guarantees */
+ .dsp-stage::after{content:"";position:absolute;left:0;right:0;pointer-events:none;
+   bottom:calc(10px + (var(--dsp-cell-h) - var(--dsp-anchor-y)) * var(--dsp-zoom));
+   height:1px;background:linear-gradient(90deg,transparent,rgba(57,211,232,.45),transparent)}
+ .dsp-canvas{position:relative;z-index:1;image-rendering:auto}
+ .dsp-panel.dsp-down .dsp-canvas{filter:grayscale(1) brightness(.55)}
+ .dsp-panel.dsp-down .dsp-state{color:var(--crimb)}
+ `;
+ document.head.appendChild(css);
+
+ const panel = document.createElement("div");
+ panel.className = "dsp-panel";
+ panel.id = "dahliaSpritePanel";
+ panel.style.display = "none";
+ panel.innerHTML =
+   '<div class="dsp-head"><span class="dsp-title">Sprite Feed — Dahlia Ishmael</span>' +
+   '<span class="dsp-state" id="dspState">idle</span></div>' +
+   '<div class="dsp-sub" id="dspSub">Fielded. Reacting to anything that lands on her, and to anything she lands.</div>' +
+   '<div class="dsp-stage" id="dspStage"><canvas class="dsp-canvas" id="dspCanvas"></canvas></div>';
+
+ const anchor = document.getElementById("passivesPanel") ||
+                document.getElementById("battleMapPanel");
+ if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(panel, anchor);
+ else document.body.appendChild(panel);
+
+ const stage = panel.querySelector("#dspStage");
+ const cv = panel.querySelector("#dspCanvas");
+ const stateEl = panel.querySelector("#dspState");
+ const ctx = cv.getContext("2d");
+
+ /* ---- playback ------------------------------------------------------
+    Time is accumulated against the real clock rather than against
+    animation-frame callbacks, so a 24fps clip runs at 24fps on a 60Hz
+    screen and on a 144Hz one. A delta returned by a backgrounded tab is
+    clamped, so the clip resumes where it was instead of skipping most
+    of the way through. */
+ const img = new Image();
+ let ready = false, raf = 0, zoom = 1;
+ let current = IDLE, oneShot = null, i = 0, acc = 0, last = 0;
+
+ function fit(){
+  const w = ATLAS.cell[0], h = ATLAS.cell[1];
+  const avail = Math.max(160, stage.clientWidth - 20);
+  zoom = Math.min(1, avail / w);
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = Math.round(w * zoom * dpr);
+  cv.height = Math.round(h * zoom * dpr);
+  cv.style.width = (w * zoom) + "px";
+  cv.style.height = (h * zoom) + "px";
+  ctx.imageSmoothingQuality = "high";
+  stage.style.setProperty("--dsp-cell-h", h + "px");
+  stage.style.setProperty("--dsp-anchor-y", ATLAS.anchor[1] + "px");
+  stage.style.setProperty("--dsp-zoom", zoom);
+  if (ready) draw();
+ }
+
+ function draw(){
+  const clip = ATLAS.clips[current];
+  if (!clip) return;
+  const cell = clip.frames[i];
+  const w = ATLAS.cell[0], h = ATLAS.cell[1];
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.drawImage(img, (cell % ATLAS.cols) * w, Math.floor(cell / ATLAS.cols) * h, w, h,
+                0, 0, cv.width, cv.height);
+ }
+
+ function tick(now){
+  raf = requestAnimationFrame(tick);
+  const clip = ATLAS.clips[current];
+  acc += Math.min(now - last, 250);
+  last = now;
+  const step = 1000 / clip.fps;
+  let dirty = false;
+  while (acc >= step) {
+   acc -= step;
+   i += 1;
+   if (i >= clip.frames.length) {
+    i = 0;
+    if (oneShot) { oneShot = null; current = IDLE; setState("idle"); }
+   }
+   dirty = true;
+  }
+  if (dirty) draw();
+ }
+
+ function setState(txt){ stateEl.textContent = txt; }
+
+ function play(name, label){
+  if (!ready || !ATLAS.clips[name]) return;
+  oneShot = name === IDLE ? null : name;
+  current = name; i = 0; acc = 0; last = performance.now();
+  setState(label || name);
+  draw();
+ }
+
+ function start(){
+  if (raf || !ready) return;
+  last = performance.now();
+  raf = requestAnimationFrame(tick);
+ }
+ function stop(){ if (raf) cancelAnimationFrame(raf); raf = 0; }
+
+ img.onload = () => { ready = true; fit(); draw(); if (panel.style.display !== "none") start(); };
+ img.src = ATLAS_SRC;
+ addEventListener("resize", fit);
+
+ /* ---- shown only while she is on the field --------------------------- */
+ function sync(){
+  const on = fielded();
+  panel.style.display = on ? "" : "none";
+  if (on) {
+   const d = (S.eng.units || []).find(u => u.side === "team" && isDahlia(u));
+   const out = !!(d && (d.dead || d.down));
+   panel.classList.toggle("dsp-down", out);
+   if (out && !oneShot) setState(d.dead ? "kindle-shell" : "down");
+   else if (!oneShot && !out && stateEl.textContent !== "idle") setState("idle");
+   fit();
+   start();
+  } else {
+   stop();
+   // Reset rather than freeze: she may be fielded again mid-clip, and a
+   // panel that comes back reading "struck" is describing an old fight.
+   oneShot = null; current = IDLE; i = 0; setState("idle");
+   panel.classList.remove("dsp-down");
+  }
+ }
+
+ /* ---- the three wraps ------------------------------------------------
+    damage(u,v) is the single place every point of damage lands: the
+    quick -20/-10 buttons call it directly and applyDamageToTarget calls
+    it too, so wrapping it catches a resolved exchange and a manual
+    adjustment both, and only once.
+
+    applyDamageToTarget is wrapped for the other direction, where she is
+    the attacker. Its own inner damage() call lands on the target, so a
+    hit she deals never also reads as a hit she takes. */
+ const _damage = damage;
+ damage = function(u, v){
+  if (v > 0 && isDahlia(u) && u.side === "team" && !u.dead) play(HIT, "struck");
+  return _damage.apply(this, arguments);
+ };
+
+ const _applyDamageToTarget = applyDamageToTarget;
+ applyDamageToTarget = function(e, attacker, target, dmg, graftIdx, actKind){
+  if (dmg > 0 && isDahlia(attacker) && attacker.side === "team" && !isDahlia(target))
+   play(ATTACK, "striking");
+  return _applyDamageToTarget.apply(this, arguments);
+ };
+
+ const _render = render;
+ render = function(){ const r = _render.apply(this, arguments); try { sync(); } catch (err) {} return r; };
+
+ /* Anything the tracker can do, the feed can be told to do by hand —
+    useful for a key binding, and for checking it without taking a hit. */
+ window.dahliaSprite = {
+  play: (name) => play(ATLAS.clips[name] ? name : IDLE),
+  hit: () => play(HIT, "struck"),
+  attack: () => play(ATTACK, "striking"),
+  idle: () => play(IDLE, "idle"),
+  panel, get fielded(){ return fielded(); }
+ };
+
+ sync();
+})();
+/* ================= END DAHLIA SPRITE FEED ========================= */
