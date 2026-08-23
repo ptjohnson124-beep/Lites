@@ -136,20 +136,36 @@ def main():
         # the drift.
         #
         # Falling back to the median is for sheets joined without an overlap,
-        # where there is nothing else to compare.
+        # where there is nothing else to compare -- and that fallback is taken
+        # against the first sheet rather than the one immediately before.
+        #
+        # A median only compares two sheets that show her in comparable poses,
+        # so it is an approximation, and chaining it multiplies every pose
+        # difference along the way into every sheet after it. The attack is the
+        # case: its strike sheet medians 328px because she spends all eight
+        # drawings lunging, and a flourish sized against that comes out 5%
+        # short of the guard it has to loop back into. Measured against the
+        # first sheet -- the one that set the scale, and the one holding her
+        # neutral stance because it is where the animation starts -- it lands
+        # within half a percent of the same figure taken pose against pose.
+        #
+        # An exact ratio loses nothing by being composed, so the overlap path
+        # still chains; only the approximation refuses to.
         drops = set(args.skip_first)
-        factor, prev = [1.0], sheets[0][1]
+        base = sheets[0][1]
+        factor, prev = [1.0], base
         for i in range(1, len(sheets)):
             d, imgs = sheets[i]
             if d in drops and dropped[d] is not None:
                 a, b = pose_height(prev[-1]), pose_height(dropped[d])
                 k = (a / b) if b else 1.0
+                factor.append(factor[-1] * k)
                 how = f"overlap pose {a}px against {b}px"
             else:
-                a, b = standing_height(prev), standing_height(imgs)
+                a, b = standing_height(base), standing_height(imgs)
                 k = (a / b) if b else 1.0
-                how = f"median height {a:.0f}px against {b:.0f}px"
-            factor.append(factor[-1] * k)
+                factor.append(k)
+                how = f"median height {a:.0f}px against {b:.0f}px, on the first sheet"
             # Every sheet's frames live in a directory called "frames", so the
             # basename alone names none of them.
             tail = os.path.basename(os.path.dirname(d.rstrip('/'))) or d

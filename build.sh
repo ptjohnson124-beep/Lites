@@ -502,3 +502,47 @@ $BUILD out/dahlia_hit/frames -o out/dahlia_hit -n dahlia_hit \
   --holds 8,1,6,2,2,2,2,4,3,3,3,3,3,4,8,4,3,3,3,6,4,10 \
   --travel 1:0,2:0,3:6,4:22,5:40,6:52,7:58,8:60,9:62,10:64,11:64,12:64,13:64,14:64,15:64,16:60,17:52,18:40,19:26,20:14,21:6,22:0 \
   --fps 24 --breathe 0 --bob 0 --sway 0 --shake 2:8,3:5
+
+# The cocky attack. Three sheets, 24 drawings, 23 played -- only one of the 24
+# is a duplicated attachment pose, because the flourish sheet came back without
+# one. The overlap is measurable: the strike sheet opens on a copy of the
+# beckon sheet's last drawing and scores 20 against a silhouette that is a
+# different drawing at 70 or more. Nothing on the flourish sheet is within 67
+# of anything on the strike sheet, so there is no copy there to drop and
+# --skip-first names only the strike.
+#
+# Which is why --match-scale takes the flourish's median against the first
+# sheet rather than the one before it. She spends all eight of the strike
+# sheet's drawings lunging, so its median measures the lunge -- 328px against
+# the beckon sheet's 360 -- and sizing the flourish off that shrinks it to 90%
+# when the answer is 95.4%. Measured against the beckon sheet the tool lands on
+# 95.4%, and the same figure taken by hand, the flourish's nearest standing
+# pose against the beckon's guard, is 95.8%.
+#
+# The swagger goes either side of the strike and not during it: she beckons on
+# 6 and grins on 21, both held a third of a second, and the two cuts cross in
+# sixteen frames between them. Pose 9 is the launch smear and is held for one
+# frame -- the whole point of a smear is that it is never seen twice.
+$SLICE assets/dahlia_attack_beckon_sheet.png -o out/atk_beckon \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single beckon
+$SLICE assets/dahlia_attack_strike_sheet.png -o out/atk_strike \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single strike
+$SLICE assets/dahlia_attack_flourish_sheet.png -o out/atk_flourish \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single flourish
+python3 tools/merge_sheets.py out/atk_beckon/frames out/atk_strike/frames \
+  out/atk_flourish/frames \
+  --skip-first out/atk_strike/frames --match-scale \
+  -o out/dahlia_attack -n dahlia_attack
+# --travel carries the lunge. She faces left, so forward is negative: 12px of
+# lean as she coils, 78 more across the smear and the cut, then the ground
+# given back over the recovery, where she is visibly rising out of the lean and
+# the motion reads as her stepping out of it. It is all returned by pose 20 so
+# the grin plays still and the last drawing sits where the first one does.
+$BUILD out/dahlia_attack/frames -o out/dahlia_attack -n dahlia_attack \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23 \
+  --holds 5,3,3,3,4,8,3,5,1,2,3,2,2,3,3,3,4,3,3,5,7,3,9 \
+  --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:-6,8:-12,9:-46,10:-78,11:-86,12:-88,13:-88,14:-90,15:-88,16:-70,17:-50,18:-26,19:-8,20:0,21:0,22:0,23:0 \
+  --fps 24 --breathe 0 --bob 0 --sway 0 --shake 11:7,14:5
