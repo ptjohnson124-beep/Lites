@@ -466,3 +466,39 @@ $BUILD out/dahlia_twirl/frames -o out/dahlia_twirl -n dahlia_twirl \
   --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 \
   --holds 10,3,3,3,2,1,2,4,4,5,4,4,10,5,12 \
   --fps 24 --breathe 0 --bob 2 --sway 2
+
+# Taking a hit. Three sheets, 24 drawings, 22 played -- two of the 24 are the
+# duplicated attachment poses and --skip-first drops both.
+#
+# --match-scale measures the overlap pose here, not the sheet median, and this
+# is the animation that forced the distinction. Her height genuinely changes
+# inside a sheet: the stagger runs 374px at the top and 223px at the bottom,
+# because she is crouching. A median across that measures the crouch and not
+# the drift, and normalising on it would have shrunk the standing sheets to
+# match a crouch. The last drawing of one sheet and the first of the next are
+# meant to be the same drawing, so their heights are directly comparable
+# whatever she is doing -- 342 against 374, then 223 against 227.
+#
+# --travel carries the knockback, which the sheets deliberately do not draw:
+# every pose is re-registered on her body at the merge, so a slide drawn into
+# a cell is taken straight back off it. She gives 64px of ground and recovers
+# it as she stands, so the last frame sits where the idle does and the two cut
+# together without a snap.
+$SLICE assets/dahlia_hit_impact_sheet.png -o out/hit_impact \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single impact
+$SLICE assets/dahlia_hit_stagger_sheet.png -o out/hit_stagger \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single stagger
+$SLICE assets/dahlia_hit_recover_sheet.png -o out/hit_recover \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single recover
+python3 tools/merge_sheets.py out/hit_impact/frames out/hit_stagger/frames \
+  out/hit_recover/frames \
+  --skip-first out/hit_stagger/frames --skip-first out/hit_recover/frames \
+  --match-scale -o out/dahlia_hit -n dahlia_hit
+$BUILD out/dahlia_hit/frames -o out/dahlia_hit -n dahlia_hit \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22 \
+  --holds 8,1,6,2,2,2,2,4,3,3,3,3,3,4,8,4,3,3,3,6,4,10 \
+  --travel 1:0,2:0,3:6,4:22,5:40,6:52,7:58,8:60,9:62,10:64,11:64,12:64,13:64,14:64,15:64,16:60,17:52,18:40,19:26,20:14,21:6,22:0 \
+  --fps 24 --breathe 0 --bob 0 --sway 0 --shake 2:8,3:5

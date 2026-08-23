@@ -57,6 +57,19 @@ def standing_height(images):
     return float(np.median(heights)) if heights else 0.0
 
 
+def pose_height(im):
+    """One pose's body height, effects excluded — for comparing two drawings."""
+    a = np.asarray(im)
+    rgb, alpha = a[:, :, :3].astype(np.int16), a[:, :, 3]
+    fire = (rgb[:, :, 0] > 170) & (rgb[:, :, 1] > 60) & (rgb[:, :, 2] < 120)
+    teal = (rgb[:, :, 1] > rgb[:, :, 0] + 30) & (rgb[:, :, 2] > rgb[:, :, 0] + 20)
+    body = (alpha > 32) & ~fire & ~teal
+    if not body.any():
+        body = alpha > 32
+    ys, _ = np.nonzero(body)
+    return int(ys.max() - ys.min() + 1)
+
+
 def rescale_to(images, k):
     """Resize a whole sheet about her feet, so the ground line does not move."""
     out = []
@@ -91,12 +104,16 @@ def main():
                          "at the wrong size and the sheets no longer agree")
     args = ap.parse_args()
 
-    sheets = []
+    sheets, dropped = [], {}
     for d in args.dirs:
         found = sorted(glob.glob(os.path.join(d, "*.png")))
         if not found:
             raise SystemExit(f"no PNGs in {d}")
         if d in args.skip_first:
+            # Keep the discarded duplicate: it is the one drawing the two
+            # sheets have in common, which makes it the only exact measurement
+            # of how far their scales have drifted.
+            dropped[d] = Image.open(found[0]).convert("RGBA")
             found = found[1:]
         sheets.append((d, [Image.open(p).convert("RGBA") for p in found]))
 
@@ -107,18 +124,40 @@ def main():
     # Her standing height is measurable on both, so the correction is too, and
     # doing it here beats working the percentage out by hand every time.
     if args.match_scale:
-        heights = [standing_height(imgs) for _, imgs in sheets]
-        # Match to the smallest, not to the first. Any other target upscales a
-        # sheet, and an upscaled drawing is softer than the one beside it —
-        # which is visible in a clip that cuts between the two every few
-        # frames. Shrinking costs nothing.
-        base = min(h for h in heights if h)
-        for i, ((d, imgs), h) in enumerate(zip(sheets, heights)):
-            k = base / h if h else 1.0
+        # Two ways to measure the drift, and which is right depends on whether
+        # she stays the same height through the animation.
+        #
+        # The overlap pose is the better one wherever it exists: the last
+        # drawing of one sheet and the first of the next are meant to be the
+        # same drawing, so their heights are directly comparable and the ratio
+        # is exact. It also survives an animation where she genuinely changes
+        # height — a stagger that ends in a crouch runs 374px to 223px inside
+        # one sheet, and a median taken across that measures the crouch, not
+        # the drift.
+        #
+        # Falling back to the median is for sheets joined without an overlap,
+        # where there is nothing else to compare.
+        drops = set(args.skip_first)
+        factor, prev = [1.0], sheets[0][1]
+        for i in range(1, len(sheets)):
+            d, imgs = sheets[i]
+            if d in drops and dropped[d] is not None:
+                a, b = pose_height(prev[-1]), pose_height(dropped[d])
+                k = (a / b) if b else 1.0
+                how = f"overlap pose {a}px against {b}px"
+            else:
+                a, b = standing_height(prev), standing_height(imgs)
+                k = (a / b) if b else 1.0
+                how = f"median height {a:.0f}px against {b:.0f}px"
+            factor.append(factor[-1] * k)
+            # Every sheet's frames live in a directory called "frames", so the
+            # basename alone names none of them.
+            tail = os.path.basename(os.path.dirname(d.rstrip('/'))) or d
+            print(f"  {tail}: {how} -> scaled {factor[-1] * 100:.1f}%")
+            prev = imgs
+        for i, ((d, imgs), k) in enumerate(zip(sheets, factor)):
             if abs(k - 1.0) > 0.005:
                 sheets[i] = (d, rescale_to(imgs, k))
-            print(f"  {os.path.basename(d.rstrip('/')) or d}: she stands {h:.0f}px, "
-                  f"scaled {k * 100:.1f}% to match {base:.0f}")
 
     poses = [im for _, imgs in sheets for im in imgs]
 
