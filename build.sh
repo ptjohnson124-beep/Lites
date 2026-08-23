@@ -575,3 +575,11 @@ $BUILD out/dahlia_attack/frames -o out/dahlia_attack -n dahlia_attack \
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
   -o out/atlas -n dahlia --preview --preview-scale 0.5
+
+# The same clips sized for a web page, where she is displayed small and the
+# bytes matter. --format webp here is a STILL image, not an animation: the
+# atlas is one picture either way, and WebP stores it in a third of the PNG's
+# bytes with the same pixels and the same alpha. 8.8MB becomes 1.0MB.
+python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
+  -o out/web -n dahlia --scale 0.5 --format webp
+cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/

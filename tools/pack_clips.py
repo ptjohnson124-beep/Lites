@@ -61,6 +61,12 @@ def main():
                     help="clear pixels kept on every side of the shared canvas")
     ap.add_argument("--cols", type=int, default=0,
                     help="cells per row; 0 picks a roughly square sheet")
+    ap.add_argument("--scale", type=float, default=1.0,
+                    help="resize every cell; 0.5 halves the atlas for the web, where "
+                         "she is displayed small anyway")
+    ap.add_argument("--format", choices=("png", "webp"), default="png",
+                    help="webp is a still image here, not an animation -- same pixels "
+                         "at a third of the bytes, and a browser reads it either way")
     ap.add_argument("--preview", action="store_true",
                     help="also write a webp playing every clip back to back, which "
                          "is what shows whether she holds still across the joins")
@@ -109,6 +115,11 @@ def main():
         timeline[c["name"]] = {"fps": c["fps"], "frames": seq,
                                "seconds": round(len(seq) / c["fps"], 3)}
 
+    if args.scale != 1.0:
+        w, h = max(1, round(w * args.scale)), max(1, round(h * args.scale))
+        ax, ay = ax * args.scale, ay * args.scale
+        cells = [c.resize((w, h), Image.LANCZOS) for c in cells]
+
     cols = args.cols or max(1, int(np.ceil(np.sqrt(len(cells)))))
     rows = (len(cells) + cols - 1) // cols
     sheet = Image.new("RGBA", (cols * w, rows * h), (0, 0, 0, 0))
@@ -116,8 +127,11 @@ def main():
         sheet.paste(cell, ((i % cols) * w, (i // cols) * h))
 
     os.makedirs(args.outdir, exist_ok=True)
-    png = f"{args.name}_atlas.png"
-    sheet.save(os.path.join(args.outdir, png), optimize=True)
+    png = f"{args.name}_atlas.{args.format}"
+    if args.format == "webp":
+        sheet.save(os.path.join(args.outdir, png), quality=90, method=6)
+    else:
+        sheet.save(os.path.join(args.outdir, png), optimize=True)
     with open(os.path.join(args.outdir, f"{args.name}_atlas.json"), "w", encoding="utf-8") as fh:
         json.dump({"image": png, "cell": [w, h], "cols": cols, "rows": rows,
                    "cells": len(cells),
