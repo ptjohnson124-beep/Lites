@@ -536,13 +536,27 @@ python3 tools/merge_sheets.py out/atk_beckon/frames out/atk_strike/frames \
   out/atk_flourish/frames \
   --skip-first out/atk_strike/frames --match-scale \
   -o out/dahlia_attack -n dahlia_attack
+# Pose 9, the launch smear, is drawn and not played. It is the one drawing on
+# all three sheets that is genuinely blurred -- its sharp-edge fraction is 2.4%
+# against 11 to 15% everywhere else, where the soft alpha on 10 to 16 is the
+# glow arcs and their line work stays crisp. A smear reads as motion at speed
+# and as a smudge at rest, and this one sat between a held anticipation and a
+# held cut, so it read as the smudge. Cutting straight from the coil to the
+# landed arc is the older trick and the surer one.
+#
+# The frame it gave up goes to pose 8, the coil, because a cut that hard wants
+# a longer wind-up behind it: the whole 66px of the lunge now crosses on that
+# one cut, with nothing drawn in between to carry it.
+#
 # --travel carries the lunge. She faces left, so forward is negative: 12px of
-# lean as she coils, 78 more across the smear and the cut, then the ground
-# given back over the recovery, where she is visibly rising out of the lean and
-# the motion reads as her stepping out of it. It is all returned by pose 20 so
-# the grin plays still and the last drawing sits where the first one does.
+# lean as she coils, 66 more across the cut, then the ground given back over
+# the recovery, where she is visibly rising out of the lean and the motion
+# reads as her stepping out of it. It is all returned by pose 20 so the grin
+# plays still and the last drawing sits where the first one does. The travel
+# and shake maps are keyed by drawing, not by playing order, so dropping a
+# pose from --poses leaves the rest of their numbering alone.
 $BUILD out/dahlia_attack/frames -o out/dahlia_attack -n dahlia_attack \
-  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23 \
-  --holds 5,3,3,3,4,8,3,5,1,2,3,2,2,3,3,3,4,3,3,5,7,3,9 \
-  --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:-6,8:-12,9:-46,10:-78,11:-86,12:-88,13:-88,14:-90,15:-88,16:-70,17:-50,18:-26,19:-8,20:0,21:0,22:0,23:0 \
+  --poses 1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,19,20,21,22,23 \
+  --holds 5,3,3,3,4,8,3,6,2,3,2,2,3,3,3,4,3,3,5,7,3,9 \
+  --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:-6,8:-12,10:-78,11:-86,12:-88,13:-88,14:-90,15:-88,16:-70,17:-50,18:-26,19:-8,20:0,21:0,22:0,23:0 \
   --fps 24 --breathe 0 --bob 0 --sway 0 --shake 11:7,14:5
