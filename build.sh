@@ -574,14 +574,14 @@ $BUILD out/dahlia_attack/frames -o out/dahlia_attack -n dahlia_attack \
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block -o out/atlas -n dahlia --preview --preview-scale 0.5
+  out/dahlia_block out/dahlia_evade -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
 # bytes matter. --format webp here is a STILL image, not an animation: the
 # atlas is one picture either way, and WebP stores it in a third of the PNG's
 # bytes with the same pixels and the same alpha. 8.8MB becomes 1.0MB.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block -o out/web -n dahlia --scale 0.5 --format webp
+  out/dahlia_block out/dahlia_evade -o out/web -n dahlia --scale 0.5 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 
 # Put the sprite feed into the combat tracker. Re-runnable: the injected block
@@ -632,4 +632,46 @@ $BUILD out/dahlia_block/frames -o out/dahlia_block -n dahlia_block \
   --holds 6,3,2,2,2,2,2,3,3,2,2,3,2,2,4,5,4,6,7,3,6,10 \
   --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:10,10:26,11:38,12:44,13:46,14:46,15:46,16:44,17:40,18:34,19:18,20:8,21:3,22:0 \
   --shake 9:9,10:5 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
+# The evade. Asked for as a full 360 spin; the middle sheet did not rotate.
+# Every one of its eight drawings sits at roughly one angle -- back
+# three-quarter, hair streaming -- with her legs cycling and heavy blur on the
+# hair. She is dashing, not turning, which is the failure the prompt named and
+# got anyway. What is built here is therefore a dash-evade: she pivots toward
+# the viewer, dashes clear with the blur carrying it, lands in a crouch and
+# steps back into her guard. A real dodge, just not the one that was asked for.
+#
+# Pose 2 is drawn and not played. It is 11 away from pose 1 where the rest of
+# that sheet steps 57 to 117 -- the same drawing twice, and the reason the
+# launch sheet measured 10.4x uneven against a 3.4x median across every sheet
+# so far. Dropping it takes that sheet to 2.0x. The other two sheets came back
+# at 2.3x and 1.9x, both under the median, which is the first evidence the
+# evenness rules in the prompt do anything.
+#
+# Only one of the two duplicated attachment poses came back. Sheet 2 does not
+# open on a copy of sheet 1's last drawing -- 46, where the copy sheet 3 does
+# carry scores 28 -- so --skip-first names only the landing sheet and the
+# spin's scale falls back to the median against the first sheet.
+#
+# She dashes RIGHT, away from an attack coming from the left, which is read off
+# the drawings rather than assumed: her hair sits left of her legs in all eight
+# dash drawings, and hair trails opposite to travel.
+$SLICE assets/dahlia_evade_launch_sheet.png -o out/evd_launch \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single launch
+$SLICE assets/dahlia_evade_spin_sheet.png -o out/evd_spin \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single spin
+$SLICE assets/dahlia_evade_land_sheet.png -o out/evd_land \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single land
+python3 tools/merge_sheets.py out/evd_launch/frames out/evd_spin/frames \
+  out/evd_land/frames \
+  --skip-first out/evd_land/frames --match-scale -o out/dahlia_evade -n dahlia_evade
+$BUILD out/dahlia_evade/frames -o out/dahlia_evade -n dahlia_evade \
+  --poses 1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23 \
+  --holds 5,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,4,5,4,5,10 \
+  --travel 1:0,3:0,4:4,5:12,6:24,7:38,8:52,9:66,10:78,11:86,12:92,13:94,14:94,15:92,16:90,17:88,18:84,19:76,20:70,21:46,22:20,23:0 \
+  --shake 20:5 \
   --fps 24 --breathe 0 --bob 0 --sway 0

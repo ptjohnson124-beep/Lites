@@ -20,8 +20,12 @@
  const ATLAS = __ATLAS_MANIFEST__;
  const ATLAS_SRC = "data:image/webp;base64," + __ATLAS_B64__;
 
- const IDLE = "dahlia_twirl", HIT = "dahlia_hit",
-       ATTACK = "dahlia_attack", BLOCK = "dahlia_block";
+ const IDLE = "dahlia_twirl", HIT = "dahlia_hit", ATTACK = "dahlia_attack",
+       BLOCK = "dahlia_block", EVADE = "dahlia_evade";
+ // Retaliations that mean she got out of the way rather than took it. Only the
+ // outright ones belong here: "check" and "parry" reduce a hit rather than
+ // avoid it, so they land in damage() and read correctly as the block already.
+ const EVASIVE = new Set(["dodge"]);
  const isDahlia = u => !!(u && u.name && u.name.indexOf("Dahlia") >= 0);
  const fielded = () => {
   try { return (S.eng.units || []).some(u => u.side === "team" && isDahlia(u)); }
@@ -66,7 +70,7 @@
  panel.innerHTML =
    '<div class="dsp-head"><span class="dsp-title">Sprite Feed — Dahlia Ishmael</span>' +
    '<span class="dsp-state" id="dspState">idle</span></div>' +
-   '<div class="dsp-sub" id="dspSub">Fielded. A hit she soaks entirely plays the block; anything that gets through plays the hit.</div>' +
+   '<div class="dsp-sub" id="dspSub">Fielded. A hit she avoids plays the evade, one she soaks plays the block, one that gets through plays the hit.</div>' +
    '<div class="dsp-stage" id="dspStage"><canvas class="dsp-canvas" id="dspCanvas"></canvas></div>';
 
  const anchor = document.getElementById("passivesPanel") ||
@@ -185,6 +189,10 @@
     applyDamageToTarget is wrapped for the other direction, where she is
     the attacker. Its own inner damage() call lands on the target, so a
     hit she deals never also reads as a hit she takes. */
+ // Set by the damage wrapper whenever it plays something, so the exchange
+ // wrapper below can tell a dodge that worked from one that did not.
+ let claimed = false;
+
  const _damage = damage;
  damage = function(u, v){
   const mine = v > 0 && isDahlia(u) && u.side === "team" && !u.dead;
@@ -198,7 +206,29 @@
   if (mine) {
    const through = u.hp < hp;
    play(through ? HIT : BLOCK, through ? "struck" : "blocked");
+   claimed = true;
   }
+  return r;
+ };
+
+ // A dodge that works never reaches damage() at all -- there is no damage to
+ // apply -- so the evade cannot be read off her HP the way the other two are.
+ // It is read off the exchange instead: what the tracker had selected as the
+ // retaliation, and whether she was the one being attacked. `claimed` is the
+ // part that matters, because a dodge that FAILED does reach damage(), and
+ // then the hit has already played and must not be overwritten by an evade.
+ const _resolveGroup = resolveGroup;
+ resolveGroup = function(){
+  let evading = false;
+  try {
+   const t = __BB.selectedInlineRetalType || __BB.selectedRetalType || "";
+   const el = document.getElementById("resTarget");
+   const target = el && (S.eng.units || []).find(u => u.id === el.value);
+   evading = EVASIVE.has(t) && isDahlia(target) && target.side === "team";
+  } catch (e) {}
+  claimed = false;
+  const r = _resolveGroup.apply(this, arguments);
+  if (evading && !claimed) play(EVADE, "evaded");
   return r;
  };
 
@@ -218,6 +248,7 @@
   play: (name) => play(ATLAS.clips[name] ? name : IDLE),
   hit: () => play(HIT, "struck"),
   block: () => play(BLOCK, "blocked"),
+  evade: () => play(EVADE, "evaded"),
   attack: () => play(ATTACK, "striking"),
   idle: () => play(IDLE, "idle"),
   panel, get fielded(){ return fielded(); }
