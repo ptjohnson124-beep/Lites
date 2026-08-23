@@ -35,6 +35,45 @@ def body_anchor(im):
     return int(xs.mean()), int(ys.max())
 
 
+def standing_height(images):
+    """Median height of her body across a sheet, ignoring effects.
+
+    Effects are excluded for the same reason the anchor excludes them: a
+    shockwave or a blade trail is taller than she is and would set the number
+    instead of her. The median rather than the mean because one pose with her
+    arm overhead should not drag a whole sheet.
+    """
+    heights = []
+    for im in images:
+        a = np.asarray(im)
+        rgb, alpha = a[:, :, :3].astype(np.int16), a[:, :, 3]
+        fire = (rgb[:, :, 0] > 170) & (rgb[:, :, 1] > 60) & (rgb[:, :, 2] < 120)
+        teal = (rgb[:, :, 1] > rgb[:, :, 0] + 30) & (rgb[:, :, 2] > rgb[:, :, 0] + 20)
+        body = (alpha > 32) & ~fire & ~teal
+        if not body.any():
+            continue
+        ys, _ = np.nonzero(body)
+        heights.append(int(ys.max() - ys.min() + 1))
+    return float(np.median(heights)) if heights else 0.0
+
+
+def rescale_to(images, k):
+    """Resize a whole sheet about her feet, so the ground line does not move."""
+    out = []
+    for im in images:
+        a = np.asarray(im)
+        ys, _ = np.nonzero(a[:, :, 3] > 32)
+        foot = int(ys.max())
+        small = im.resize((max(1, round(im.width * k)), max(1, round(im.height * k))),
+                          Image.LANCZOS)
+        b = np.asarray(small)
+        ys2, _ = np.nonzero(b[:, :, 3] > 32)
+        canvas = Image.new("RGBA", im.size, (0, 0, 0, 0))
+        canvas.paste(small, ((im.width - small.width) // 2, foot - int(ys2.max())))
+        out.append(canvas)
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -46,16 +85,42 @@ def main():
                          "whose opening pose repeats the last pose of the one before")
     ap.add_argument("--margin", type=int, default=60,
                     help="clear space kept around the widest pose")
+    ap.add_argument("--match-scale", action="store_true",
+                    help="resize later sheets so she is the same height on all of "
+                         "them; for when the duplicated attachment pose came back "
+                         "at the wrong size and the sheets no longer agree")
     args = ap.parse_args()
 
-    poses = []
+    sheets = []
     for d in args.dirs:
         found = sorted(glob.glob(os.path.join(d, "*.png")))
         if not found:
             raise SystemExit(f"no PNGs in {d}")
         if d in args.skip_first:
             found = found[1:]
-        poses += [Image.open(p).convert("RGBA") for p in found]
+        sheets.append((d, [Image.open(p).convert("RGBA") for p in found]))
+
+    # The one drawing repeated between two sheets is the only thing carrying
+    # scale from one to the next, and it is the instruction the generator
+    # ignores most often: twice in a row a second sheet came back with a pose
+    # that was similar rather than copied, and 6 to 9 per cent larger with it.
+    # Her standing height is measurable on both, so the correction is too, and
+    # doing it here beats working the percentage out by hand every time.
+    if args.match_scale:
+        heights = [standing_height(imgs) for _, imgs in sheets]
+        # Match to the smallest, not to the first. Any other target upscales a
+        # sheet, and an upscaled drawing is softer than the one beside it —
+        # which is visible in a clip that cuts between the two every few
+        # frames. Shrinking costs nothing.
+        base = min(h for h in heights if h)
+        for i, ((d, imgs), h) in enumerate(zip(sheets, heights)):
+            k = base / h if h else 1.0
+            if abs(k - 1.0) > 0.005:
+                sheets[i] = (d, rescale_to(imgs, k))
+            print(f"  {os.path.basename(d.rstrip('/')) or d}: she stands {h:.0f}px, "
+                  f"scaled {k * 100:.1f}% to match {base:.0f}")
+
+    poses = [im for _, imgs in sheets for im in imgs]
 
     anchors = [body_anchor(p) for p in poses]
     left = max(ax for ax, _ in anchors)

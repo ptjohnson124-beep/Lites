@@ -434,26 +434,35 @@ $BUILD out/dahlia_getup/frames -o out/dahlia_getup -n dahlia_getup \
   --shake 6:3 \
   --travel 1:0,2:0,3:4,4:8,5:10,6:8,7:4,8:0
 
+
 # Twirl idle, the first animation of the new design. Two sheets, both with a
-# real alpha channel -- 256 levels and 20-26k soft-edge pixels apiece -- so
-# --keyed takes the sheet's own mask and there is nothing to un-matte.
+# real alpha channel -- around 200 levels and 57 to 79 thousand soft-edge
+# pixels apiece -- so --keyed takes each sheet's own mask and there is nothing
+# to un-matte, no grain to denoise and no backdrop to guess.
 #
-# --scale 9:92,10:92,11:92,12:92,13:92,14:92,15:92 is the patch for a failed
-# attachment. Sheet B was told to copy sheet A's last pose into its top-left
-# cell and did not: the two drawings differ by 76 of 255, where a faithful
-# copy comes back under 8. That duplicate pose is the only thing carrying
-# scale between two sheets, so without it sheet B came back 9% larger. The
-# scale is measured off her standing height, 322px on A against 350px on B.
-$SLICE assets/dahlia_twirl_a_sheet.png -o out/dahlia_twirl_a \
+# The sheets are played in the reverse of the order they were labelled. The
+# spin sheet's faces are neutral all the way across and the grin sheet runs
+# neutral, grin, grin, grin, grin, neutral -- a complete arc that returns --
+# so the twirl is the first half whatever the prompt called them. It is also
+# the tighter join: spin-to-grin measures 35 of 255 where grin-to-spin is 65,
+# and both are smaller than the largest step inside either sheet.
+#
+# --match-scale rather than a hand-computed --scale. The duplicated attachment
+# pose is the only thing carrying scale between two sheets and it is the
+# instruction the generator ignores most often -- twice in a row the second
+# sheet came back with a pose that was similar rather than copied, and 6 to 9
+# per cent larger with it. Her standing height is measurable on both sheets,
+# so the correction is too.
+$SLICE assets/dahlia_twirl_spin_sheet.png -o out/twirl_spin \
   --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
-  --align silhouette --single dahlia_twirl_a
-$SLICE assets/dahlia_twirl_b_sheet.png -o out/dahlia_twirl_b \
+  --align silhouette --single spin
+$SLICE assets/dahlia_twirl_grin_sheet.png -o out/twirl_grin \
   --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
-  --align silhouette --single dahlia_twirl_b
-python3 tools/merge_sheets.py out/dahlia_twirl_a/frames out/dahlia_twirl_b/frames \
-  --skip-first out/dahlia_twirl_b/frames -o out/dahlia_twirl -n dahlia_twirl
+  --align silhouette --single grin
+python3 tools/merge_sheets.py out/twirl_spin/frames out/twirl_grin/frames \
+  --skip-first out/twirl_grin/frames --match-scale \
+  -o out/dahlia_twirl -n dahlia_twirl
 $BUILD out/dahlia_twirl/frames -o out/dahlia_twirl -n dahlia_twirl \
   --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 \
-  --scale 9:92,10:92,11:92,12:92,13:92,14:92,15:92 \
-  --holds 10,4,3,3,3,1,3,3,3,4,4,5,10,5,12 \
+  --holds 10,3,3,3,2,1,2,4,4,5,4,4,10,5,12 \
   --fps 24 --breathe 0 --bob 2 --sway 2
