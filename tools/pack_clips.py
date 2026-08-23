@@ -1,0 +1,154 @@
+#!/usr/bin/env python3
+"""Put finished clips onto one shared canvas, and pack them into one atlas.
+
+Each clip comes out of the assembler on a canvas of its own, sized to whatever
+that particular animation needed. Inside a clip that is right and the frames
+line up to within a pixel or two. Between clips it is wrong: the idle, the hit
+and the attack ended up 436x431, 459x378 and 485x385, with her feet 8, 12 and
+16 pixels off the bottom and her centre line at 51%, 46% and 64% of the width.
+Play one after another and she jumps the moment the clip changes.
+
+So the clips are registered to each other here. Note the unit: a *clip* is
+moved, not a frame. Frames inside a clip are already registered, and some of
+what looks like drift is deliberate -- the lunge in the attack, the knockback
+in the hit -- so every frame of a clip takes the same offset and the motion
+inside it survives intact.
+
+The other thing this fixes is that a played frame is not a drawing. A pose held
+nine frames is written out nine times, so about 70% of every strip is the same
+image repeated. Here identical frames are stored once and the timing becomes a
+list of indices, which is what a playback loop wants anyway.
+"""
+
+import argparse
+import glob
+import hashlib
+import json
+import os
+
+import numpy as np
+from PIL import Image
+
+
+def ground(im):
+    """Where a frame stands: the centre of her boots, and the floor under them.
+
+    The horizontal measurement is the assembler's own: the desaturated pixels of
+    the lower body, so streaming hair -- the most mobile thing on her -- does not
+    vote on where her feet are. The vertical one is the lowest of those same
+    pixels, which is the sole of the lower boot.
+    """
+    a = np.array(im)
+    rgb = a[:, :, :3].astype(np.int16)
+    mx, mn = rgb.max(axis=2), rgb.min(axis=2)
+    sat = np.where(mx > 0, (mx - mn) * 255 // np.maximum(mx, 1), 0)
+    core = (a[:, :, 3] > 0) & (sat < 70)
+    core[:int(core.shape[0] * 0.55)] = False
+    ys, xs = np.nonzero(core)
+    if not len(xs):
+        return im.width / 2.0, im.height - 1
+    return float(xs.mean()), int(ys.max())
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("clips", nargs="+",
+                    help="clip directories, each holding <name>_frames/ and <name>.json")
+    ap.add_argument("-o", "--outdir", default="out/atlas")
+    ap.add_argument("-n", "--name", default="dahlia")
+    ap.add_argument("--margin", type=int, default=8,
+                    help="clear pixels kept on every side of the shared canvas")
+    ap.add_argument("--cols", type=int, default=0,
+                    help="cells per row; 0 picks a roughly square sheet")
+    ap.add_argument("--preview", action="store_true",
+                    help="also write a webp playing every clip back to back, which "
+                         "is what shows whether she holds still across the joins")
+    ap.add_argument("--preview-scale", type=float, default=0.5)
+    args = ap.parse_args()
+
+    clips = []
+    for d in args.clips:
+        name = os.path.basename(d.rstrip("/"))
+        meta_path = os.path.join(d, f"{name}.json")
+        frames = sorted(glob.glob(os.path.join(d, f"{name}_frames", "*.png")))
+        if not frames:
+            raise SystemExit(f"{d}: no played frames in {name}_frames/")
+        meta = json.load(open(meta_path, encoding="utf-8")) if os.path.exists(meta_path) else {}
+        images = [Image.open(p).convert("RGBA") for p in frames]
+        # The clip's own origin is taken from its first frame, because that is
+        # the drawing it cuts in on and the one that has to agree with every
+        # other clip's first drawing.
+        gx, gy = ground(images[0])
+        clips.append({"name": name, "images": images, "gx": gx, "gy": gy,
+                      "fps": meta.get("fps", 24)})
+
+    # One canvas that fits every clip once each is hung on the shared anchor.
+    ax = max(c["gx"] for c in clips)
+    ay = max(c["gy"] for c in clips)
+    w = int(round(ax + max(c["images"][0].width - c["gx"] for c in clips))) + 2 * args.margin
+    h = int(round(ay + max(c["images"][0].height - c["gy"] for c in clips))) + 2 * args.margin
+    ax, ay = ax + args.margin, ay + args.margin
+
+    # Identical frames are stored once. Hashing the pixels rather than comparing
+    # poses is what catches the near-duplicates too: a pose held under a decaying
+    # shake produces frames that differ, and they are kept, while a pose held
+    # still produces one image and it is kept once.
+    cells, index, timeline = [], {}, {}
+    for c in clips:
+        ox, oy = int(round(ax - c["gx"])), int(round(ay - c["gy"]))
+        seq = []
+        for im in c["images"]:
+            canvas = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+            canvas.alpha_composite(im, (ox, oy))
+            key = hashlib.sha1(canvas.tobytes()).digest()
+            if key not in index:
+                index[key] = len(cells)
+                cells.append(canvas)
+            seq.append(index[key])
+        timeline[c["name"]] = {"fps": c["fps"], "frames": seq,
+                               "seconds": round(len(seq) / c["fps"], 3)}
+
+    cols = args.cols or max(1, int(np.ceil(np.sqrt(len(cells)))))
+    rows = (len(cells) + cols - 1) // cols
+    sheet = Image.new("RGBA", (cols * w, rows * h), (0, 0, 0, 0))
+    for i, cell in enumerate(cells):
+        sheet.paste(cell, ((i % cols) * w, (i // cols) * h))
+
+    os.makedirs(args.outdir, exist_ok=True)
+    png = f"{args.name}_atlas.png"
+    sheet.save(os.path.join(args.outdir, png), optimize=True)
+    with open(os.path.join(args.outdir, f"{args.name}_atlas.json"), "w", encoding="utf-8") as fh:
+        json.dump({"image": png, "cell": [w, h], "cols": cols, "rows": rows,
+                   "cells": len(cells),
+                   # Everything a playback loop needs to put her in the right
+                   # place: her feet land here in every cell of every clip.
+                   "anchor": [round(ax, 1), round(ay, 1)],
+                   "clips": timeline}, fh, indent=1)
+
+    if args.preview:
+        # Played end to end, a clip change is the only place she can jump, and
+        # a still figure at the joins is the whole claim this tool makes.
+        seq = [cells[i] for t in timeline.values() for i in t["frames"]]
+        k = args.preview_scale
+        if k != 1.0:
+            seq = [f.resize((max(1, round(w * k)), max(1, round(h * k))),
+                            Image.LANCZOS) for f in seq]
+        fps = clips[0]["fps"]
+        out = os.path.join(args.outdir, f"{args.name}_all.webp")
+        seq[0].save(out, save_all=True, append_images=seq[1:],
+                    duration=round(1000 / fps), loop=0, quality=92)
+        print(f"  {out}  ({len(seq)} frames, every clip in a row)")
+
+    played = sum(len(t["frames"]) for t in timeline.values())
+    print(f"{len(clips)} clips, {played} played frames -> {len(cells)} cells "
+          f"({(1 - len(cells) / played) * 100:.0f}% were repeats)")
+    print(f"  shared canvas {w}x{h}, her feet at {ax:.0f},{ay:.0f} in every one")
+    print(f"  {os.path.join(args.outdir, png)}  ({cols}x{rows} cells, "
+          f"{os.path.getsize(os.path.join(args.outdir, png)) / 1e6:.1f} MB)")
+    for n, t in timeline.items():
+        print(f"  {n:16s} {len(t['frames']):3d} frames @ {t['fps']}fps  {t['seconds']}s")
+
+
+if __name__ == "__main__":
+    main()

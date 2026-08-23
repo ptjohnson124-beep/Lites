@@ -560,3 +560,18 @@ $BUILD out/dahlia_attack/frames -o out/dahlia_attack -n dahlia_attack \
   --holds 5,3,3,3,4,8,3,6,2,3,2,2,3,3,3,4,3,3,5,7,3,9 \
   --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:-6,8:-12,10:-78,11:-86,12:-88,13:-88,14:-90,15:-88,16:-70,17:-50,18:-26,19:-8,20:0,21:0,22:0,23:0 \
   --fps 24 --breathe 0 --bob 0 --sway 0 --shake 11:7,14:5
+
+# Every finished clip onto one shared canvas, and one atlas for all of them.
+#
+# The assembler sizes each clip's canvas to that clip, which is right inside a
+# clip and wrong between them: the idle, the hit and the attack came out
+# 436x431, 459x378 and 485x385, with her boots 8, 12 and 16px off the bottom and
+# 119px apart horizontally. That is a jump every time the animation changes.
+# Registering the clips to each other brings it to 0px vertically and 3.3px
+# horizontally -- the residual is two ways of measuring where her boots are
+# disagreeing, not her moving.
+#
+# A clip is moved, not a frame. The frames inside a clip are already registered
+# and some of their motion is deliberate, so they all take the same offset.
+python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
+  -o out/atlas -n dahlia --preview --preview-scale 0.5
