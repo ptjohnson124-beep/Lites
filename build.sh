@@ -656,6 +656,16 @@ $BUILD out/dahlia_block/frames -o out/dahlia_block -n dahlia_block \
 # 25) and it is drawn 26% larger, the worst drift yet, so its scale falls back
 # to the median against the first sheet.
 #
+# Every drawing from the pivot through to the recovery gets exactly ONE frame.
+# The first cut held the nerve pose for three frames in the middle of a run of
+# one-frame drawings, which put five frozen frames inside the fastest part of
+# the clip and read as the animation hitching. The timing rule for this was
+# already written down and I broke it: a hold only works on a pose that is
+# already at rest, and holding one caught mid-movement reads as a stutter. The
+# nerve is caught mid-spin, so it is drawn and passed through rather than held.
+# The turn now runs 12 drawings in 12 frames, half a second, with no frame
+# repeated anywhere inside it.
+#
 # --scale 23:115 is the loop closing. Pose 23 and pose 1 are the same guard
 # drawing, and pose 23 came back 15% smaller: same stance, 224px between the
 # boots against 220, just drawn small. Everything else on that sheet measures
@@ -675,7 +685,7 @@ python3 tools/merge_sheets.py out/ev2_pivot/frames out/ev2_back/frames \
   --skip-first out/ev2_land/frames --match-scale -o out/dahlia_evade -n dahlia_evade
 $BUILD out/dahlia_evade/frames -o out/dahlia_evade -n dahlia_evade \
   --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23 \
-  --holds 5,2,2,2,2,2,2,2,1,1,3,1,1,1,1,2,2,3,3,5,4,6,10 \
+  --holds 5,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,2,4,3,5,10 \
   --scale 23:115 \
   --travel 1:0,2:0,3:4,4:10,5:18,6:26,7:34,8:42,9:48,10:52,11:56,12:58,13:58,14:56,15:54,16:50,17:44,18:36,19:26,20:18,21:10,22:4,23:0 \
   --shake 20:5 \
