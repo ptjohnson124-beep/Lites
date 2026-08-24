@@ -869,6 +869,60 @@ $BUILD out/dahlia_taunt/frames -o out/dahlia_taunt -n dahlia_taunt \
   --fps 24 --breathe 0 --bob 0 --sway 0
 
 
+# The fractured idle -- the one that runs after the Soul Engine has split.
+# Three sheets, 24 drawings, 22 played, and it is the cleanest set of sheets
+# this project has had.
+#
+# BOTH copied poses came back real, at 12.7 and 7.6 against a threshold of 35,
+# and the scale correction was 100.0% and 99.8%. The overlap-pose instruction
+# is the one the generator ignores most often -- roughly six times in ten --
+# and here it landed twice, exactly.
+#
+# And the LOOP CLOSES. 26.3 across the wrap, under the same threshold, with the
+# last pose the same height as the first to within a pixel. Every other loop in
+# this set wraps at 45 or worse because the generator drew a return-to-start
+# instead of repeating the start. This one repeated the start.
+#
+# Step evenness is 5.2x and mean change is 47.6%, which anywhere else in this
+# project is a defect and here is the animation. The rule exists to stop ONE
+# movement being sampled unevenly. There is no one movement here -- her weight
+# throws forward, then hard back, then sideways, and none of it goes anywhere.
+# Large steps at high speed read as snapping, which is what a convulsion is.
+#
+# Three holds and every one of them is on a pose that has actually stopped,
+# which is the only condition under which a hold works: pose 5 is the jam,
+# where she locks rigid; pose 11 is the brace, the first drawing where she is
+# standing on something; pose 15 is the closest she gets, hand at her temple,
+# and the step INTO it is 14.6 where the clip averages 47.6 -- the movement has
+# already stopped by the time she arrives. Everything else gets two frames.
+#
+# --bob 0 --sway 0, reversing the slipping idle. Pipeline drift is smooth and
+# sinusoidal, and under violent drawn motion that reads as floaty rather than
+# unsteady. The instability is in the drawings. --shake takes its place, on the
+# two drawings where it takes her.
+#
+# --travel lurches and returns to zero. Her feet are planted in all 22 drawings
+# -- the foot row varies by 2px across the whole clip -- so a few pixels of
+# whole-body shove reads as her being moved rather than as her walking.
+$SLICE assets/dahlia_fracture_taken_sheet.png -o out/fr_taken \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single taken
+$SLICE assets/dahlia_fracture_fight_sheet.png -o out/fr_fight \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single fight
+$SLICE assets/dahlia_fracture_lose_sheet.png -o out/fr_lose \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single lose
+python3 tools/merge_sheets.py out/fr_taken/frames out/fr_fight/frames out/fr_lose/frames \
+  --skip-first out/fr_fight/frames --skip-first out/fr_lose/frames \
+  --match-scale -o out/dahlia_fracture -n dahlia_fracture
+$BUILD out/dahlia_fracture/frames -o out/dahlia_fracture -n dahlia_fracture \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22 \
+  --holds 3,2,2,2,6,2,2,2,2,2,5,2,2,2,7,2,2,2,2,2,2,3 \
+  --travel 1:0,2:-8,3:6,4:-4,5:0,6:5,7:-6,8:0,9:0,10:0,11:0,12:0,13:0,14:0,15:0,16:0,17:-5,18:0,19:6,20:-3,21:-4,22:0 \
+  --shake 5:8,19:6 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
 # ---------------------------------------------------------------------
 # PACKING COMES LAST, and that is load-bearing rather than tidy. It reads
 # out/dahlia_* off disk, so anything rebuilt after it is packed in its
@@ -890,7 +944,7 @@ $BUILD out/dahlia_taunt/frames -o out/dahlia_taunt -n dahlia_taunt \
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture \
   -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
@@ -905,11 +959,11 @@ python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
 # "dahlia_hit", so roles are what the manifest carries and the atlas basename
 # is what matches a unit by name.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture \
   --role out/dahlia_twirl=idle --role out/dahlia_hit=hit \
   --role out/dahlia_attack=attack --role out/dahlia_block=block \
   --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
-  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping \
+  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured \
   -o out/web -n dahlia --scale 0.75 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 
