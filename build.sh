@@ -1012,6 +1012,42 @@ $BUILD out/dahlia_cyber/frames -o out/dahlia_cyber -n dahlia_cyber \
   --holds 6,5,5,5,5,5,5,9,4,5,5,6,14 \
   --fps 24 --breathe 0 --bob 1 --sway 1
 
+# The idle. Two sheets, 16 drawings, 15 played -- a knife flourish and a
+# settle, replacing the twirl that opened this project. out/dahlia_twirl is
+# still built above and still in the repo; it is simply no longer packed.
+#
+# The seams are the best pair so far: the join is 12.2 and THE WRAP IS 3.1,
+# with body height running 460 to 473 across all 15 drawings and the loop
+# closing at -1.5%. No scale correction anywhere. That matters more on this
+# clip than on any other, because the idle is what every other clip hands back
+# to -- a bad wrap here would show every time anything finished.
+#
+# The shape is one event and a long rest, which is what an idle should be. The
+# flourish is poses 2 to 7 and gets 2 and 3 frames a drawing; the settle is 8
+# to 14 at 5; and poses 15 and 1 are the same drawing either side of the loop,
+# holding 10 and 14 frames, so she spends a full second at guard between
+# flourishes. Steps back that up: the spin runs 25 to 59 and the settle runs 9
+# to 21.
+#
+# SWAPPING THE IDLE MOVES EVERY OTHER CLIP. --match-scale normalises everything
+# down to the smallest clip, and the twirl WAS that clip at sqrt(area) 203.
+# This one is drawn at 274, 35% larger. The new floor is the hit at 206, so the
+# atlas barely moves -- but if a future idle came in smaller than the hit, the
+# whole set would shrink to it.
+$SLICE assets/dahlia_flourish_spin_sheet.png -o out/fl_spin \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single spin
+$SLICE assets/dahlia_flourish_settle_sheet.png -o out/fl_settle \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single settle
+python3 tools/merge_sheets.py out/fl_spin/frames out/fl_settle/frames \
+  --skip-first out/fl_settle/frames \
+  --match-scale -o out/dahlia_flourish -n dahlia_flourish
+$BUILD out/dahlia_flourish/frames -o out/dahlia_flourish -n dahlia_flourish \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 \
+  --holds 14,3,3,3,2,3,2,3,4,5,5,5,5,5,10 \
+  --fps 24 --breathe 0 --bob 2 --sway 1
+
 # ---------------------------------------------------------------------
 # PACKING COMES LAST, and that is load-bearing rather than tidy. It reads
 # out/dahlia_* off disk, so anything rebuilt after it is packed in its
@@ -1051,7 +1087,7 @@ $BUILD out/dahlia_cyber/frames -o out/dahlia_cyber -n dahlia_cyber \
 #
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
-python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
+python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
   out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber \
   --match-scale -o out/atlas -n dahlia --preview --preview-scale 0.5
 
@@ -1066,9 +1102,9 @@ python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
 # one character in the tracker the panel has to ask for "the hit", not for
 # "dahlia_hit", so roles are what the manifest carries and the atlas basename
 # is what matches a unit by name.
-python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
+python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
   out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber \
-  --role out/dahlia_twirl=idle --role out/dahlia_hit=hit \
+  --role out/dahlia_flourish=idle --role out/dahlia_hit=hit \
   --role out/dahlia_attack=attack --role out/dahlia_block=block \
   --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
   --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis \
