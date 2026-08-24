@@ -561,6 +561,58 @@ $BUILD out/dahlia_attack/frames -o out/dahlia_attack -n dahlia_attack \
   --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:-6,8:-12,10:-78,11:-86,12:-88,13:-88,14:-90,15:-88,16:-70,17:-50,18:-26,19:-8,20:0,21:0,22:0,23:0 \
   --fps 24 --breathe 0 --bob 0 --sway 0 --shake 11:7,14:5
 
+# The slipping idle -- the one that runs when PMF drops. Three sheets, 24
+# drawings, all 22 kept after the two copies are folded out.
+#
+# It is an idle, so it is built by the opposite rules to everything above. The
+# other clips are one movement sampled evenly and every step matters; this one
+# is a person failing to hold still. Step evenness comes out 1.6x, 3.7x and
+# 5.8x per sheet, which would be a defect in the attack and is not one here:
+# the biggest step on any of the three is 45 where the attack's smallest was
+# larger than that. All the motion is small. Unevenness inside small motion is
+# what shaking looks like.
+#
+# Both copies came back and both are real: 16.4 and 31.6, against a threshold
+# of 35 for "the same drawing". That is the best pair of joins any clip here
+# has had.
+#
+# And the scale needed almost nothing -- sheet 2 at 100.8%, sheet 3 at 95.1%,
+# and after that her height runs 596 to 607px across all 22 poses with the loop
+# closing at +0.8%. First clip in the set that did not need a --scale ramp to
+# shut the loop.
+#
+# The loop WRAP is the one flaw and it is in the drawings, not the timing.
+# Sheet 3's last pose and sheet 1's first come back 45.6 apart where a genuine
+# copy scores under 35 -- the generator drew the return-to-start rather than
+# repeating the start. That lands as a 21.0% change across the wrap. Worth
+# writing down what does NOT fix it, because I tried all of it: shortening the
+# holds on either side changes how long she dwells there, not how far she
+# travels between the two drawings, so the number does not move. Nor does
+# reseating the seam -- 22->1 is 45.6, 21->1 is 45.3, 20->1 is 44.3, 22->2 is
+# 46.8, 21->2 is 48.9, against a biggest-internal-step of 47.2. There is no
+# cheaper cut anywhere in the clip, and the wrap is not even an outlier against
+# that internal maximum. Fixing it needs sheet 3 redrawn with a true copy of
+# sheet 1's opening pose. At idle speed, under a shadow, it reads as one more
+# tremor.
+#
+# --bob 2 --sway 2 and nothing else. The twirl idle gets breathe; this one does
+# not, because steady breathing is exactly what she has lost.
+$SLICE assets/dahlia_slip_lose_sheet.png -o out/sl_lose \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single lose
+$SLICE assets/dahlia_slip_worst_sheet.png -o out/sl_worst \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single worst
+$SLICE assets/dahlia_slip_back_sheet.png -o out/sl_back \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single back
+python3 tools/merge_sheets.py out/sl_lose/frames out/sl_worst/frames out/sl_back/frames \
+  --skip-first out/sl_worst/frames --skip-first out/sl_back/frames \
+  --match-scale -o out/dahlia_slip -n dahlia_slip
+$BUILD out/dahlia_slip/frames -o out/dahlia_slip -n dahlia_slip \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22 \
+  --holds 4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,3,4,4,4,4,4 \
+  --fps 24 --breathe 0 --bob 2 --sway 2
 # Every finished clip onto one shared canvas, and one atlas for all of them.
 #
 # The assembler sizes each clip's canvas to that clip, which is right inside a
@@ -574,24 +626,26 @@ $BUILD out/dahlia_attack/frames -o out/dahlia_attack -n dahlia_attack \
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt -o out/atlas -n dahlia --preview --preview-scale 0.5
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip \
+  -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
 # bytes matter -- less than they did, since the tracker is opened off disk
 # rather than fetched, so 0.75 buys real resolution for load time nobody waits
 # on. --format webp here is a STILL image, not an animation: the
 # atlas is one picture either way, and WebP stores it in a third of the PNG's
-# bytes with the same pixels and the same alpha. 8.8MB becomes 1.0MB.
+# bytes with the same pixels and the same alpha. At eight clips the same
+# atlas is 23.4MB as PNG and 6.8MB as WebP.
 # --role names each clip by what it IS rather than whose it is. With more than
 # one character in the tracker the panel has to ask for "the hit", not for
 # "dahlia_hit", so roles are what the manifest carries and the atlas basename
 # is what matches a unit by name.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip \
   --role out/dahlia_twirl=idle --role out/dahlia_hit=hit \
   --role out/dahlia_attack=attack --role out/dahlia_block=block \
   --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
-  --role out/dahlia_taunt=taunt \
+  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping \
   -o out/web -n dahlia --scale 0.75 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 

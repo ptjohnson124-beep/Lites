@@ -25,6 +25,17 @@
  const EVASIVE = new Set(["dodge"]);
  const COUNTERING = new Set(["counter", "parry"]);
 
+ /* 'slipping' is not an event clip -- it is a second RESTING state. Every
+    other role plays once and hands back; this one replaces the idle for as
+    long as the condition holds, and hands back on its own when it lifts.
+
+    60 is the tracker's own line rather than a number picked here: the specs
+    that ask whether a frequency is holding all test PMF >= 60, and
+    pmfBracketOf steps at 60 too. Above it she is reading high; below it she
+    is not. A character without the clip simply keeps the ordinary idle, so
+    this costs nothing for the rest of the cast. */
+ const SLIP_AT = 60;
+
  // onload rather than decode(), and a closure over the entry itself rather
  // than an index resolved later. The first version did neither and simply
  // never became ready, with a bare .catch swallowing whatever the reason was.
@@ -129,6 +140,15 @@
 
  const clipOf = (who, role) => (who && who.atlas.clips[role]) || null;
 
+ /* Which clip she rests in. Read fresh every time rather than cached, because
+    the thing it depends on moves between frames. */
+ let subjectUnit = null;
+ function rest(){
+  if (!subjectUnit || !clipOf(subject, "slipping")) return "idle";
+  const pmf = (typeof subjectUnit.pmf === "number") ? subjectUnit.pmf : 90;
+  return pmf < SLIP_AT ? "slipping" : "idle";
+ }
+
  function fit(){
   if (!subject) return;
   const [w, h] = subject.atlas.cell;
@@ -148,7 +168,7 @@
 
  function draw(){
   if (!subject || !subject.ready) return;
-  const clip = clipOf(subject, current) || clipOf(subject, "idle");
+  const clip = clipOf(subject, current) || clipOf(subject, rest());
   if (!clip) return;
   const cell = clip.frames[Math.min(i, clip.frames.length - 1)];
   const [w, h] = subject.atlas.cell, cols = subject.atlas.cols;
@@ -160,7 +180,7 @@
  function tick(now){
   raf = requestAnimationFrame(tick);
   if (!subject) return;
-  const clip = clipOf(subject, current) || clipOf(subject, "idle");
+  const clip = clipOf(subject, current) || clipOf(subject, rest());
   if (!clip) return;
   acc += Math.min(now - last, 250);
   last = now;
@@ -171,7 +191,7 @@
    i += 1;
    if (i >= clip.frames.length) {
     i = 0;
-    if (oneShot) { oneShot = null; current = "idle"; setState("idle"); }
+    if (oneShot) { oneShot = null; current = rest(); setState(current); }
    }
    dirty = true;
   }
@@ -188,9 +208,10 @@
   if (!who || who === subject) return false;
   if (oneShot && !force) return false;
   subject = who;
+  subjectUnit = (fielded().find(x => forUnit(x) === who)) || null;
   whoEl.textContent = who.label;
-  current = "idle"; oneShot = null; i = 0; acc = 0;
-  setState("idle");
+  oneShot = null; i = 0; acc = 0;
+  current = rest(); setState(current);
   fit();
   return true;
  }
@@ -241,7 +262,7 @@
   panel.style.display = on.length ? "" : "none";
   if (!on.length) {
    stop();
-   subject = null; oneShot = null; current = "idle"; i = 0;
+   subject = null; subjectUnit = null; oneShot = null; current = "idle"; i = 0;
    setState("idle"); whoEl.textContent = "—";
    panel.classList.remove("dsp-down");
    return;
@@ -251,9 +272,15 @@
   if (act) show(forUnit(act));
   if (!subject) show(forUnit(on[0]));
   const u = on.find(x => forUnit(x) === subject);
+  subjectUnit = u || null;
+  // Crossing the line changes what she rests in. Only ever between clips --
+  // a hit that is still playing finishes, and lands in the new resting state
+  // when it hands back, because tick() asks rest() at that moment too.
+  if (!oneShot && current !== rest()) { current = rest(); i = 0; acc = 0; }
   const out = !!(u && (u.dead || u.down));
   panel.classList.toggle("dsp-down", out);
   if (out && !oneShot) setState(u.dead ? "down" : "downed");
+  else if (!oneShot) setState(current);
   fit();
   start();
  }
