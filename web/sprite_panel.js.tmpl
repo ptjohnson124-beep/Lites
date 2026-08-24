@@ -21,7 +21,11 @@
  const ATLAS_SRC = "data:image/webp;base64," + __ATLAS_B64__;
 
  const IDLE = "dahlia_twirl", HIT = "dahlia_hit", ATTACK = "dahlia_attack",
-       BLOCK = "dahlia_block", EVADE = "dahlia_dodge";
+       BLOCK = "dahlia_block", EVADE = "dahlia_dodge", COUNTER = "dahlia_counter";
+ // Retaliations that both stop the hit and answer it. They have their own clip
+ // because a counter is not a block followed by an attack -- one motion does
+ // both -- and the tracker's own descriptions say the same of these two.
+ const COUNTERING = new Set(["counter", "parry"]);
  // Retaliations that mean she got out of the way rather than took it. Only the
  // outright ones belong here: "check" and "parry" reduce a hit rather than
  // avoid it, so they land in damage() and read correctly as the block already.
@@ -70,7 +74,7 @@
  panel.innerHTML =
    '<div class="dsp-head"><span class="dsp-title">Sprite Feed — Dahlia Ishmael</span>' +
    '<span class="dsp-state" id="dspState">idle</span></div>' +
-   '<div class="dsp-sub" id="dspSub">Fielded. A hit she avoids plays the evade, one she soaks plays the block, one that gets through plays the hit.</div>' +
+   '<div class="dsp-sub" id="dspSub">Fielded. Countered, avoided, soaked or taken — the feed plays whichever actually happened.</div>' +
    '<div class="dsp-stage" id="dspStage"><canvas class="dsp-canvas" id="dspCanvas"></canvas></div>';
 
  const anchor = document.getElementById("passivesPanel") ||
@@ -219,16 +223,23 @@
  // then the hit has already played and must not be overwritten by an evade.
  const _resolveGroup = resolveGroup;
  resolveGroup = function(){
-  let evading = false;
+  let evading = false, countering = false;
   try {
    const t = __BB.selectedInlineRetalType || __BB.selectedRetalType || "";
    const el = document.getElementById("resTarget");
    const target = el && (S.eng.units || []).find(u => u.id === el.value);
-   evading = EVASIVE.has(t) && isDahlia(target) && target.side === "team";
+   const hers = isDahlia(target) && target.side === "team";
+   evading = hers && EVASIVE.has(t);
+   countering = hers && COUNTERING.has(t);
   } catch (e) {}
   claimed = false;
   const r = _resolveGroup.apply(this, arguments);
-  if (evading && !claimed) play(EVADE, "evaded");
+  // A counter that lands deals damage, so applyDamageToTarget will already
+  // have played the attack by the time this runs -- and the counter is the
+  // truer description of what happened, so it plays last and wins. `claimed`
+  // still decides: if the counter failed and a hit reached her, the hit stays.
+  if (countering && !claimed) play(COUNTER, "countered");
+  else if (evading && !claimed) play(EVADE, "evaded");
   return r;
  };
 
@@ -249,6 +260,7 @@
   hit: () => play(HIT, "struck"),
   block: () => play(BLOCK, "blocked"),
   evade: () => play(EVADE, "evaded"),
+  counter: () => play(COUNTER, "countered"),
   attack: () => play(ATTACK, "striking"),
   idle: () => play(IDLE, "idle"),
   panel, get fielded(){ return fielded(); }

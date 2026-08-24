@@ -574,14 +574,14 @@ $BUILD out/dahlia_attack/frames -o out/dahlia_attack -n dahlia_attack \
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge -o out/atlas -n dahlia --preview --preview-scale 0.5
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
 # bytes matter. --format webp here is a STILL image, not an animation: the
 # atlas is one picture either way, and WebP stores it in a third of the PNG's
 # bytes with the same pixels and the same alpha. 8.8MB becomes 1.0MB.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge -o out/web -n dahlia --scale 0.5 --format webp
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter -o out/web -n dahlia --scale 0.5 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 
 # Put the sprite feed into the combat tracker. Re-runnable: the injected block
@@ -749,4 +749,56 @@ $BUILD out/dahlia_dodge/frames -o out/dahlia_dodge -n dahlia_dodge \
   --holds 3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,3,4,5,11 \
   --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0,10:2,11:4,12:6,13:8,14:9,15:10,16:10,17:30,18:60,19:95,20:125,21:145,22:158,23:165,24:160,25:150,26:135,27:115,28:85,29:55,30:25,31:0 \
   --shake 25:6 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
+# The counter. Four sheets, 32 drawings, 29 played -- and the first set where
+# ALL THREE copied poses came back: 37, 39 and 57, against a body silhouette
+# where a genuinely different drawing scores 70 or more. Scale drift across the
+# four is +16%, +3% and -6%, which is the tightest set so far and the reason
+# --match-scale needed no help here.
+#
+# The named risk did not happen either. A deflection is a two-body idea drawn
+# on a one-character sheet, so the obvious way to draw it is to draw the thing
+# being turned aside. The enemy appears nowhere on any of the 32 drawings; the
+# incoming attack is only ever the flare on her blade.
+#
+# --scale ramps the last seven poses from 100 to 117%. Pose 29 and pose 1 are
+# the same guard drawing and 29 came back 15% smaller: same stance, 263px
+# between the boots against 277, just drawn small. Spread across the settle it
+# is 2 to 3% a drawing, and the first and last frames now match to the pixel.
+#
+# NOTHING IS HELD INSIDE THE SWEEP. Sheets 2 and 3 are one continuous movement
+# -- the arc that turns the attack aside is the arc that lands -- so all 14 of
+# their frames run at one drawing each with no frame repeated. The recovery is
+# the same until she actually stops.
+#
+# The read is the exception and it is deliberate. Its drawings change 7% each,
+# a third of what made the dodge's lean strobe, and she is decelerating into
+# stillness rather than moving through it, so the holds read as her taking her
+# time rather than as dropped frames. It is the one place in the set where
+# holding mid-movement is the right call, and it is only right because the
+# steps are small.
+$SLICE assets/dahlia_counter_read_sheet.png -o out/ct_read \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single read
+$SLICE assets/dahlia_counter_deflect_sheet.png -o out/ct_deflect \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single deflect
+$SLICE assets/dahlia_counter_punish_sheet.png -o out/ct_punish \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single punish
+$SLICE assets/dahlia_counter_reset_sheet.png -o out/ct_reset \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single reset
+python3 tools/merge_sheets.py out/ct_read/frames out/ct_deflect/frames \
+  out/ct_punish/frames out/ct_reset/frames \
+  --skip-first out/ct_deflect/frames --skip-first out/ct_punish/frames \
+  --skip-first out/ct_reset/frames \
+  --match-scale -o out/dahlia_counter -n dahlia_counter
+$BUILD out/dahlia_counter/frames -o out/dahlia_counter -n dahlia_counter \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29 \
+  --holds 5,3,3,3,3,3,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,4,6,12 \
+  --scale 23:100,24:103,25:106,26:109,27:112,28:115,29:117 \
+  --travel 1:0,2:0,3:0,4:0,5:-2,6:-4,7:-6,8:-8,9:-14,10:-22,11:-30,12:-36,13:-40,14:-42,15:-44,16:-46,17:-48,18:-50,19:-52,20:-52,21:-50,22:-48,23:-44,24:-38,25:-30,26:-22,27:-14,28:-6,29:0 \
+  --shake 9:6,19:8 \
   --fps 24 --breathe 0 --bob 0 --sway 0
