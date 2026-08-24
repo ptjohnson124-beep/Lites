@@ -50,6 +50,35 @@ def ground(im):
     return float(xs.mean()), int(ys.max())
 
 
+def body_area(im):
+    """How much of a frame is HER, with effects masked out.
+
+    Used as the measure of how large she is DRAWN, and area is the right
+    measure rather than height. Height is a property of the pose: she is 325px
+    tall through the dodge because she spends it crouched and 603px through the
+    slipping idle because she spends it upright, and normalising on that would
+    make her grow every time she stood up. Area barely moves when a limb folds
+    -- measured across these clips, the spread of sqrt(area) WITHIN a clip is
+    under 6% where height varies by 17% -- so it tracks the drawing scale and
+    not the choreography.
+
+    Fire and the blade's teal are excluded for the same reason the anchor
+    excludes them: an effect can be larger than she is and would set the number
+    instead of her.
+    """
+    a = np.asarray(im)
+    rgb, alpha = a[:, :, :3].astype(np.int16), a[:, :, 3]
+    fire = (rgb[:, :, 0] > 170) & (rgb[:, :, 1] > 60) & (rgb[:, :, 2] < 120)
+    teal = (rgb[:, :, 1] > rgb[:, :, 0] + 30) & (rgb[:, :, 2] > rgb[:, :, 0] + 20)
+    body = (alpha > 32) & ~fire & ~teal
+    return int(body.sum()) or int((alpha > 32).sum())
+
+
+def clip_scale(images):
+    """One number for how large she is drawn in this clip."""
+    return float(np.median([np.sqrt(body_area(im)) for im in images]))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -66,6 +95,13 @@ def main():
                          "'out/dahlia_twirl=idle'. With more than one character in a "
                          "tracker the player has to ask for 'the hit', not for "
                          "'dahlia_hit', so the roles are what the manifest carries")
+    ap.add_argument("--match-scale", action="store_true",
+                    help="resize each clip so she is drawn the same size in all of "
+                         "them. Registering position is not enough on its own: the "
+                         "sheets behind different clips came back at very different "
+                         "scales, and she jumped 67%% larger the moment the panel "
+                         "switched to a newer clip. Everything is brought DOWN to the "
+                         "smallest clip, so no frame is ever enlarged")
     ap.add_argument("--scale", type=float, default=1.0,
                     help="resize every cell; 0.5 halves the atlas for the web, where "
                          "she is displayed small anyway")
@@ -94,12 +130,30 @@ def main():
             raise SystemExit(f"{d}: no played frames in {name}_frames/")
         meta = json.load(open(meta_path, encoding="utf-8")) if os.path.exists(meta_path) else {}
         images = [Image.open(p).convert("RGBA") for p in frames]
+        clips.append({"name": roles.get(d.rstrip("/"), name), "images": images,
+                      "dir": d.rstrip("/"), "fps": meta.get("fps", 24)})
+
+    if args.match_scale:
+        # Measured before anything is moved, and applied before the anchor is
+        # taken, so the feet still land together afterwards.
+        for c in clips:
+            c["measure"] = clip_scale(c["images"])
+        target = min(c["measure"] for c in clips)
+        for c in clips:
+            k = target / c["measure"]
+            if abs(k - 1.0) < 0.005:
+                print(f"  {c['name']:<12s} already at scale")
+                continue
+            c["images"] = [im.resize((max(1, round(im.width * k)),
+                                      max(1, round(im.height * k))), Image.LANCZOS)
+                           for im in c["images"]]
+            print(f"  {c['name']:<12s} scaled {100 * k:.1f}%")
+
+    for c in clips:
         # The clip's own origin is taken from its first frame, because that is
         # the drawing it cuts in on and the one that has to agree with every
         # other clip's first drawing.
-        gx, gy = ground(images[0])
-        clips.append({"name": roles.get(d.rstrip("/"), name), "images": images,
-                      "gx": gx, "gy": gy, "fps": meta.get("fps", 24)})
+        c["gx"], c["gy"] = ground(c["images"][0])
 
     unknown = set(roles) - {d.rstrip("/") for d in args.clips}
     if unknown:

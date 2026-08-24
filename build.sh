@@ -939,6 +939,42 @@ $BUILD out/dahlia_fracture/frames -o out/dahlia_fracture -n dahlia_fracture \
   --shake 10:3,11:5,12:4,13:3,19:6 \
   --fps 24 --breathe 0 --bob 0 --sway 0
 
+# Her baseline frequency spec -- the clip that plays for EVERY MF spec she has,
+# which is why nothing leaves her body on it. Two sheets, 16 drawings, 15
+# played, and it is the first action written from her unit block in the tracker
+# rather than from a description: her signature reads "micro-cinders below the
+# visible spectrum, a Pyrelite still waiting to fully light", and the animation
+# is that sentence drawn.
+#
+# The join is 11.8 and THE WRAP IS 2.8 -- the tightest match this project has
+# measured, by a factor of four. The clip ends on her reference guard and hands
+# back to the idle with nothing to see at the seam.
+#
+# --scale 15:108 and nothing else. The last drawing came back 11% smaller than
+# its neighbour: body height runs 545, 567..583, 572, 572, 506, so the guard she
+# ends on was drawn small. Body PIXEL COUNT confirms it is scale and not pose --
+# 104,971 against 90,975, a 13% area difference, which is 7% linear. Corrected,
+# the loop closes at +0.0%.
+#
+# Step evenness reads 4.8x and 5.8x and is not a fault here: the largest step on
+# either sheet is 33 and 61, where the attack's SMALLEST was larger. She barely
+# moves in this clip, which is the whole design -- her strength is 3 and her
+# soul is 8, and the movement is small on purpose.
+$SLICE assets/dahlia_spec_read_sheet.png -o out/sp_read \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single read
+$SLICE assets/dahlia_spec_call_sheet.png -o out/sp_call \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single call
+python3 tools/merge_sheets.py out/sp_read/frames out/sp_call/frames \
+  --skip-first out/sp_call/frames \
+  --match-scale -o out/dahlia_spec -n dahlia_spec
+$BUILD out/dahlia_spec/frames -o out/dahlia_spec -n dahlia_spec \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 \
+  --holds 6,4,4,4,4,4,4,8,2,2,3,3,4,5,10 \
+  --scale 15:108 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
 # ---------------------------------------------------------------------
 # PACKING COMES LAST, and that is load-bearing rather than tidy. It reads
 # out/dahlia_* off disk, so anything rebuilt after it is packed in its
@@ -948,6 +984,25 @@ $BUILD out/dahlia_fracture/frames -o out/dahlia_fracture -n dahlia_fracture \
 # was present and the atlas came out looking finished.
 # ---------------------------------------------------------------------
 # Every finished clip onto one shared canvas, and one atlas for all of them.
+#
+# --match-scale is the second half of that and it was missing for nine clips.
+# Registering POSITION is not enough on its own: the sheets behind different
+# clips came back at very different sizes, and in the packed atlas her body
+# measured 269px on the idle and 450px on the slipping idle. Her feet were in
+# the right place and she was 67% larger -- so she jumped size every time the
+# panel changed clip, silently, because each clip looked correct on its own.
+#
+# The measure is sqrt(body area) rather than height, because height is a
+# property of the POSE: she is 325px through the dodge because she spends it
+# crouched and 603px through the slipping idle because she spends it upright.
+# Normalising on height would make her grow every time she stood up. Across
+# these clips the spread of sqrt(area) within a clip is under 6% where height
+# varies by 17%.
+#
+# Everything is brought DOWN to the smallest clip, so no frame is ever
+# enlarged: the newer sheets have resolution to spare and the idle does not.
+# Cross-clip spread goes from 1.70x to 1.14x, and what is left is pose rather
+# than scale.
 #
 # The assembler sizes each clip's canvas to that clip, which is right inside a
 # clip and wrong between them: the idle, the hit and the attack came out
@@ -960,8 +1015,8 @@ $BUILD out/dahlia_fracture/frames -o out/dahlia_fracture -n dahlia_fracture \
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture \
-  -o out/atlas -n dahlia --preview --preview-scale 0.5
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec \
+  --match-scale -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
 # bytes matter -- less than they did, since the tracker is opened off disk
@@ -975,12 +1030,12 @@ python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
 # "dahlia_hit", so roles are what the manifest carries and the atlas basename
 # is what matches a unit by name.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec \
   --role out/dahlia_twirl=idle --role out/dahlia_hit=hit \
   --role out/dahlia_attack=attack --role out/dahlia_block=block \
   --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
-  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured \
-  -o out/web -n dahlia --scale 0.75 --format webp
+  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec \
+  --match-scale -o out/web -n dahlia --scale 0.75 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 
 # Put the sprite feed into the combat tracker. Re-runnable: the injected block
