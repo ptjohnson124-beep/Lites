@@ -582,8 +582,17 @@ python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
 # on. --format webp here is a STILL image, not an animation: the
 # atlas is one picture either way, and WebP stores it in a third of the PNG's
 # bytes with the same pixels and the same alpha. 8.8MB becomes 1.0MB.
+# --role names each clip by what it IS rather than whose it is. With more than
+# one character in the tracker the panel has to ask for "the hit", not for
+# "dahlia_hit", so roles are what the manifest carries and the atlas basename
+# is what matches a unit by name.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt -o out/web -n dahlia --scale 0.75 --format webp
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt \
+  --role out/dahlia_twirl=idle --role out/dahlia_hit=hit \
+  --role out/dahlia_attack=attack --role out/dahlia_block=block \
+  --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
+  --role out/dahlia_taunt=taunt \
+  -o out/web -n dahlia --scale 0.75 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 
 # Put the sprite feed into the combat tracker. Re-runnable: the injected block
@@ -594,6 +603,10 @@ cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 # The tracker is opened off disk, so the atlas cannot be fetched -- file://
 # blocks it -- and it is inlined as a data URI, which is how that file already
 # carries its battle-map backdrops.
+# Every <name>_atlas.json in out/web becomes one member of the cast, and its
+# basename is the match key: dahlia_atlas.json plays for any unit whose name
+# contains "dahlia". Adding a character is packing an atlas next to the others
+# and re-running this.
 # python3 tools/inject_sprite_panel.py path/to/BLACKBOX_MERC_OS.html -a out/web
 
 # The block: panicked, played off cool. Three sheets, 24 drawings, 22 played --

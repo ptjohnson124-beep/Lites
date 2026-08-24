@@ -12,7 +12,7 @@
   404.2
  ],
  "clips": {
-  "dahlia_twirl": {
+  "idle": {
    "fps": 24.0,
    "frames": [
     0,
@@ -90,7 +90,7 @@
    ],
    "seconds": 3.0
   },
-  "dahlia_hit": {
+  "hit": {
    "fps": 24.0,
    "frames": [
     26,
@@ -183,7 +183,7 @@
    ],
    "seconds": 3.625
   },
-  "dahlia_attack": {
+  "attack": {
    "fps": 24.0,
    "frames": [
     53,
@@ -276,7 +276,7 @@
    ],
    "seconds": 3.625
   },
-  "dahlia_block": {
+  "block": {
    "fps": 24.0,
    "frames": [
     79,
@@ -363,7 +363,7 @@
    ],
    "seconds": 3.375
   },
-  "dahlia_dodge": {
+  "dodge": {
    "fps": 24.0,
    "frames": [
     104,
@@ -423,7 +423,7 @@
    ],
    "seconds": 2.25
   },
-  "dahlia_counter": {
+  "counter": {
    "fps": 24.0,
    "frames": [
     135,
@@ -494,7 +494,7 @@
    ],
    "seconds": 2.708
   },
-  "dahlia_taunt": {
+  "taunt": {
    "fps": 24.0,
    "frames": [
     164,

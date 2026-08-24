@@ -1,40 +1,57 @@
 
-/* ==== BEGIN DAHLIA SPRITE FEED — injected block, delete to the END marker ====
+/* ==== BEGIN SPRITE FEED — injected block, delete to the END marker ====
    -------------------------------------------------------------------
-   A black-grid panel under the battle map that shows Dahlia animating.
-   It appears only while a Dahlia unit is fielded on the party side and
-   removes itself the moment she is not.
+   A black-grid panel under the battle map showing whoever is currently
+   acting, for any character who has sprites. It appears when at least one
+   sprited character is fielded and removes itself when none is.
 
-   Everything below is additive: no existing function is edited, three
-   are wrapped in the same way this file already wraps renderCmd. Delete
-   from this comment to the matching end marker and the tracker is
-   exactly as it was.
+   Everything below is additive: no existing function is edited, four are
+   wrapped the same way this file already wraps renderCmd. Delete from this
+   comment to the matching end marker and the tracker is exactly as it was.
 
-   The frames are drawn cell by cell out of one atlas rather than played
-   as an animated GIF or WebP, because an <img> cannot be driven: it
-   starts when it loads, loops forever, and offers script no way to run
-   a clip once or to learn that it has finished. A hit has to play once
-   and hand back to the idle, so the frames are drawn by hand.
+   Frames are drawn cell by cell out of an atlas rather than played as an
+   animated GIF or WebP, because an <img> cannot be driven: it starts when it
+   loads, loops forever, and offers script no way to run a clip once or to
+   learn that it has finished. A hit has to play once and hand back to the
+   idle, so the frames are drawn by hand.
    =================================================================== */
 (function(){
- const ATLAS = __ATLAS_MANIFEST__;
- const ATLAS_SRC = "data:image/webp;base64," + __ATLAS_B64__;
+ const CAST = __CAST__;
 
- const IDLE = "dahlia_twirl", HIT = "dahlia_hit", ATTACK = "dahlia_attack",
-       BLOCK = "dahlia_block", EVADE = "dahlia_dodge", COUNTER = "dahlia_counter",
-       TAUNT = "dahlia_taunt";
- // Retaliations that both stop the hit and answer it. They have their own clip
- // because a counter is not a block followed by an attack -- one motion does
- // both -- and the tracker's own descriptions say the same of these two.
- const COUNTERING = new Set(["counter", "parry"]);
- // Retaliations that mean she got out of the way rather than took it. Only the
- // outright ones belong here: "check" and "parry" reduce a hit rather than
- // avoid it, so they land in damage() and read correctly as the block already.
+ /* Which clip answers which event. A character only needs 'idle', 'hit' and
+    'attack' to narrate a fight; the rest are for whoever earns them, and a
+    character without one simply keeps idling rather than borrowing someone
+    else's meaning. */
  const EVASIVE = new Set(["dodge"]);
- const isDahlia = u => !!(u && u.name && u.name.indexOf("Dahlia") >= 0);
+ const COUNTERING = new Set(["counter", "parry"]);
+
+ // onload rather than decode(), and a closure over the entry itself rather
+ // than an index resolved later. The first version did neither and simply
+ // never became ready, with a bare .catch swallowing whatever the reason was.
+ // Anything that can fail here is recorded on the entry instead, so
+ // spriteFeed.cast can be asked why a character is not drawing.
+ const cast = CAST.map(c => {
+  const entry = { key: c.key, match: c.key.toLowerCase(), atlas: c.atlas,
+                  img: new Image(), ready: false, error: null,
+                  label: c.label || c.key };
+  entry.img.onload = () => {
+   entry.ready = true;
+   try { sync(); } catch (e) {}
+  };
+  entry.img.onerror = () => { entry.error = "atlas image failed to load"; };
+  entry.img.src = c.src;
+  return entry;
+ });
+ const forUnit = u => {
+  if (!u || !u.name) return null;
+  const n = u.name.toLowerCase();
+  return cast.find(c => n.indexOf(c.match) >= 0) || null;
+ };
+ const unitById = id => {
+  try { return (S.eng.units || []).find(u => u.id === id) || null; } catch (e) { return null; }
+ };
  const fielded = () => {
-  try { return (S.eng.units || []).some(u => u.side === "team" && isDahlia(u)); }
-  catch (e) { return false; }
+  try { return (S.eng.units || []).filter(u => forUnit(u)); } catch (e) { return []; }
  };
 
  /* ---- the panel ---------------------------------------------------- */
@@ -45,12 +62,13 @@
  .dsp-head{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:4px}
  .dsp-title{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
    color:var(--cyand);text-transform:uppercase}
+ .dsp-who{font-family:var(--hud);font-size:13px;font-weight:600;color:var(--ice);
+   letter-spacing:.02em}
  .dsp-state{font-family:var(--mono);font-size:9px;letter-spacing:.1em;
    color:var(--ember);text-transform:uppercase;margin-left:auto}
  .dsp-sub{font-family:var(--mono);font-size:9px;color:var(--dim);margin-bottom:8px}
  .dsp-stage{position:relative;display:grid;place-items:center;border:1px solid var(--line);
    border-radius:2px;overflow:hidden;background:var(--pit);padding:10px 0}
- /* the grid she stands on: 24px cells, one brighter line every fourth */
  .dsp-stage::before{content:"";position:absolute;inset:0;pointer-events:none;
    background-image:
      linear-gradient(rgba(35,48,66,.55) 1px,transparent 1px),
@@ -58,21 +76,18 @@
      linear-gradient(rgba(57,211,232,.14) 1px,transparent 1px),
      linear-gradient(90deg,rgba(57,211,232,.14) 1px,transparent 1px);
    background-size:24px 24px,24px 24px,96px 96px,96px 96px}
- /* a floor line under her boots, at the anchor the atlas guarantees */
  .dsp-stage::after{content:"";position:absolute;left:0;right:0;pointer-events:none;
    bottom:calc(10px + (var(--dsp-cell-h) - var(--dsp-anchor-y)) * var(--dsp-zoom));
    height:1px;background:linear-gradient(90deg,transparent,rgba(57,211,232,.45),transparent)}
  /* A quarter of her is darker than luminance 20 -- trousers, boots, the
     shadowed side of the hoodie -- and against any dark ground that is about
     1.1:1, which is invisible. No backdrop colour fixes it either: her dark
-    range covers the whole shadow end, so separating her needs light near her
+    range covers the whole shadow end, so separating her needs light NEAR her
     rather than a different ground.
     It has to be a WIDE, DIM halo and never a tight bright rim. The first
     attempt led with a 1px line at 85% opacity, and her silhouette has 3,392
     boundary pixels -- 5.3% of her ink, every hair strand among them -- so it
-    painted a bright speckle along all of them and read as grain ON her. These
-    are broad enough to lift the ground she stands against instead, which is
-    the thing that actually needed lifting. */
+    painted a bright speckle along all of them and read as grain ON her. */
  .dsp-canvas{position:relative;z-index:1;image-rendering:auto;
    filter:drop-shadow(0 0 8px rgba(72,112,152,.60))
           drop-shadow(0 0 22px rgba(40,72,106,.55))}
@@ -83,12 +98,13 @@
 
  const panel = document.createElement("div");
  panel.className = "dsp-panel";
- panel.id = "dahliaSpritePanel";
+ panel.id = "spriteFeedPanel";
  panel.style.display = "none";
  panel.innerHTML =
-   '<div class="dsp-head"><span class="dsp-title">Sprite Feed — Dahlia Ishmael</span>' +
+   '<div class="dsp-head"><span class="dsp-title">Sprite Feed</span>' +
+   '<span class="dsp-who" id="dspWho">—</span>' +
    '<span class="dsp-state" id="dspState">idle</span></div>' +
-   '<div class="dsp-sub" id="dspSub">Fielded. Countered, avoided, soaked or taken — the feed plays whichever actually happened.</div>' +
+   '<div class="dsp-sub" id="dspSub">Follows whoever is acting. Countered, avoided, soaked or taken — it plays whichever actually happened.</div>' +
    '<div class="dsp-stage" id="dspStage"><canvas class="dsp-canvas" id="dspCanvas"></canvas></div>';
 
  const anchor = document.getElementById("passivesPanel") ||
@@ -99,20 +115,23 @@
  const stage = panel.querySelector("#dspStage");
  const cv = panel.querySelector("#dspCanvas");
  const stateEl = panel.querySelector("#dspState");
+ const whoEl = panel.querySelector("#dspWho");
  const ctx = cv.getContext("2d");
 
  /* ---- playback ------------------------------------------------------
-    Time is accumulated against the real clock rather than against
-    animation-frame callbacks, so a 24fps clip runs at 24fps on a 60Hz
-    screen and on a 144Hz one. A delta returned by a backgrounded tab is
-    clamped, so the clip resumes where it was instead of skipping most
-    of the way through. */
- const img = new Image();
- let ready = false, raf = 0, zoom = 1;
- let current = IDLE, oneShot = null, i = 0, acc = 0, last = 0;
+    Time is accumulated against the real clock rather than against animation
+    frame callbacks, so a 24fps clip runs at 24fps on a 60Hz screen and on a
+    144Hz one. A delta returned by a backgrounded tab is clamped, so the clip
+    resumes where it was instead of skipping most of the way through. */
+ let subject = null;          // whose sprites are on screen
+ let raf = 0, zoom = 1;
+ let current = "idle", oneShot = null, i = 0, acc = 0, last = 0;
+
+ const clipOf = (who, role) => (who && who.atlas.clips[role]) || null;
 
  function fit(){
-  const w = ATLAS.cell[0], h = ATLAS.cell[1];
+  if (!subject) return;
+  const [w, h] = subject.atlas.cell;
   const avail = Math.max(160, stage.clientWidth - 20);
   zoom = Math.min(1, avail / w);
   const dpr = window.devicePixelRatio || 1;
@@ -122,24 +141,27 @@
   cv.style.height = (h * zoom) + "px";
   ctx.imageSmoothingQuality = "high";
   stage.style.setProperty("--dsp-cell-h", h + "px");
-  stage.style.setProperty("--dsp-anchor-y", ATLAS.anchor[1] + "px");
+  stage.style.setProperty("--dsp-anchor-y", subject.atlas.anchor[1] + "px");
   stage.style.setProperty("--dsp-zoom", zoom);
-  if (ready) draw();
+  draw();
  }
 
  function draw(){
-  const clip = ATLAS.clips[current];
+  if (!subject || !subject.ready) return;
+  const clip = clipOf(subject, current) || clipOf(subject, "idle");
   if (!clip) return;
-  const cell = clip.frames[i];
-  const w = ATLAS.cell[0], h = ATLAS.cell[1];
+  const cell = clip.frames[Math.min(i, clip.frames.length - 1)];
+  const [w, h] = subject.atlas.cell, cols = subject.atlas.cols;
   ctx.clearRect(0, 0, cv.width, cv.height);
-  ctx.drawImage(img, (cell % ATLAS.cols) * w, Math.floor(cell / ATLAS.cols) * h, w, h,
+  ctx.drawImage(subject.img, (cell % cols) * w, Math.floor(cell / cols) * h, w, h,
                 0, 0, cv.width, cv.height);
  }
 
  function tick(now){
   raf = requestAnimationFrame(tick);
-  const clip = ATLAS.clips[current];
+  if (!subject) return;
+  const clip = clipOf(subject, current) || clipOf(subject, "idle");
+  if (!clip) return;
   acc += Math.min(now - last, 250);
   last = now;
   const step = 1000 / clip.fps;
@@ -149,7 +171,7 @@
    i += 1;
    if (i >= clip.frames.length) {
     i = 0;
-    if (oneShot) { oneShot = null; current = IDLE; setState("idle"); }
+    if (oneShot) { oneShot = null; current = "idle"; setState("idle"); }
    }
    dirty = true;
   }
@@ -158,110 +180,147 @@
 
  function setState(txt){ stateEl.textContent = txt; }
 
- function play(name, label){
-  if (!ready || !ATLAS.clips[name]) return;
-  oneShot = name === IDLE ? null : name;
-  current = name; i = 0; acc = 0; last = performance.now();
-  setState(label || name);
+ /* Switching who is on screen. A clip that is mid-play is not interrupted by a
+    mere change of turn -- only by something actually happening to somebody
+    else -- so the panel does not flicker between units while a hit is still
+    reading. */
+ function show(who, force){
+  if (!who || who === subject) return false;
+  if (oneShot && !force) return false;
+  subject = who;
+  whoEl.textContent = who.label;
+  current = "idle"; oneShot = null; i = 0; acc = 0;
+  setState("idle");
+  fit();
+  return true;
+ }
+
+ /* Play a role for a named unit. Missing roles fall through to nothing at all
+    rather than to a stand-in: a wrong animation is worse than no animation,
+    and a character with three clips should simply keep idling through a block
+    rather than borrow the hit. */
+ function play(unit, role, label){
+  const who = forUnit(unit);
+  if (!who || !who.ready) return false;
+  if (!clipOf(who, role)) return false;
+  show(who, true);
+  oneShot = role === "idle" ? null : role;
+  current = role; i = 0; acc = 0; last = performance.now();
+  setState(label || role);
   draw();
+  start();
+  return true;
  }
 
- function start(){
-  if (raf || !ready) return;
-  last = performance.now();
-  raf = requestAnimationFrame(tick);
- }
+ function start(){ if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); } }
  function stop(){ if (raf) cancelAnimationFrame(raf); raf = 0; }
-
- img.onload = () => { ready = true; fit(); draw(); if (panel.style.display !== "none") start(); };
- img.src = ATLAS_SRC;
  addEventListener("resize", fit);
 
- /* ---- shown only while she is on the field --------------------------- */
- function sync(){
-  const on = fielded();
-  panel.style.display = on ? "" : "none";
-  if (on) {
-   const d = (S.eng.units || []).find(u => u.side === "team" && isDahlia(u));
-   const out = !!(d && (d.dead || d.down));
-   panel.classList.toggle("dsp-down", out);
-   if (out && !oneShot) setState(d.dead ? "kindle-shell" : "down");
-   else if (!oneShot && !out && stateEl.textContent !== "idle") setState("idle");
-   fit();
-   start();
-  } else {
-   stop();
-   // Reset rather than freeze: she may be fielded again mid-clip, and a
-   // panel that comes back reading "struck" is describing an old fight.
-   oneShot = null; current = IDLE; i = 0; setState("idle");
-   panel.classList.remove("dsp-down");
+ /* ---- who is acting -------------------------------------------------
+    Three things in the tracker point at a unit, in falling order of how
+    deliberate they are: the actor chosen in the resolve panel, the actor in
+    the retaliation panel, and whatever is selected on the battle map. The
+    first sprited one wins. */
+ function acting(){
+  const ids = [];
+  for (const id of ["resActor", "retActor"]) {
+   const el = document.getElementById(id);
+   if (el && el.value) ids.push(el.value);
   }
+  try { if (window.bmSelectedUnitId) ids.push(window.bmSelectedUnitId); } catch (e) {}
+  try { if (S.eng.lastActorId) ids.push(S.eng.lastActorId); } catch (e) {}
+  for (const id of ids) {
+   const u = unitById(id);
+   if (forUnit(u)) return u;
+  }
+  return null;
  }
 
- /* ---- the three wraps ------------------------------------------------
-    damage(u,v) is the single place every point of damage lands: the
-    quick -20/-10 buttons call it directly and applyDamageToTarget calls
-    it too, so wrapping it catches a resolved exchange and a manual
-    adjustment both, and only once.
+ function sync(){
+  const on = fielded();
+  panel.style.display = on.length ? "" : "none";
+  if (!on.length) {
+   stop();
+   subject = null; oneShot = null; current = "idle"; i = 0;
+   setState("idle"); whoEl.textContent = "—";
+   panel.classList.remove("dsp-down");
+   return;
+  }
+  // Follow the acting unit, but never yank the panel away mid-clip.
+  const act = acting();
+  if (act) show(forUnit(act));
+  if (!subject) show(forUnit(on[0]));
+  const u = on.find(x => forUnit(x) === subject);
+  const out = !!(u && (u.dead || u.down));
+  panel.classList.toggle("dsp-down", out);
+  if (out && !oneShot) setState(u.dead ? "down" : "downed");
+  fit();
+  start();
+ }
 
-    applyDamageToTarget is wrapped for the other direction, where she is
-    the attacker. Its own inner damage() call lands on the target, so a
-    hit she deals never also reads as a hit she takes. */
- // Set by the damage wrapper whenever it plays something, so the exchange
- // wrapper below can tell a dodge that worked from one that did not.
+ /* ---- the wraps ------------------------------------------------------
+    damage(u,v) is the single place every point of damage lands: the quick
+    -20/-10 buttons call it directly and applyDamageToTarget calls it too, so
+    wrapping it catches a resolved exchange and a manual adjustment both, and
+    only once. */
  let claimed = false;
 
  const _damage = damage;
  damage = function(u, v){
-  const mine = v > 0 && isDahlia(u) && u.side === "team" && !u.dead;
+  const mine = v > 0 && forUnit(u) && !u.dead;
   const hp = mine ? u.hp : 0;
   const r = _damage.apply(this, arguments);
-  // Which of the two defensive clips plays is read off real state rather than
-  // guessed. Inside damage() the shield and the grafts drain before anything
-  // reaches her, so a hit she soaked whole leaves her HP untouched and is the
-  // block, and a hit that moved it is the hit -- including one only partly
-  // soaked, which did get through. It has to be measured after the call.
+  // Which defensive clip plays is read off real state rather than guessed.
+  // Inside damage() the shield and the grafts drain before anything reaches
+  // them, so a hit soaked whole leaves HP untouched and is the block, and a
+  // hit that moved it is the hit -- including one only partly soaked, which
+  // did get through. It has to be measured after the call.
   if (mine) {
    const through = u.hp < hp;
-   play(through ? HIT : BLOCK, through ? "struck" : "blocked");
-   claimed = true;
+   if (play(u, through ? "hit" : "block", through ? "struck" : "blocked")) claimed = true;
   }
   return r;
  };
 
- // A dodge that works never reaches damage() at all -- there is no damage to
- // apply -- so the evade cannot be read off her HP the way the other two are.
- // It is read off the exchange instead: what the tracker had selected as the
- // retaliation, and whether she was the one being attacked. `claimed` is the
- // part that matters, because a dodge that FAILED does reach damage(), and
- // then the hit has already played and must not be overwritten by an evade.
- // Two separate paths reach a retaliation and they disagree about which end
- // of the exchange Dahlia is on. Resolving inline, she is the TARGET being
- // attacked and the type is selectedInlineRetalType. Through the retaliation
- // panel she is the ACTOR -- the one answering -- and the type is
- // selectedRetalType. Wrapping only the first is why a counter thrown from
- // the panel played as an attack: that path never touched resolveGroup, so
- // the only thing that fired was applyDamageToTarget seeing her deal damage.
- function retaliationByHer(varName, elId){
+ const _applyDamageToTarget = applyDamageToTarget;
+ applyDamageToTarget = function(e, attacker, target, dmg, graftIdx, actKind){
+  const mine = dmg > 0 && forUnit(attacker) && attacker !== target;
+  const defeated = _applyDamageToTarget.apply(this, arguments);
+  // A finish gets the taunt, and the function already says so in its return
+  // value -- the only thing that does. Inspecting the target does not work: a
+  // hostile is never marked dead or down at all, because damage() routes that
+  // whole side through an integrity pool instead.
+  if (mine) play(attacker, defeated ? "taunt" : "attack",
+                 defeated ? "upper hand" : "striking");
+  return defeated;
+ };
+
+ /* Two separate paths reach a retaliation and they disagree about which end of
+    the exchange the retaliator is on. Resolving inline they are the TARGET
+    being attacked and the type is selectedInlineRetalType; through the
+    retaliation panel they are the ACTOR answering and the type is
+    selectedRetalType. */
+ function retaliator(varName, elId){
   try {
-   const t = __BB[varName] || "";
    const el = document.getElementById(elId);
-   const u = el && (S.eng.units || []).find(x => x.id === el.value);
-   return (isDahlia(u) && u.side === "team") ? t : "";
-  } catch (e) { return ""; }
+   const u = unitById(el && el.value);
+   return forUnit(u) ? { type: __BB[varName] || "", unit: u } : null;
+  } catch (e) { return null; }
  }
 
  function wrapExchange(fn, varName, elId){
   return function(){
-   const t = retaliationByHer(varName, elId);
+   const r0 = retaliator(varName, elId);
    claimed = false;
    const r = fn.apply(this, arguments);
    // A counter that lands deals damage, so applyDamageToTarget has already
-   // played the attack by now -- and the counter is the truer description of
-   // what happened, so it plays last and wins. `claimed` still decides: if
-   // the retaliation failed and a hit reached her, the hit stays.
-   if (COUNTERING.has(t) && !claimed) play(COUNTER, "countered");
-   else if (EVASIVE.has(t) && !claimed) play(EVADE, "evaded");
+   // played the attack by now -- and the counter is the truer description, so
+   // it plays last and wins. `claimed` still decides: if the retaliation
+   // failed and a hit landed, the hit stays.
+   if (r0 && !claimed) {
+    if (COUNTERING.has(r0.type)) play(r0.unit, "counter", "countered");
+    else if (EVASIVE.has(r0.type)) play(r0.unit, "dodge", "evaded");
+   }
    return r;
   };
  }
@@ -270,49 +329,44 @@
  if (typeof enemyRetaliation === "function")
   enemyRetaliation = wrapExchange(enemyRetaliation, "selectedRetalType", "retActor");
 
- // And the buttons have to be re-bound, which is the part that actually broke
- // it. Both were wired with onclick = resolveGroup / enemyRetaliation long
- // before this block runs, so each button holds a reference to the ORIGINAL
- // function. Reassigning the name afterwards rebinds callers that look it up
- // by name -- which is every internal call, and every test written against
- // it -- and does nothing whatever for the two buttons a person actually
- // presses. Pointing them at the wrapped versions is the fix.
+ // The buttons have to be re-bound, which is the part that actually broke this
+ // the first time. Both were wired with onclick = resolveGroup /
+ // enemyRetaliation long before this block runs, so each button holds a
+ // reference to the ORIGINAL function. Reassigning the name rebinds every
+ // caller that looks it up by name -- which is every internal call, and every
+ // test written against it -- and does nothing for the two buttons a person
+ // actually presses.
  for (const [id, fn] of [["btnResolve", resolveGroup], ["btnRetal", enemyRetaliation]]) {
   const el = document.getElementById(id);
   if (el && typeof fn === "function") el.onclick = fn;
  }
 
- const _applyDamageToTarget = applyDamageToTarget;
- applyDamageToTarget = function(e, attacker, target, dmg, graftIdx, actKind){
-  const mine = dmg > 0 && isDahlia(attacker) && attacker.side === "team" && !isDahlia(target);
-  const defeated = _applyDamageToTarget.apply(this, arguments);
-  // The taunt has a combat event of its own: she finishes someone -- and the
-  // function already says so in its return value, which is the only thing that
-  // does. Inspecting the target does not work: a hostile is never marked dead
-  // or down at all, because damage() routes the whole side through an
-  // integrity pool instead, so the flags this used to read stay false forever.
-  // A finish is the truer description of the beat, so it wins over the attack.
-  if (mine) play(defeated ? TAUNT : ATTACK, defeated ? "upper hand" : "striking");
-  return defeated;
- };
+ // Changing the actor should move the panel even when nothing has happened yet.
+ for (const id of ["resActor", "retActor"]) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener("change", () => { try { sync(); } catch (e) {} });
+ }
 
  const _render = render;
- render = function(){ const r = _render.apply(this, arguments); try { sync(); } catch (err) {} return r; };
+ render = function(){ const r = _render.apply(this, arguments); try { sync(); } catch (e) {} return r; };
 
- /* Anything the tracker can do, the feed can be told to do by hand —
-    useful for a key binding, and for checking it without taking a hit. */
- window.dahliaSprite = {
-  play: (name) => play(ATLAS.clips[name] ? name : IDLE),
-  hit: () => play(HIT, "struck"),
-  block: () => play(BLOCK, "blocked"),
-  evade: () => play(EVADE, "evaded"),
-  counter: () => play(COUNTER, "countered"),
-  taunt: () => play(TAUNT, "upper hand"),
-  attack: () => play(ATTACK, "striking"),
-  idle: () => play(IDLE, "idle"),
-  panel, get fielded(){ return fielded(); }
+ window.spriteFeed = {
+  play: (name, role) => {
+   const u = (S.eng.units || []).find(x => x.name && x.name.toLowerCase()
+              .indexOf(String(name).toLowerCase()) >= 0);
+   return play(u, role, role);
+  },
+  show: (name) => {
+   const u = (S.eng.units || []).find(x => x.name && x.name.toLowerCase()
+              .indexOf(String(name).toLowerCase()) >= 0);
+   const who = forUnit(u); return who ? show(who, true) : false;
+  },
+  get subject(){ return subject && subject.label; },
+  get cast(){ return cast.map(c => ({ name: c.key, ready: c.ready, error: c.error,
+                                     clips: Object.keys(c.atlas.clips) })); },
+  panel
  };
 
  sync();
 })();
-/* ================= END DAHLIA SPRITE FEED ========================= */
+/* ================= END SPRITE FEED ========================= */

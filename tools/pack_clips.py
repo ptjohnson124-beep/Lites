@@ -61,6 +61,11 @@ def main():
                     help="clear pixels kept on every side of the shared canvas")
     ap.add_argument("--cols", type=int, default=0,
                     help="cells per row; 0 picks a roughly square sheet")
+    ap.add_argument("--role", action="append", default=[], metavar="DIR=ROLE",
+                    help="name a clip by what it IS rather than whose it is, e.g. "
+                         "'out/dahlia_twirl=idle'. With more than one character in a "
+                         "tracker the player has to ask for 'the hit', not for "
+                         "'dahlia_hit', so the roles are what the manifest carries")
     ap.add_argument("--scale", type=float, default=1.0,
                     help="resize every cell; 0.5 halves the atlas for the web, where "
                          "she is displayed small anyway")
@@ -72,6 +77,13 @@ def main():
                          "is what shows whether she holds still across the joins")
     ap.add_argument("--preview-scale", type=float, default=0.5)
     args = ap.parse_args()
+
+    roles = {}
+    for spec in args.role:
+        d, _, r = spec.rpartition("=")
+        if not d or not r:
+            raise SystemExit(f"--role wants DIR=ROLE, got {spec!r}")
+        roles[d.rstrip("/")] = r
 
     clips = []
     for d in args.clips:
@@ -86,8 +98,13 @@ def main():
         # the drawing it cuts in on and the one that has to agree with every
         # other clip's first drawing.
         gx, gy = ground(images[0])
-        clips.append({"name": name, "images": images, "gx": gx, "gy": gy,
-                      "fps": meta.get("fps", 24)})
+        clips.append({"name": roles.get(d.rstrip("/"), name), "images": images,
+                      "gx": gx, "gy": gy, "fps": meta.get("fps", 24)})
+
+    unknown = set(roles) - {d.rstrip("/") for d in args.clips}
+    if unknown:
+        raise SystemExit(f"--role names directories that are not being packed: "
+                         f"{', '.join(sorted(unknown))}")
 
     # One canvas that fits every clip once each is hung on the shared anchor.
     ax = max(c["gx"] for c in clips)
