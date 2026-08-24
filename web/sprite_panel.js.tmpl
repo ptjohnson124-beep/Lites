@@ -48,7 +48,7 @@
    color:var(--ember);text-transform:uppercase;margin-left:auto}
  .dsp-sub{font-family:var(--mono);font-size:9px;color:var(--dim);margin-bottom:8px}
  .dsp-stage{position:relative;display:grid;place-items:center;border:1px solid var(--line);
-   border-radius:2px;overflow:hidden;background:#000;padding:10px 0}
+   border-radius:2px;overflow:hidden;background:var(--pit);padding:10px 0}
  /* the grid she stands on: 24px cells, one brighter line every fourth */
  .dsp-stage::before{content:"";position:absolute;inset:0;pointer-events:none;
    background-image:
@@ -61,7 +61,16 @@
  .dsp-stage::after{content:"";position:absolute;left:0;right:0;pointer-events:none;
    bottom:calc(10px + (var(--dsp-cell-h) - var(--dsp-anchor-y)) * var(--dsp-zoom));
    height:1px;background:linear-gradient(90deg,transparent,rgba(57,211,232,.45),transparent)}
- .dsp-canvas{position:relative;z-index:1;image-rendering:auto}
+ /* A quarter of her is darker than luminance 20 -- trousers, boots, the
+    shadowed side of the hoodie -- and against any dark ground that is about
+    1.1:1, which is invisible. No backdrop colour fixes it, because her dark
+    range covers the whole shadow end. What fixes it is an edge: the shadows
+    follow her alpha silhouette, so the outline reads even where the fill
+    does not. Cool-toned, so it sits with the blade rather than fighting it. */
+ .dsp-canvas{position:relative;z-index:1;image-rendering:auto;
+   filter:drop-shadow(0 0 1px rgba(180,205,225,.85))
+          drop-shadow(0 0 4px rgba(120,160,200,.45))
+          drop-shadow(0 0 14px rgba(40,70,100,.55))}
  .dsp-panel.dsp-down .dsp-canvas{filter:grayscale(1) brightness(.55)}
  .dsp-panel.dsp-down .dsp-state{color:var(--crimb)}
  `;
@@ -221,27 +230,52 @@
  // retaliation, and whether she was the one being attacked. `claimed` is the
  // part that matters, because a dodge that FAILED does reach damage(), and
  // then the hit has already played and must not be overwritten by an evade.
- const _resolveGroup = resolveGroup;
- resolveGroup = function(){
-  let evading = false, countering = false;
+ // Two separate paths reach a retaliation and they disagree about which end
+ // of the exchange Dahlia is on. Resolving inline, she is the TARGET being
+ // attacked and the type is selectedInlineRetalType. Through the retaliation
+ // panel she is the ACTOR -- the one answering -- and the type is
+ // selectedRetalType. Wrapping only the first is why a counter thrown from
+ // the panel played as an attack: that path never touched resolveGroup, so
+ // the only thing that fired was applyDamageToTarget seeing her deal damage.
+ function retaliationByHer(varName, elId){
   try {
-   const t = __BB.selectedInlineRetalType || __BB.selectedRetalType || "";
-   const el = document.getElementById("resTarget");
-   const target = el && (S.eng.units || []).find(u => u.id === el.value);
-   const hers = isDahlia(target) && target.side === "team";
-   evading = hers && EVASIVE.has(t);
-   countering = hers && COUNTERING.has(t);
-  } catch (e) {}
-  claimed = false;
-  const r = _resolveGroup.apply(this, arguments);
-  // A counter that lands deals damage, so applyDamageToTarget will already
-  // have played the attack by the time this runs -- and the counter is the
-  // truer description of what happened, so it plays last and wins. `claimed`
-  // still decides: if the counter failed and a hit reached her, the hit stays.
-  if (countering && !claimed) play(COUNTER, "countered");
-  else if (evading && !claimed) play(EVADE, "evaded");
-  return r;
- };
+   const t = __BB[varName] || "";
+   const el = document.getElementById(elId);
+   const u = el && (S.eng.units || []).find(x => x.id === el.value);
+   return (isDahlia(u) && u.side === "team") ? t : "";
+  } catch (e) { return ""; }
+ }
+
+ function wrapExchange(fn, varName, elId){
+  return function(){
+   const t = retaliationByHer(varName, elId);
+   claimed = false;
+   const r = fn.apply(this, arguments);
+   // A counter that lands deals damage, so applyDamageToTarget has already
+   // played the attack by now -- and the counter is the truer description of
+   // what happened, so it plays last and wins. `claimed` still decides: if
+   // the retaliation failed and a hit reached her, the hit stays.
+   if (COUNTERING.has(t) && !claimed) play(COUNTER, "countered");
+   else if (EVASIVE.has(t) && !claimed) play(EVADE, "evaded");
+   return r;
+  };
+ }
+
+ resolveGroup = wrapExchange(resolveGroup, "selectedInlineRetalType", "resTarget");
+ if (typeof enemyRetaliation === "function")
+  enemyRetaliation = wrapExchange(enemyRetaliation, "selectedRetalType", "retActor");
+
+ // And the buttons have to be re-bound, which is the part that actually broke
+ // it. Both were wired with onclick = resolveGroup / enemyRetaliation long
+ // before this block runs, so each button holds a reference to the ORIGINAL
+ // function. Reassigning the name afterwards rebinds callers that look it up
+ // by name -- which is every internal call, and every test written against
+ // it -- and does nothing whatever for the two buttons a person actually
+ // presses. Pointing them at the wrapped versions is the fix.
+ for (const [id, fn] of [["btnResolve", resolveGroup], ["btnRetal", enemyRetaliation]]) {
+  const el = document.getElementById(id);
+  if (el && typeof fn === "function") el.onclick = fn;
+ }
 
  const _applyDamageToTarget = applyDamageToTarget;
  applyDamageToTarget = function(e, attacker, target, dmg, graftIdx, actKind){
