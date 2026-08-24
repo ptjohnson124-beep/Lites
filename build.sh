@@ -577,11 +577,13 @@ python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
   out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
-# bytes matter. --format webp here is a STILL image, not an animation: the
+# bytes matter -- less than they did, since the tracker is opened off disk
+# rather than fetched, so 0.75 buys real resolution for load time nobody waits
+# on. --format webp here is a STILL image, not an animation: the
 # atlas is one picture either way, and WebP stores it in a third of the PNG's
 # bytes with the same pixels and the same alpha. 8.8MB becomes 1.0MB.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt -o out/web -n dahlia --scale 0.5 --format webp
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt -o out/web -n dahlia --scale 0.75 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 
 # Put the sprite feed into the combat tracker. Re-runnable: the injected block

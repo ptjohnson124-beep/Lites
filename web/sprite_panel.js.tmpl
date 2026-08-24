@@ -64,14 +64,18 @@
    height:1px;background:linear-gradient(90deg,transparent,rgba(57,211,232,.45),transparent)}
  /* A quarter of her is darker than luminance 20 -- trousers, boots, the
     shadowed side of the hoodie -- and against any dark ground that is about
-    1.1:1, which is invisible. No backdrop colour fixes it, because her dark
-    range covers the whole shadow end. What fixes it is an edge: the shadows
-    follow her alpha silhouette, so the outline reads even where the fill
-    does not. Cool-toned, so it sits with the blade rather than fighting it. */
+    1.1:1, which is invisible. No backdrop colour fixes it either: her dark
+    range covers the whole shadow end, so separating her needs light near her
+    rather than a different ground.
+    It has to be a WIDE, DIM halo and never a tight bright rim. The first
+    attempt led with a 1px line at 85% opacity, and her silhouette has 3,392
+    boundary pixels -- 5.3% of her ink, every hair strand among them -- so it
+    painted a bright speckle along all of them and read as grain ON her. These
+    are broad enough to lift the ground she stands against instead, which is
+    the thing that actually needed lifting. */
  .dsp-canvas{position:relative;z-index:1;image-rendering:auto;
-   filter:drop-shadow(0 0 1px rgba(180,205,225,.85))
-          drop-shadow(0 0 4px rgba(120,160,200,.45))
-          drop-shadow(0 0 14px rgba(40,70,100,.55))}
+   filter:drop-shadow(0 0 8px rgba(72,112,152,.60))
+          drop-shadow(0 0 22px rgba(40,72,106,.55))}
  .dsp-panel.dsp-down .dsp-canvas{filter:grayscale(1) brightness(.55)}
  .dsp-panel.dsp-down .dsp-state{color:var(--crimb)}
  `;
