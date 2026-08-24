@@ -574,14 +574,14 @@ $BUILD out/dahlia_attack/frames -o out/dahlia_attack -n dahlia_attack \
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter -o out/atlas -n dahlia --preview --preview-scale 0.5
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
 # bytes matter. --format webp here is a STILL image, not an animation: the
 # atlas is one picture either way, and WebP stores it in a third of the PNG's
 # bytes with the same pixels and the same alpha. 8.8MB becomes 1.0MB.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter -o out/web -n dahlia --scale 0.5 --format webp
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt -o out/web -n dahlia --scale 0.5 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 
 # Put the sprite feed into the combat tracker. Re-runnable: the injected block
@@ -801,4 +801,49 @@ $BUILD out/dahlia_counter/frames -o out/dahlia_counter -n dahlia_counter \
   --scale 23:100,24:103,25:106,26:109,27:112,28:115,29:117 \
   --travel 1:0,2:0,3:0,4:0,5:-2,6:-4,7:-6,8:-8,9:-14,10:-22,11:-30,12:-36,13:-40,14:-42,15:-44,16:-46,17:-48,18:-50,19:-52,20:-52,21:-50,22:-48,23:-44,24:-38,25:-30,26:-22,27:-14,28:-6,29:0 \
   --shake 9:6,19:8 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
+# The taunt. Three sheets, 24 drawings, 21 played -- and it is the inverse of
+# everything else here: she LOWERS her guard. The flex is foreknowledge rather
+# than strength, so the payload is two fingers to her own temple, held.
+#
+# Both copied poses came back, 31 and 17, and the drift is +14% and 0%.
+#
+# Pose 14 is drawn and not played. It sits 7 away from pose 13 where the rest
+# of that sheet steps 19 to 52 -- the same drawing twice, in the middle of the
+# temple hold. Dropped, and the hold given to its neighbours instead: 13 and 15
+# together carry a full second on the gesture.
+#
+# This is the ONE clip where long holds are unambiguously right, and it is
+# worth saying why given how often the opposite has needed fixing. Everywhere
+# else a doubled drawing is a freeze frame inside motion. Here she has actually
+# stopped -- the whole taunt is that she is taking her time -- and a hold only
+# ever works on a pose already at rest. Mean change across the clip is 4.2%.
+#
+# --scale on the last three poses closes the loop on HEIGHT, which is what
+# pack_clips registers clips on. Her stance also comes back 17% wider than the
+# opening guard, and that is the drawing rather than the scale: correcting it
+# would need the width, and scaling for height makes the width worse. It is
+# left as drawn, because stance width already runs 207 to 297px across the six
+# clips that shipped before this one -- the variation is in the family.
+#
+# No --travel at all. Not a little: none. She never moves her feet, and that is
+# part of the gesture -- she is not coming any closer because she does not have
+# to.
+$SLICE assets/dahlia_taunt_drop_sheet.png -o out/tn_drop \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single drop
+$SLICE assets/dahlia_taunt_read_sheet.png -o out/tn_read \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single read
+$SLICE assets/dahlia_taunt_flick_sheet.png -o out/tn_flick \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single flick
+python3 tools/merge_sheets.py out/tn_drop/frames out/tn_read/frames out/tn_flick/frames \
+  --skip-first out/tn_read/frames --skip-first out/tn_flick/frames \
+  --match-scale -o out/dahlia_taunt -n dahlia_taunt
+$BUILD out/dahlia_taunt/frames -o out/dahlia_taunt -n dahlia_taunt \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,15,16,17,18,19,20,21,22 \
+  --holds 8,4,3,3,3,3,3,4,3,3,3,3,10,14,2,2,4,4,4,5,12 \
+  --scale 20:102,21:104,22:107 \
   --fps 24 --breathe 0 --bob 0 --sway 0

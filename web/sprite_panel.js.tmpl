@@ -21,7 +21,8 @@
  const ATLAS_SRC = "data:image/webp;base64," + __ATLAS_B64__;
 
  const IDLE = "dahlia_twirl", HIT = "dahlia_hit", ATTACK = "dahlia_attack",
-       BLOCK = "dahlia_block", EVADE = "dahlia_dodge", COUNTER = "dahlia_counter";
+       BLOCK = "dahlia_block", EVADE = "dahlia_dodge", COUNTER = "dahlia_counter",
+       TAUNT = "dahlia_taunt";
  // Retaliations that both stop the hit and answer it. They have their own clip
  // because a counter is not a block followed by an attack -- one motion does
  // both -- and the tracker's own descriptions say the same of these two.
@@ -279,9 +280,16 @@
 
  const _applyDamageToTarget = applyDamageToTarget;
  applyDamageToTarget = function(e, attacker, target, dmg, graftIdx, actKind){
-  if (dmg > 0 && isDahlia(attacker) && attacker.side === "team" && !isDahlia(target))
-   play(ATTACK, "striking");
-  return _applyDamageToTarget.apply(this, arguments);
+  const mine = dmg > 0 && isDahlia(attacker) && attacker.side === "team" && !isDahlia(target);
+  const defeated = _applyDamageToTarget.apply(this, arguments);
+  // The taunt has a combat event of its own: she finishes someone -- and the
+  // function already says so in its return value, which is the only thing that
+  // does. Inspecting the target does not work: a hostile is never marked dead
+  // or down at all, because damage() routes the whole side through an
+  // integrity pool instead, so the flags this used to read stay false forever.
+  // A finish is the truer description of the beat, so it wins over the attack.
+  if (mine) play(defeated ? TAUNT : ATTACK, defeated ? "upper hand" : "striking");
+  return defeated;
  };
 
  const _render = render;
@@ -295,6 +303,7 @@
   block: () => play(BLOCK, "blocked"),
   evade: () => play(EVADE, "evaded"),
   counter: () => play(COUNTER, "countered"),
+  taunt: () => play(TAUNT, "upper hand"),
   attack: () => play(ATTACK, "striking"),
   idle: () => play(IDLE, "idle"),
   panel, get fielded(){ return fielded(); }
