@@ -1113,6 +1113,45 @@ $BUILD out/dahlia_down/frames -o out/dahlia_down -n dahlia_down \
   --shake 2:6 \
   --fps 24 --breathe 0 --bob 0 --sway 0
 
+# Her death, and the tracker decides what it is rather than the brief: her Soul
+# Engine is a hereditary trait with no housing, "Form: none installed", running
+# ASH -> FIRE -> REVIVE. So this is not a corpse. Two sheets, because being
+# killed and being burned are two different events.
+#
+# THE JOIN IS 5.9 -- the tightest copy this project has measured, by half. The
+# ground line holds at y 567 to 572 across all fifteen drawings, so she falls
+# onto the floor she stood on and the ash sits on it.
+#
+# Both sheets break the evenness rule and both are right. Sheet 1 decelerates,
+# 65 down to 14: a body being thrown and coming to rest. Sheet 2 accelerates,
+# 11 up to 37: fire catching, then the collapse to ash. Neither is one movement
+# sampled unevenly.
+#
+# Timing is two clips in one. Sheet 1 gets 1 to 6 frames a drawing because a
+# killing blow is over before anyone reacts, and the only held drawing is the
+# guard BEFORE it -- eight frames of normal so the second drawing lands. Sheet
+# 2 gets 8 to 20 because nothing on it is an event, and the ash gets twenty
+# because the clip stops there.
+#
+# --travel carries her 64px in the direction of the blow across drawings 2 to 5
+# and then nothing moves again. --shake on the blow and the landing, at 12 and
+# 6, so the second reads as smaller.
+$SLICE assets/dahlia_death_blow_sheet.png -o out/dt_blow \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single blow
+$SLICE assets/dahlia_death_kindle_sheet.png -o out/dt_kindle \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single kindle
+python3 tools/merge_sheets.py out/dt_blow/frames out/dt_kindle/frames \
+  --skip-first out/dt_kindle/frames \
+  --match-scale -o out/dahlia_death -n dahlia_death
+$BUILD out/dahlia_death/frames -o out/dahlia_death -n dahlia_death \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 \
+  --holds 8,1,2,2,3,3,4,6,8,8,8,8,8,10,20 \
+  --shake 2:12,4:6 \
+  --travel 1:0,2:-26,3:-46,4:-58,5:-62,6:-64,7:-64,8:-64,9:-64,10:-64,11:-64,12:-64,13:-64,14:-64,15:-64 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
 # ---------------------------------------------------------------------
 # PACKING COMES LAST, and that is load-bearing rather than tidy. It reads
 # out/dahlia_* off disk, so anything rebuilt after it is packed in its
@@ -1153,7 +1192,7 @@ $BUILD out/dahlia_down/frames -o out/dahlia_down -n dahlia_down \
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death \
   --match-scale -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
@@ -1168,11 +1207,11 @@ python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack
 # "dahlia_hit", so roles are what the manifest carries and the atlas basename
 # is what matches a unit by name.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death \
   --role out/dahlia_flourish=idle --role out/dahlia_hit=hit \
   --role out/dahlia_attack=attack --role out/dahlia_block=block \
   --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
-  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down \
+  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down --role out/dahlia_death=death \
   --match-scale -o out/web -n dahlia --scale 0.75 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 

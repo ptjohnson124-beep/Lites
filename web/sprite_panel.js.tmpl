@@ -47,6 +47,7 @@
     because the tracker only reaches it AFTER a PMF collapse, so it is the
     later of the two to arrive. Swapping the two rows swaps the answer. */
  const RESTING = [
+  ["death",          u => !!u.dead],
   ["down",           u => !!u.down || !!u.dead],
   ["cyberpsychosis", u => (u.cyber || 0) >= 100],
   ["fractured",      u => !!u.soulFractured],
@@ -58,7 +59,11 @@
     collapse: looping it would have her fall over on repeat for as long as she
     is down. So these clamp instead of wrapping, and the state re-enters from
     the top only when the condition changes. */
- const HOLD_LAST = new Set(["down"]);
+ const HOLD_LAST = new Set(["down", "death"]);
+
+ /* 'down' still answers u.dead as well as u.down, and that is deliberate: it
+    is the fallback for a character who has a down clip and no death clip. The
+    table is ordered, so anyone with both gets the death. */
 
  // onload rather than decode(), and a closure over the entry itself rather
  // than an index resolved later. The first version did neither and simply

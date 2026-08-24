@@ -75,8 +75,24 @@ def body_area(im):
 
 
 def clip_scale(images):
-    """One number for how large she is drawn in this clip."""
-    return float(np.median([np.sqrt(body_area(im)) for im in images]))
+    """One number for how large she is drawn in this clip.
+
+    The median of the FIRST THREE frames, not of all of them, and the reason is
+    that some clips stop containing the character. The death animation ends as
+    a pile of ash: taken over the whole clip its median reads 235 where her
+    standing drawings measure 257 to 294, so it would be scaled up by 12% to
+    make the ASH the right size. The cyberpsychosis idle fails the other way --
+    its coloured copies add area from the third drawing on, and a high
+    percentile reads 392 against a real 321.
+
+    Almost every clip here opens on her reference guard, before anything has
+    happened to her, which makes the opening frames the most comparable thing
+    across clips: measured that way the cross-clip spread is 1.60x against
+    1.67x on the full median, so it is also the tighter measure. Three frames
+    rather than one, so a single odd drawing cannot set a whole clip.
+    """
+    head = images[:3] if len(images) >= 3 else images
+    return float(np.median([np.sqrt(body_area(im)) for im in head]))
 
 
 def main():
