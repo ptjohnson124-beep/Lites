@@ -71,7 +71,7 @@
   "travel": "1:0,2:6,5:-26,4:-48,3:-66,6:-72,8:-76",
   "stabilize": "core",
   "size": [
-    383,
+    381,
     317
   ],
   "strip": "dahlia_ragdoll_strip.png",

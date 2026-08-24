@@ -25,16 +25,23 @@
  const EVASIVE = new Set(["dodge"]);
  const COUNTERING = new Set(["counter", "parry"]);
 
- /* 'slipping' is not an event clip -- it is a second RESTING state. Every
-    other role plays once and hands back; this one replaces the idle for as
-    long as the condition holds, and hands back on its own when it lifts.
+ /* RESTING states, most severe first. These are not event clips: an event
+    role plays once and hands back, while a resting role REPLACES the idle for
+    as long as its condition holds and hands back on its own when it lifts.
 
-    60 is the tracker's own line rather than a number picked here: the specs
-    that ask whether a frequency is holding all test PMF >= 60, and
-    pmfBracketOf steps at 60 too. Above it she is reading high; below it she
-    is not. A character without the clip simply keeps the ordinary idle, so
-    this costs nothing for the rest of the cast. */
- const SLIP_AT = 60;
+    'idle' is the floor and needs no entry. The first row whose test passes AND
+    whose clip the character actually has wins, so a character with only an
+    idle falls straight through and this costs the rest of the cast nothing.
+    A fourth state is a row here rather than another branch.
+
+    Neither threshold is invented. soulFractured is set in exactly one place in
+    the tracker, alongside pmf = 0, and never clears on its own. 60 is the
+    line the tracker already draws: the specs that ask whether a frequency is
+    holding all test PMF >= 60, and pmfBracketOf steps at 60 too. */
+ const RESTING = [
+  ["fractured", u => !!u.soulFractured],
+  ["slipping",  u => ((typeof u.pmf === "number") ? u.pmf : 90) < 60],
+ ];
 
  // onload rather than decode(), and a closure over the entry itself rather
  // than an index resolved later. The first version did neither and simply
@@ -144,9 +151,14 @@
     the thing it depends on moves between frames. */
  let subjectUnit = null;
  function rest(){
-  if (!subjectUnit || !clipOf(subject, "slipping")) return "idle";
-  const pmf = (typeof subjectUnit.pmf === "number") ? subjectUnit.pmf : 90;
-  return pmf < SLIP_AT ? "slipping" : "idle";
+  if (!subjectUnit) return "idle";
+  for (const [role, holds] of RESTING) {
+   if (!clipOf(subject, role)) continue;
+   let yes = false;
+   try { yes = !!holds(subjectUnit); } catch (e) {}
+   if (yes) return role;
+  }
+  return "idle";
  }
 
  function fit(){

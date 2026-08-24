@@ -613,55 +613,6 @@ $BUILD out/dahlia_slip/frames -o out/dahlia_slip -n dahlia_slip \
   --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22 \
   --holds 4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,3,4,4,4,4,4 \
   --fps 24 --breathe 0 --bob 2 --sway 2
-# Every finished clip onto one shared canvas, and one atlas for all of them.
-#
-# The assembler sizes each clip's canvas to that clip, which is right inside a
-# clip and wrong between them: the idle, the hit and the attack came out
-# 436x431, 459x378 and 485x385, with her boots 8, 12 and 16px off the bottom and
-# 119px apart horizontally. That is a jump every time the animation changes.
-# Registering the clips to each other brings it to 0px vertically and 3.3px
-# horizontally -- the residual is two ways of measuring where her boots are
-# disagreeing, not her moving.
-#
-# A clip is moved, not a frame. The frames inside a clip are already registered
-# and some of their motion is deliberate, so they all take the same offset.
-python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip \
-  -o out/atlas -n dahlia --preview --preview-scale 0.5
-
-# The same clips sized for a web page, where she is displayed small and the
-# bytes matter -- less than they did, since the tracker is opened off disk
-# rather than fetched, so 0.75 buys real resolution for load time nobody waits
-# on. --format webp here is a STILL image, not an animation: the
-# atlas is one picture either way, and WebP stores it in a third of the PNG's
-# bytes with the same pixels and the same alpha. At eight clips the same
-# atlas is 23.4MB as PNG and 6.8MB as WebP.
-# --role names each clip by what it IS rather than whose it is. With more than
-# one character in the tracker the panel has to ask for "the hit", not for
-# "dahlia_hit", so roles are what the manifest carries and the atlas basename
-# is what matches a unit by name.
-python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip \
-  --role out/dahlia_twirl=idle --role out/dahlia_hit=hit \
-  --role out/dahlia_attack=attack --role out/dahlia_block=block \
-  --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
-  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping \
-  -o out/web -n dahlia --scale 0.75 --format webp
-cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
-
-# Put the sprite feed into the combat tracker. Re-runnable: the injected block
-# is bounded by two markers and any earlier copy is removed first, so adding an
-# animation to the atlas means re-running this and nothing else. Deleting the
-# block between the markers restores the tracker byte for byte.
-#
-# The tracker is opened off disk, so the atlas cannot be fetched -- file://
-# blocks it -- and it is inlined as a data URI, which is how that file already
-# carries its battle-map backdrops.
-# Every <name>_atlas.json in out/web becomes one member of the cast, and its
-# basename is the match key: dahlia_atlas.json plays for any unit whose name
-# contains "dahlia". Adding a character is packing an atlas next to the others
-# and re-running this.
-# python3 tools/inject_sprite_panel.py path/to/BLACKBOX_MERC_OS.html -a out/web
 
 # The block: panicked, played off cool. Three sheets, 24 drawings, 22 played --
 # both duplicated attachment poses came back this time, scoring 34 and 17
@@ -916,3 +867,62 @@ $BUILD out/dahlia_taunt/frames -o out/dahlia_taunt -n dahlia_taunt \
   --holds 8,4,3,3,3,3,3,4,3,3,3,3,10,14,2,2,4,4,4,5,12 \
   --scale 20:102,21:104,22:107 \
   --fps 24 --breathe 0 --bob 0 --sway 0
+
+
+# ---------------------------------------------------------------------
+# PACKING COMES LAST, and that is load-bearing rather than tidy. It reads
+# out/dahlia_* off disk, so anything rebuilt after it is packed in its
+# PREVIOUS state. This block used to sit in the middle of the file, which
+# meant a clean run packed the four clips defined below it from whatever
+# happened to be on disk from the run before -- silently, since every clip
+# was present and the atlas came out looking finished.
+# ---------------------------------------------------------------------
+# Every finished clip onto one shared canvas, and one atlas for all of them.
+#
+# The assembler sizes each clip's canvas to that clip, which is right inside a
+# clip and wrong between them: the idle, the hit and the attack came out
+# 436x431, 459x378 and 485x385, with her boots 8, 12 and 16px off the bottom and
+# 119px apart horizontally. That is a jump every time the animation changes.
+# Registering the clips to each other brings it to 0px vertically and 3.3px
+# horizontally -- the residual is two ways of measuring where her boots are
+# disagreeing, not her moving.
+#
+# A clip is moved, not a frame. The frames inside a clip are already registered
+# and some of their motion is deliberate, so they all take the same offset.
+python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip \
+  -o out/atlas -n dahlia --preview --preview-scale 0.5
+
+# The same clips sized for a web page, where she is displayed small and the
+# bytes matter -- less than they did, since the tracker is opened off disk
+# rather than fetched, so 0.75 buys real resolution for load time nobody waits
+# on. --format webp here is a STILL image, not an animation: the
+# atlas is one picture either way, and WebP stores it in a third of the PNG's
+# bytes with the same pixels and the same alpha. At eight clips the same
+# atlas is 23.4MB as PNG and 6.8MB as WebP.
+# --role names each clip by what it IS rather than whose it is. With more than
+# one character in the tracker the panel has to ask for "the hit", not for
+# "dahlia_hit", so roles are what the manifest carries and the atlas basename
+# is what matches a unit by name.
+python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip \
+  --role out/dahlia_twirl=idle --role out/dahlia_hit=hit \
+  --role out/dahlia_attack=attack --role out/dahlia_block=block \
+  --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
+  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping \
+  -o out/web -n dahlia --scale 0.75 --format webp
+cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
+
+# Put the sprite feed into the combat tracker. Re-runnable: the injected block
+# is bounded by two markers and any earlier copy is removed first, so adding an
+# animation to the atlas means re-running this and nothing else. Deleting the
+# block between the markers restores the tracker byte for byte.
+#
+# The tracker is opened off disk, so the atlas cannot be fetched -- file://
+# blocks it -- and it is inlined as a data URI, which is how that file already
+# carries its battle-map backdrops.
+# Every <name>_atlas.json in out/web becomes one member of the cast, and its
+# basename is the match key: dahlia_atlas.json plays for any unit whose name
+# contains "dahlia". Adding a character is packing an atlas next to the others
+# and re-running this.
+# python3 tools/inject_sprite_panel.py path/to/BLACKBOX_MERC_OS.html -a out/web

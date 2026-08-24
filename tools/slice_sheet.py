@@ -366,6 +366,119 @@ def denoise_art(sheet, strength, passes=1, spatial=2, sigma_s=1.6):
                                       np.array(sheet)[:, :, 3]]))
 
 
+def _small_blobs(mask, max_blob):
+    """Which of a sparse mask's 4-connected blobs are no larger than max_blob.
+
+    `label_components` would answer this, and it walks the whole image to do
+    it: sixty-four passes of searchsorted over five million pixels, twenty-six
+    seconds a sheet, repeated once per desalt pass. The mask here holds ten or
+    twenty thousand True pixels in total, so the work belongs on the pixels
+    rather than on the picture -- a union-find over the coordinates themselves
+    runs in milliseconds and gives exactly the same answer.
+    """
+    ys, xs = np.nonzero(mask)
+    n = len(ys)
+    if not n:
+        return np.zeros_like(mask)
+
+    at = {(int(y), int(x)): i for i, (y, x) in enumerate(zip(ys, xs))}
+    parent = list(range(n))
+
+    def find(a):
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+
+    for i, (y, x) in enumerate(zip(ys.tolist(), xs.tolist())):
+        for nb in ((y, x - 1), (y - 1, x)):     # west and north is enough
+            j = at.get(nb)
+            if j is not None:
+                ra, rb = find(i), find(j)
+                if ra != rb:
+                    parent[rb] = ra
+
+    size = {}
+    roots = [find(i) for i in range(n)]
+    for r in roots:
+        size[r] = size.get(r, 0) + 1
+
+    small = np.fromiter((size[r] <= max_blob for r in roots), bool, n)
+    out = np.zeros_like(mask)
+    out[ys[small], xs[small]] = True
+    return out
+
+
+def desalt(rgb, inside, tol, max_blob, passes=7):
+    """Take isolated white specks off the character.
+
+    A different fault from the mottling `denoise_art` handles, and the
+    bilateral filter cannot touch it -- it protects anything differing from its
+    neighbours by more than `strength`, which is exactly what a near-white
+    pixel on near-black trousers is. The filter keeps this grain BY DESIGN.
+    `despeckle` cannot reach it either: that works on the alpha channel and
+    drops islands of opacity, and these specks are fully opaque pixels sitting
+    in the middle of her.
+
+    What they are is salt noise: single pixels and pairs, several hundred a
+    frame, brightest where she is darkest, so they read as sparkle on the
+    trousers, gloves and boots and make the whole sprite look low quality.
+
+    Three conditions, and all are needed. A pixel must sit clear of her outline
+    -- see below -- AND be far brighter than the 5x5 median around it, which is
+    what makes it a speck rather than shading, AND belong to a blob no larger
+    than `max_blob` pixels, which is what keeps her eyes, the blade's glyphs,
+    the hood strings and every specular highlight in her hair. Drawn detail at
+    this size is never four pixels of pure white alone in the dark; grain
+    always is.
+
+    Condemned pixels take the 5x5 median colour rather than a blur, so nothing
+    softens: the replacement is a colour already present next to it.
+
+    IT HAS TO REPEAT, and one pass is not close. The median is taken over the
+    dirty neighbourhood, so where two or three specks sit near each other the
+    replacement is itself pulled bright and stays over the threshold. Measured
+    on one frame, a single pass took 538 speck pixels to 224, a second to 114,
+    a third to 73, and seven reached 12. The eighth removed nothing, so seven
+    is where it stops.
+    """
+    if max_blob < 1 or tol < 1:
+        return rgb
+
+    # Only pixels whose whole 5x5 window is inside her are candidates. Without
+    # this the comparison is rigged at her outline: the window there is mostly
+    # transparent, the median of it collapses toward nothing, and every bright
+    # pixel along the edge of the white hoodie measures as a speck. Eroding the
+    # mask by two -- the filter's own reach -- means the median a pixel is
+    # judged against is made only of pixels that are really her.
+    core = inside.copy()
+    for _ in range(2):
+        core &= (np.roll(core, 1, 0) & np.roll(core, -1, 0) &
+                 np.roll(core, 1, 1) & np.roll(core, -1, 1))
+    if not core.any():
+        return rgb
+
+    for _ in range(max(1, passes)):
+        lum = 0.2126 * rgb[:, :, 0] + 0.7152 * rgb[:, :, 1] + 0.0722 * rgb[:, :, 2]
+        guide = Image.fromarray(np.clip(np.where(inside, lum, 0), 0, 255).astype(np.uint8))
+        med_lum = np.asarray(guide.filter(ImageFilter.MedianFilter(5))).astype(np.float32)
+
+        hot = core & (lum - med_lum > tol)
+        if not hot.any():
+            break
+
+        doomed = _small_blobs(hot, max_blob)
+        if not doomed.any():
+            break
+
+        med_rgb = np.asarray(Image.fromarray(np.clip(rgb, 0, 255).astype(np.uint8))
+                             .filter(ImageFilter.MedianFilter(5))).astype(rgb.dtype)
+        rgb = rgb.copy()
+        rgb[doomed] = med_rgb[doomed]
+
+    return rgb
+
+
 def label_components(mask):
     """Connected-component labels for a boolean mask, 4-connected.
 
@@ -877,6 +990,14 @@ def main():
                     help="clear JPEG grain: differences under this many levels are noise (try 12)")
     ap.add_argument("--despeckle", type=int, default=24,
                     help="drop opaque islands smaller than this many pixels")
+    ap.add_argument("--desalt", type=int, default=8, metavar="MAX_BLOB",
+                    help="take isolated white specks off the character: bright blobs "
+                         "no larger than this many pixels are replaced with the colour "
+                         "around them. 0 turns it off. Unlike --denoise this targets "
+                         "high-contrast grain, which the bilateral filter protects")
+    ap.add_argument("--desalt-tol", type=int, default=30, metavar="LEVELS",
+                    help="how much brighter than its surroundings a pixel must be "
+                         "before --desalt will consider it a speck")
     ap.add_argument("--pad", type=int, default=4)
     ap.add_argument("--min-gap", type=int, default=4, help="smallest background gap that splits frames")
     ap.add_argument("--min-size", type=int, default=16, help="smallest accepted frame width/height")
@@ -1005,6 +1126,28 @@ def main():
             alpha &= ~(haze & band)
 
     alpha = despeckle(fill_holes(alpha, args.fill_holes, args.max_hole), args.despeckle)
+
+    if args.desalt:
+        # After the mask is settled, so "inside her" means the pixels that will
+        # actually ship rather than the whole sheet. Before --denoise, so the
+        # bilateral filter smooths a surface with the specks already gone
+        # instead of averaging them into their neighbours.
+        #
+        # SOLID pixels only, not everything the mask keeps. Her aura is a wide
+        # band of low alpha that the mask is right to include and this filter
+        # has no business in: a bright fleck out there is a spark someone drew,
+        # and it sits against a dark surround exactly the way a speck does.
+        # Restricting to alpha over half cut this from 16,276 pixels on the
+        # first slipping sheet to 11,065 -- a third of the hits were out in the
+        # aura, where nothing was wrong.
+        solid = alpha & (np.array(sheet)[:, :, 3] > 128)
+        before = rgb.copy()
+        rgb = desalt(rgb.astype(np.float32), solid,
+                     args.desalt_tol, args.desalt).astype(rgb.dtype)
+        moved = int((before != rgb).any(axis=2).sum())
+        if moved:
+            print(f"  desalt: {moved} speck pixels replaced")
+        sheet = Image.fromarray(np.dstack([rgb, np.array(sheet)[:, :, 3]]))
 
     if args.denoise:
         # Masks are decided on the original pixels; only the pixels shipped
