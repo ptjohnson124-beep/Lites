@@ -1310,6 +1310,38 @@ $BUILD out/dahlia_throw/frames -o out/dahlia_throw -n dahlia_throw \
   --poses 1,3,4,5,6,7,8 --holds 5,4,3,2,2,3,12 --shake 5:6 \
   --fps 24 --breathe 0 --bob 0 --sway 0
 
+# The ragdoll, and the first clip that did not come from a drawing sheet at
+# all. AutoSprite exports a finished spritesheet plus a manifest: 12 frames on
+# a uniform 256x256 grid, already in order and already registered to each
+# other, with real alpha. So it skips the slicer and the merger -- those exist
+# to order and register drawings -- and goes straight to the assembler.
+#
+# It arrives better registered than most drawing sheets have: her feet land
+# within one pixel across all seven kept poses, her centre within nine, and
+# in-clip scale drift is 1.15x against a set median of 1.18x.
+#
+# --flip because it drew her FACING RIGHT and this whole set faces left. That
+# is measured rather than eyeballed: the blade sits at +0.26 of her width from
+# her body centre on the export, against -0.43 on the idle.
+#
+# --drop 0,1 because the clip opens on her standing still. A third of the
+# generated frames were a setup beat that a ragdoll should not have -- she is
+# hit with no anticipation.
+#
+# Three more frames go automatically. The export ends on a held pose written
+# out four times, and frames 9, 10 and 11 differ from their neighbours by 0.2%,
+# 0.4% and 0.2%. Every one of those is a wasted pose, because the assembler
+# expresses a hold as a NUMBER rather than as repeated drawings -- which is
+# also why the source's 5.14 fps does not survive: retimed at 24 with --holds
+# the same seven poses carry far finer control than the tool offered.
+python3 tools/import_spritesheet.py assets/dahlia_ragdoll_autosprite.png \
+  -m assets/dahlia_ragdoll_autosprite.json \
+  -o out/dahlia_ragdoll -n dahlia_ragdoll --flip --drop 0,1
+python3 tools/merge_sheets.py out/dahlia_ragdoll/frames -o out/dahlia_ragdoll -n dahlia_ragdoll
+$BUILD out/dahlia_ragdoll/frames -o out/dahlia_ragdoll -n dahlia_ragdoll \
+  --poses 1,2,3,4,5,6,7 --holds 3,2,2,3,4,4,14 --shake 3:6,5:4 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
 # ---------------------------------------------------------------------
 # PACKING COMES LAST, and that is load-bearing rather than tidy. It reads
 # out/dahlia_* off disk, so anything rebuilt after it is packed in its
