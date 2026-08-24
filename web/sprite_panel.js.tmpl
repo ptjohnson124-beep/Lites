@@ -34,13 +34,22 @@
     idle falls straight through and this costs the rest of the cast nothing.
     A fourth state is a row here rather than another branch.
 
-    Neither threshold is invented. soulFractured is set in exactly one place in
-    the tracker, alongside pmf = 0, and never clears on its own. 60 is the
+    None of these thresholds is invented. cyber reaches 100 in one place --
+    checkCorruption, where the tracker's own log line says CYBERPSYCHOSIS FULLY
+    TRIGGERS -- and it is a SUBTYPE rather than anything of hers, so this row
+    is the first that any character can use. soulFractured is set in exactly
+    one place too, alongside pmf = 0, and never clears on its own. 60 is the
     line the tracker already draws: the specs that ask whether a frequency is
-    holding all test PMF >= 60, and pmfBracketOf steps at 60 too. */
+    holding all test PMF >= 60, and pmfBracketOf steps at 60 too.
+
+    Cyberpsychosis outranks the fracture, which is a judgement call rather than
+    a fact: both are terminal and a unit could carry both. It goes first
+    because the tracker only reaches it AFTER a PMF collapse, so it is the
+    later of the two to arrive. Swapping the two rows swaps the answer. */
  const RESTING = [
-  ["fractured", u => !!u.soulFractured],
-  ["slipping",  u => ((typeof u.pmf === "number") ? u.pmf : 90) < 60],
+  ["cyberpsychosis", u => (u.cyber || 0) >= 100],
+  ["fractured",      u => !!u.soulFractured],
+  ["slipping",       u => ((typeof u.pmf === "number") ? u.pmf : 90) < 60],
  ];
 
  // onload rather than decode(), and a closure over the entry itself rather

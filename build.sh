@@ -975,6 +975,43 @@ $BUILD out/dahlia_spec/frames -o out/dahlia_spec -n dahlia_spec \
   --scale 15:108 \
   --fps 24 --breathe 0 --bob 0 --sway 0
 
+# The cyberpsychosis idle. Two sheets, 16 drawings, 13 played -- and it is the
+# first clip here that is not really hers. The tracker holds Cyberpsychosis as
+# a SUBTYPE any character can carry, so this one is named for what it is and
+# the whole cast can use it.
+#
+# Both seams close: the join is 20.6 and the wrap is 22.4, and the body height
+# runs 530 to 552 across all 15 drawings with the loop closing at -1.9%. No
+# scale correction needed anywhere.
+#
+# THREE DRAWINGS ARE DROPPED, and measuring by colour rather than by silhouette
+# is what found them. The ghosting is a colour effect on an almost stationary
+# body, so a silhouette diff barely sees it. On RGB the build steps 11.7 to
+# 13.8 all the way up -- even, exactly as asked -- and then sheet 2 dumps the
+# entire collapse into its FIRST step at 28.8 and coasts: 6.3, 2.2, 2.9, 2.7,
+# 1.5, 1.4. The last five drawings are one drawing. Poses 13 and 14 are cut and
+# pose 15 carries the end state on a 14-frame hold, which is right rather than
+# a compromise -- the brief is that the copies close to a hairline AND STOP
+# THERE, so she is meant to sit at not-quite-registered.
+#
+# The 28.8 cliff cannot be fixed downstream, so it is played into instead: pose
+# 8 is maximum separation and gets 9 frames, the longest hold in the clip, and
+# then it snaps. A sudden collapse after a held peak reads as the glitch doing
+# something; the same step arriving mid-cadence would read as a cut.
+$SLICE assets/dahlia_cyber_settle_sheet.png -o out/cy_settle \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single settle
+$SLICE assets/dahlia_cyber_close_sheet.png -o out/cy_close \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single close
+python3 tools/merge_sheets.py out/cy_settle/frames out/cy_close/frames \
+  --skip-first out/cy_close/frames \
+  --match-scale -o out/dahlia_cyber -n dahlia_cyber
+$BUILD out/dahlia_cyber/frames -o out/dahlia_cyber -n dahlia_cyber \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,15 \
+  --holds 6,5,5,5,5,5,5,9,4,5,5,6,14 \
+  --fps 24 --breathe 0 --bob 1 --sway 1
+
 # ---------------------------------------------------------------------
 # PACKING COMES LAST, and that is load-bearing rather than tidy. It reads
 # out/dahlia_* off disk, so anything rebuilt after it is packed in its
@@ -1015,7 +1052,7 @@ $BUILD out/dahlia_spec/frames -o out/dahlia_spec -n dahlia_spec \
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber \
   --match-scale -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
@@ -1030,11 +1067,11 @@ python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
 # "dahlia_hit", so roles are what the manifest carries and the atlas basename
 # is what matches a unit by name.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber \
   --role out/dahlia_twirl=idle --role out/dahlia_hit=hit \
   --role out/dahlia_attack=attack --role out/dahlia_block=block \
   --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
-  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec \
+  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis \
   --match-scale -o out/web -n dahlia --scale 0.75 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 
