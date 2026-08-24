@@ -1048,6 +1048,44 @@ $BUILD out/dahlia_flourish/frames -o out/dahlia_flourish -n dahlia_flourish \
   --holds 14,3,3,3,2,3,2,3,4,5,5,5,5,5,10 \
   --fps 24 --breathe 0 --bob 2 --sway 1
 
+# Going down -- and the tracker holds "down" and "dead" as two separate states,
+# so this is the first of two. She is alive at the end of it: no fire, no ash,
+# no Kindle-Shell, and she never lets go of the dagger.
+#
+# ONE SHEET, and it is the first clip built from one. The action is one
+# movement -- her legs fail, she reaches, the arm gives, she lands -- and eight
+# drawings covers it. Step evenness comes out 2.0x, exactly on the rule, with
+# steps of 42, 21, 33, 31, 29, 43, 27.
+#
+# The loop wrap measures 54.7 and does not matter, because THIS CLIP DOES NOT
+# LOOP. It plays through once and then stays on its last drawing for as long as
+# the tracker says she is down, which is a thing the panel could not previously
+# express -- every other resting clip repeats.
+#
+# Her ground line holds across all eight drawings: the lowest opaque pixel sits
+# at y 547 to 550 the whole way down, so she collapses onto the floor she was
+# standing on rather than sinking through it or hovering above it.
+#
+# Body area runs 274, 295, 290, 277, 286, 285, 261, 250 -- a 1.18x spread, and
+# the small end is the last two drawings where she is lying on her side and
+# overlapping herself. That is foreshortening rather than scale drift, and the
+# clip's median lands at 281 against the idle's 274, so --match-scale leaves it
+# essentially alone.
+#
+# --holds gives the catch five frames: her arm locks and takes her weight for
+# exactly one drawing, which is the one moment in the fall that is genuinely
+# still. The give after it gets two. --shake 2:6 on the buckle and nothing
+# else. No travel: she goes down where she stood.
+$SLICE assets/dahlia_down_sheet.png -o out/dahlia_down_src \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single down
+python3 tools/merge_sheets.py out/dahlia_down_src/frames -o out/dahlia_down -n dahlia_down
+$BUILD out/dahlia_down/frames -o out/dahlia_down -n dahlia_down \
+  --poses 1,2,3,4,5,6,7,8 \
+  --holds 3,2,2,3,5,2,3,12 \
+  --shake 2:6 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
 # ---------------------------------------------------------------------
 # PACKING COMES LAST, and that is load-bearing rather than tidy. It reads
 # out/dahlia_* off disk, so anything rebuilt after it is packed in its
@@ -1088,7 +1126,7 @@ $BUILD out/dahlia_flourish/frames -o out/dahlia_flourish -n dahlia_flourish \
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down \
   --match-scale -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
@@ -1103,11 +1141,11 @@ python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack
 # "dahlia_hit", so roles are what the manifest carries and the atlas basename
 # is what matches a unit by name.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down \
   --role out/dahlia_flourish=idle --role out/dahlia_hit=hit \
   --role out/dahlia_attack=attack --role out/dahlia_block=block \
   --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
-  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis \
+  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down \
   --match-scale -o out/web -n dahlia --scale 0.75 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 

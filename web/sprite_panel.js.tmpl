@@ -47,10 +47,18 @@
     because the tracker only reaches it AFTER a PMF collapse, so it is the
     later of the two to arrive. Swapping the two rows swaps the answer. */
  const RESTING = [
+  ["down",           u => !!u.down || !!u.dead],
   ["cyberpsychosis", u => (u.cyber || 0) >= 100],
   ["fractured",      u => !!u.soulFractured],
   ["slipping",       u => ((typeof u.pmf === "number") ? u.pmf : 90) < 60],
  ];
+
+ /* Resting roles that play THROUGH ONCE and then stay on their last drawing.
+    Every other resting clip loops, which is right for an idle and wrong for a
+    collapse: looping it would have her fall over on repeat for as long as she
+    is down. So these clamp instead of wrapping, and the state re-enters from
+    the top only when the condition changes. */
+ const HOLD_LAST = new Set(["down"]);
 
  // onload rather than decode(), and a closure over the entry itself rather
  // than an index resolved later. The first version did neither and simply
@@ -211,6 +219,11 @@
    acc -= step;
    i += 1;
    if (i >= clip.frames.length) {
+    if (!oneShot && HOLD_LAST.has(current)) {
+     i = clip.frames.length - 1;      // arrived, and it stays arrived
+     acc = 0;
+     break;
+    }
     i = 0;
     if (oneShot) { oneShot = null; current = rest(); setState(current); }
    }
@@ -298,10 +311,12 @@
   // a hit that is still playing finishes, and lands in the new resting state
   // when it hands back, because tick() asks rest() at that moment too.
   if (!oneShot && current !== rest()) { current = rest(); i = 0; acc = 0; }
+  // The grey wash was a stand-in for not having a drawing of her on the floor.
+  // A character who now HAS that drawing does not need it, and it would only
+  // make the one clip that is already dark harder to see.
   const out = !!(u && (u.dead || u.down));
-  panel.classList.toggle("dsp-down", out);
-  if (out && !oneShot) setState(u.dead ? "down" : "downed");
-  else if (!oneShot) setState(current);
+  panel.classList.toggle("dsp-down", out && !clipOf(subject, "down"));
+  if (!oneShot) setState(current);
   fit();
   start();
  }
