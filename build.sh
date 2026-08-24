@@ -718,8 +718,14 @@ $BUILD out/dahlia_evade/frames -o out/dahlia_evade -n dahlia_evade \
 # to 19% instead of one at 42%. Re-rolling the dash sheet alone would fix it
 # properly; it is the outlier, not the others.
 #
-# Every drawing in the dash gets one frame and none repeats. All the held time
-# is in the weave, where she is genuinely still, and the last drawing.
+# EVERY drawing gets one frame from the lean-back through to the landing, and
+# the held time is all in the settle at the end. The first cut doubled each
+# drawing of the lean, which put 11 repeated frames into an 18-frame section --
+# move, freeze, move, freeze -- and that strobe is what read as strange. It was
+# also 750ms for a slip, where a real one is nearer 250. It now runs 292ms with
+# nothing repeated, and the same applies to the duck and the dash: no frame is
+# shown twice anywhere she is still moving. Only the settle holds, because that
+# is the one part where she is genuinely coming to rest.
 $SLICE assets/dahlia_dodge_weave_sheet.png -o out/dg_weave \
   --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
   --align silhouette --single weave
@@ -740,7 +746,7 @@ python3 tools/merge_sheets.py out/dg_weave/frames out/dg_duck/frames \
   -o out/dahlia_dodge -n dahlia_dodge
 $BUILD out/dahlia_dodge/frames -o out/dahlia_dodge -n dahlia_dodge \
   --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31 \
-  --holds 4,2,2,2,2,2,2,2,2,2,2,2,1,1,1,2,1,1,1,1,1,1,1,2,2,2,3,3,4,4,10 \
+  --holds 3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,3,4,5,11 \
   --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0,10:2,11:4,12:6,13:8,14:9,15:10,16:10,17:30,18:60,19:95,20:125,21:145,22:158,23:165,24:160,25:150,26:135,27:115,28:85,29:55,30:25,31:0 \
   --shake 25:6 \
   --fps 24 --breathe 0 --bob 0 --sway 0
