@@ -1186,6 +1186,60 @@ $BUILD out/dahlia_ashes/frames -o out/dahlia_ashes -n dahlia_ashes \
   --holds 12,14,12,16,16,12,10 \
   --fps 24 --breathe 0 --bob 0 --sway 0
 
+# The soul attack -- the teleporting flame slash. Two sheets, 16 drawings, 15
+# played, and THE GENERATOR DREW THE EMPTY FRAME. Sheet 1 ends on her shape in
+# cinders with no character inside it, which was the instruction most likely to
+# be refused: it is a character sheet and the obvious thing is to put the
+# character on it.
+#
+# --rows 2 --cols 4 rather than --components, and it is not optional here. On
+# components the cinders reach far enough vertically that --cluster-gap 14
+# BRIDGED THE TWO ROWS: seven frames came out instead of eight, 1096px tall,
+# with two poses in one. The same fault the ash sheet had, for the same reason.
+#
+# The silhouette measure cannot read either cinder drawing and it is worth
+# knowing why before trusting a number on a particle sheet. The dots are mostly
+# semi-transparent -- the empty frame has 21,375 pixels above alpha 8 and only
+# 2,639 above 128 -- so a mask thresholded at 128 sees almost nothing and the
+# join scored 100.0, meaning "no overlap at all". Dropping the threshold to 8
+# still scored 87.7, because crop-and-rescale normalises on a BOUNDING BOX and
+# stray cinders set the box. Looked at directly, the two drawings are the same
+# pose at different densities. The number was wrong, not the art.
+#
+# --sheet-scale BY HAND, because --match-scale was wrong for the same reason.
+# It compares the two copies of the overlap pose, and here those are a bright
+# cinder figure against a fainter one: it read 462 against 413 and scaled sheet
+# 2 up by 111.9%, which put her guard at 480 where sheet 1's is 402. Measured
+# on the SOLID drawings instead -- 402 against 434 -- sheet 2 wants 92.6%, and
+# the loop then closes at -0.2%.
+#
+# NO --travel, which overrides what the prompt planned for. The intent was to
+# put the teleport distance back by hand, since clips register on her feet. But
+# the panel shows one character against nothing: a lateral jump has no map to
+# be relative to and would read as her sliding in a box, and it would leave her
+# 80px from where the idle expects her. The dissolve and the reassembly already
+# say she was not there and now is.
+#
+# --desalt is safe on a particle sheet, which was not obvious. The filter drops
+# small bright blobs and a cinder is exactly that. Measured: the empty cinder
+# frame is BYTE-IDENTICAL with and without it, and the worst other pose loses
+# 44 cinder pixels out of 4,888. The eroded-core rule is what saves it -- the
+# dots sit near the mask edge, which is excluded.
+$SLICE assets/dahlia_soul_leave_sheet.png -o out/sa_leave \
+  --keyed --rows 2 --cols 4 --fill-holes 4 \
+  --align silhouette --single leave
+$SLICE assets/dahlia_soul_arrive_sheet.png -o out/sa_arrive \
+  --keyed --rows 2 --cols 4 --fill-holes 4 \
+  --align silhouette --single arrive
+python3 tools/merge_sheets.py out/sa_leave/frames out/sa_arrive/frames \
+  --skip-first out/sa_arrive/frames --sheet-scale out/sa_arrive/frames=92.6 \
+  -o out/dahlia_soul -n dahlia_soul
+$BUILD out/dahlia_soul/frames -o out/dahlia_soul -n dahlia_soul \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 \
+  --holds 6,4,3,3,3,3,3,4,2,1,1,2,3,5,10 \
+  --shake 9:6 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
 # ---------------------------------------------------------------------
 # PACKING COMES LAST, and that is load-bearing rather than tidy. It reads
 # out/dahlia_* off disk, so anything rebuilt after it is packed in its
@@ -1236,7 +1290,7 @@ $BUILD out/dahlia_ashes/frames -o out/dahlia_ashes -n dahlia_ashes \
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul \
   --scale-like out/dahlia_ashes=out/dahlia_death --match-scale -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
@@ -1251,11 +1305,11 @@ python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack
 # "dahlia_hit", so roles are what the manifest carries and the atlas basename
 # is what matches a unit by name.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul \
   --role out/dahlia_flourish=idle --role out/dahlia_hit=hit \
   --role out/dahlia_attack=attack --role out/dahlia_block=block \
   --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
-  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down --role out/dahlia_death=death --role out/dahlia_ashes=dead \
+  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down --role out/dahlia_death=death --role out/dahlia_ashes=dead --role out/dahlia_soul=soul \
   --scale-like out/dahlia_ashes=out/dahlia_death --match-scale -o out/web -n dahlia --scale 0.75 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 
