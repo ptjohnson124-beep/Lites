@@ -916,11 +916,27 @@ $SLICE assets/dahlia_fracture_lose_sheet.png -o out/fr_lose \
 python3 tools/merge_sheets.py out/fr_taken/frames out/fr_fight/frames out/fr_lose/frames \
   --skip-first out/fr_fight/frames --skip-first out/fr_lose/frames \
   --match-scale -o out/dahlia_fracture -n dahlia_fracture
+#
+# POSE 5 IS DRAWN AND NOT PLAYED, and dropping it was the right call rather
+# than a shortening. It is the only drawing in the clip square-on to the
+# camera -- arms down, feet planted, facing the viewer -- where every other
+# drawing faces left. I had read it as "the jam, where she locks rigid" and
+# given it a SIX FRAME HOLD, which made the flattest drawing in a convulsion
+# the longest thing on screen. Dropping it costs nothing measurable: 4->6 is
+# 66.4 against a biggest-step of 76.7 that the clip already contains.
+#
+# The fight-back is held nearly three times as long as it was. Poses 10 to 13
+# are where she clamps her own arm and forces it down, and they now carry 6, 8,
+# 5 and 4 frames against 2 before. Those poses are NOT at rest -- the steps
+# into them run 25 to 47 -- so holding them alone would freeze-frame, which is
+# the fault this project keeps having to correct. --shake is what makes it
+# legitimate: a held strain pose with a tremor under it reads as effort against
+# a load, which is what it is.
 $BUILD out/dahlia_fracture/frames -o out/dahlia_fracture -n dahlia_fracture \
-  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22 \
-  --holds 3,2,2,2,6,2,2,2,2,2,5,2,2,2,7,2,2,2,2,2,2,3 \
-  --travel 1:0,2:-8,3:6,4:-4,5:0,6:5,7:-6,8:0,9:0,10:0,11:0,12:0,13:0,14:0,15:0,16:0,17:-5,18:0,19:6,20:-3,21:-4,22:0 \
-  --shake 5:8,19:6 \
+  --poses 1,2,3,4,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22 \
+  --holds 3,2,2,2,2,2,2,3,6,8,5,4,3,8,2,2,2,2,2,2,3 \
+  --travel 1:0,2:-8,3:6,4:-4,6:5,7:-6,8:0,9:0,10:0,11:0,12:0,13:0,14:0,15:0,16:0,17:-5,18:0,19:6,20:-3,21:-4,22:0 \
+  --shake 10:3,11:5,12:4,13:3,19:6 \
   --fps 24 --breathe 0 --bob 0 --sway 0
 
 # ---------------------------------------------------------------------
