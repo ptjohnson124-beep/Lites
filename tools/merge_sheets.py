@@ -98,6 +98,11 @@ def main():
                          "whose opening pose repeats the last pose of the one before")
     ap.add_argument("--margin", type=int, default=60,
                     help="clear space kept around the widest pose")
+    ap.add_argument("--sheet-scale", action="append", default=[], metavar="DIR=PCT",
+                    help="resize one sheet by hand, e.g. 'out/x/frames=91'. For the case "
+                         "--match-scale cannot express: when the copied poses did not come "
+                         "back and the sheets disagree about her size, so which pair to "
+                         "believe is a judgement rather than a measurement")
     ap.add_argument("--match-scale", action="store_true",
                     help="resize later sheets so she is the same height on all of "
                          "them; for when the duplicated attachment pose came back "
@@ -174,6 +179,25 @@ def main():
         for i, ((d, imgs), k) in enumerate(zip(sheets, factor)):
             if abs(k - 1.0) > 0.005:
                 sheets[i] = (d, rescale_to(imgs, k))
+
+    # Applied after --match-scale so the two can be combined: measure what can be
+    # measured, then correct by hand the sheets that had nothing to measure against.
+    manual = {}
+    for spec in args.sheet_scale:
+        d, _, pct = spec.rpartition("=")
+        if not d or not pct:
+            raise SystemExit(f"--sheet-scale wants DIR=PCT, got {spec!r}")
+        manual[d] = float(pct) / 100.0
+    for i, (d, imgs) in enumerate(sheets):
+        k = manual.get(d)
+        if k and abs(k - 1.0) > 0.005:
+            tail = os.path.basename(os.path.dirname(d.rstrip('/'))) or d
+            print(f"  {tail}: set by hand -> {k * 100:.1f}%")
+            sheets[i] = (d, rescale_to(imgs, k))
+    unknown = set(manual) - {d for d, _ in sheets}
+    if unknown:
+        raise SystemExit(f"--sheet-scale names directories that are not being merged: "
+                         f"{', '.join(sorted(unknown))}")
 
     poses = [im for _, imgs in sheets for im in imgs]
 

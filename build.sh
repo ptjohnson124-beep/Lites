@@ -574,14 +574,14 @@ $BUILD out/dahlia_attack/frames -o out/dahlia_attack -n dahlia_attack \
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_evade -o out/atlas -n dahlia --preview --preview-scale 0.5
+  out/dahlia_block out/dahlia_dodge -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
 # bytes matter. --format webp here is a STILL image, not an animation: the
 # atlas is one picture either way, and WebP stores it in a third of the PNG's
 # bytes with the same pixels and the same alpha. 8.8MB becomes 1.0MB.
 python3 tools/pack_clips.py out/dahlia_twirl out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_evade -o out/web -n dahlia --scale 0.5 --format webp
+  out/dahlia_block out/dahlia_dodge -o out/web -n dahlia --scale 0.5 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 
 # Put the sprite feed into the combat tracker. Re-runnable: the injected block
@@ -689,4 +689,58 @@ $BUILD out/dahlia_evade/frames -o out/dahlia_evade -n dahlia_evade \
   --scale 23:115 \
   --travel 1:0,2:0,3:4,4:10,5:18,6:26,7:34,8:42,9:48,10:52,11:56,12:58,13:58,14:56,15:54,16:50,17:44,18:36,19:26,20:18,21:10,22:4,23:0 \
   --shake 20:5 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
+# The dodge: weave, duck, back dash. Four sheets, 32 drawings, 31 played --
+# this replaces the spin, which turned her back on a live attack and needed a
+# nerve beat to apologise for doing it. It is also the easier thing to draw: no
+# rotation, no back views, and the blur sits on a straight-line dash rather
+# than a turn.
+#
+# The weave instruction held, which is the first time a named risk did not
+# happen. Her boots were to stay planted through all eight of sheet 1 and they
+# do: the right edge moves 1px across the sheet and the centre 11px, where the
+# 28px on the left edge is her front foot drawing in as she leans, not a step.
+#
+# Only ONE of the three copied poses came back -- four sheets means three
+# chances to lose it -- and the two that did not are exactly where --match-scale
+# has nothing to work with. Her height genuinely collapses through the duck and
+# the dash, so a median comparison would measure the crouch, and the one real
+# copy (duck 8 against dash 1, scoring 28) says the dash sheet is drawn 36%
+# larger than the duck sheet while the reset sheet's standing poses say it is
+# drawn 45% larger than that. Those two constraints disagree and no measurement
+# resolves them: the sheets are inconsistent with each other.
+#
+# So --sheet-scale sets them by hand, which is what that flag is for. Anchored
+# on her standing height where a sheet has one -- weave 100%, duck 91%, reset
+# 97% -- the loop closes exactly. The dash has no standing pose at all, so 80%
+# splits the difference between the two constraints and leaves every join at 11
+# to 19% instead of one at 42%. Re-rolling the dash sheet alone would fix it
+# properly; it is the outlier, not the others.
+#
+# Every drawing in the dash gets one frame and none repeats. All the held time
+# is in the weave, where she is genuinely still, and the last drawing.
+$SLICE assets/dahlia_dodge_weave_sheet.png -o out/dg_weave \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single weave
+$SLICE assets/dahlia_dodge_duck_sheet.png -o out/dg_duck \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single duck
+$SLICE assets/dahlia_dodge_dash_sheet.png -o out/dg_dash \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single dash
+$SLICE assets/dahlia_dodge_reset_sheet.png -o out/dg_reset \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single reset
+python3 tools/merge_sheets.py out/dg_weave/frames out/dg_duck/frames \
+  out/dg_dash/frames out/dg_reset/frames \
+  --skip-first out/dg_dash/frames \
+  --sheet-scale out/dg_duck/frames=91 --sheet-scale out/dg_dash/frames=80 \
+  --sheet-scale out/dg_reset/frames=97 \
+  -o out/dahlia_dodge -n dahlia_dodge
+$BUILD out/dahlia_dodge/frames -o out/dahlia_dodge -n dahlia_dodge \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31 \
+  --holds 4,2,2,2,2,2,2,2,2,2,2,2,1,1,1,2,1,1,1,1,1,1,1,2,2,2,3,3,4,4,10 \
+  --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0,10:2,11:4,12:6,13:8,14:9,15:10,16:10,17:30,18:60,19:95,20:125,21:145,22:158,23:165,24:160,25:150,26:135,27:115,28:85,29:55,30:25,31:0 \
+  --shake 25:6 \
   --fps 24 --breathe 0 --bob 0 --sway 0
