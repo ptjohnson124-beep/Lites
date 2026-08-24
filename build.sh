@@ -1043,9 +1043,36 @@ $SLICE assets/dahlia_flourish_settle_sheet.png -o out/fl_settle \
 python3 tools/merge_sheets.py out/fl_spin/frames out/fl_settle/frames \
   --skip-first out/fl_settle/frames \
   --match-scale -o out/dahlia_flourish -n dahlia_flourish
+#
+# POSES 1, 14 AND 15 ARE DRAWN AND NOT PLAYED, and 1 and 15 are the interesting
+# pair. They are the reference guard, drawn faithfully at both ends of the
+# animation -- and the blade in the reference is far brighter than the blade the
+# generator drew for everything in between. Measured: 7233 and 7469 teal pixels
+# with 1434 and 1514 of them above luminance 150, against 1400 to 2300 teal and
+# 110 to 500 bright for poses 2 to 14. They also sat either side of the loop
+# seam with long holds, so the bright blade was on screen for a FULL SECOND
+# every cycle. That is what stood out.
+#
+# Dropping only the last one would have halved it and kept the fault. Dropping
+# both removes it, and the hand-back gets better rather than worse: the other
+# clips end at 1073 to 4109 teal, which matches poses 2 to 14 and not 1 and 15.
+# The only clip that still ends bright is the spec, at 9053 -- its closing guard
+# came from the same reference drawing, so there is a one-frame blade drop when
+# it hands back. One frame at a transition is a different order of problem from
+# a second of it every loop, and it is left alone for now.
+#
+# The seam costs something and there was no cheaper one. Every candidate loop
+# that excludes 1 and 15 wraps between 30.6 and 34.4, against 3.1 for the old
+# 15->1. 2..13 is the best of them at 30.6, still under the 35 that separates a
+# copy from a resemblance, and it drops pose 14 which was a near-duplicate
+# anyway -- 13->14 measured 10 where the flourish steps 25 to 59.
+#
+# The long guard rest went with pose 1, so the settle absorbs it: poses 10 to 13
+# now hold 8 and 9 frames each. With --bob and --sway underneath, a near-still
+# stretch reads as her standing and breathing, which is what an idle is.
 $BUILD out/dahlia_flourish/frames -o out/dahlia_flourish -n dahlia_flourish \
-  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 \
-  --holds 14,3,3,3,2,3,2,3,4,5,5,5,5,5,10 \
+  --poses 2,3,4,5,6,7,8,9,10,11,12,13 \
+  --holds 7,3,3,2,3,2,5,6,8,9,9,9 \
   --fps 24 --breathe 0 --bob 2 --sway 1
 
 # Going down -- and the tracker holds "down" and "dead" as two separate states,
