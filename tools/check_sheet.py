@@ -162,7 +162,18 @@ def report(path, rows, cols, loops):
           "   (% of the drawing that moved)")
     if max(steps) < 12 and max(rgbs) > 2:
         print("               (shape barely moves -- judge this sheet on colour)")
-    elif ev > 3.0:
+    # Evenly spaced and too far apart are different faults, and only one of them
+    # was being caught. Across the sheets that produced good clips here the mean
+    # step runs 11 to 50, the top of that being a deliberate convulsion. Past
+    # that the drawings stop being samples of one movement and become a set of
+    # separate poses, however evenly they are spaced.
+    mean_step = float(np.mean(steps))
+    if mean_step > 52 and max(steps) > 12:
+        warn.append(f"mean step {mean_step:.0f} -- consecutive drawings are further "
+                    f"apart than on any sheet that has worked here (11-50, the top of "
+                    f"that a convulsion). This is eight poses rather than eight "
+                    f"samples of one movement, and it will read as a stutter")
+    if ev > 3.0:
         warn.append(f"step evenness {ev:.1f}x -- the rule is no step more than twice "
                     f"the smallest. Biggest {max(steps):.0f}, smallest {min(steps):.0f}")
 

@@ -66,13 +66,44 @@ def matte(white, black, floor=0.004):
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--from-black", action="store_true",
+                    help="ONE render on pure black instead of a pair. Only sound when "
+                         "nothing on the subject is itself near-black -- check that "
+                         "first, because anything darker than the ramp is punched out. "
+                         "Recovers the colour by dividing the backdrop out, so edge "
+                         "pixels come back at full strength instead of darkened")
+    ap.add_argument("--lo", type=float, default=6.0,
+                    help="--from-black: luminance that counts as fully transparent")
+    ap.add_argument("--hi", type=float, default=26.0,
+                    help="--from-black: luminance that counts as fully opaque")
     ap.add_argument("white", help="the sheet rendered on pure white")
-    ap.add_argument("black", help="the same sheet rendered on pure black")
+    ap.add_argument("black", nargs="?", help="the same sheet rendered on pure black")
     ap.add_argument("-o", "--out", required=True)
     ap.add_argument("--max-drift", type=float, default=0.02,
                     help="refuse the pair if the ink moved more than this")
     args = ap.parse_args()
 
+    if args.from_black:
+        b = load(args.white)          # the single render, which is the black one
+        lum = (0.2126 * b[:, :, 0] + 0.7152 * b[:, :, 1] + 0.0722 * b[:, :, 2]) * 255.0
+        t = np.clip((lum - args.lo) / max(1e-6, args.hi - args.lo), 0.0, 1.0)
+        a = t * t * (3 - 2 * t)       # smoothstep, so the edge ramps rather than steps
+        dark = 100.0 * (a[a > 0.5].size and (lum[a > 0.5] < args.hi).mean() or 0)
+        print(f"  keyed        {int((a > 0.5).sum()):,} solid px, "
+              f"{int(((a > 0.02) & (a < 0.98)).sum()):,} soft-edge px")
+        if dark > 2:
+            print(f"  warn   {dark:.1f}% of what was kept sits inside the ramp -- parts "
+                  f"of the subject are as dark as the backdrop and will be eaten")
+        rgb = np.clip(b / np.maximum(a, 0.004)[:, :, None], 0.0, 1.0)
+        rgb[a < 0.004] = 0.0
+        out = np.dstack([(rgb * 255).round().astype(np.uint8),
+                         (a * 255).round().astype(np.uint8)])
+        Image.fromarray(out, "RGBA").save(args.out)
+        print(f"  -> {args.out}")
+        return 0
+
+    if not args.black:
+        raise SystemExit("give both renders, or pass --from-black with just the one")
     w, b = load(args.white), load(args.black)
     if w.shape != b.shape:
         raise SystemExit(f"the two renders are different sizes: "
