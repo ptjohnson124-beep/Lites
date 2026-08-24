@@ -111,13 +111,17 @@ def main():
                          "'out/dahlia_twirl=idle'. With more than one character in a "
                          "tracker the player has to ask for 'the hit', not for "
                          "'dahlia_hit', so the roles are what the manifest carries")
+    ap.add_argument("--scale-like", action="append", default=[], metavar="DIR=OTHER",
+                    help="this clip CONTINUES FROM the end of another one, so size its "
+                         "first frame to match that one's last instead of measuring it "
+                         "as a character. For the ash loop, which carries on from where "
+                         "the death animation stops: 'out/dahlia_ashes=out/dahlia_death'")
     ap.add_argument("--match-scale", action="store_true",
                     help="resize each clip so she is drawn the same size in all of "
                          "them. Registering position is not enough on its own: the "
                          "sheets behind different clips came back at very different "
                          "scales, and she jumped 67%% larger the moment the panel "
-                         "switched to a newer clip. Everything is brought DOWN to the "
-                         "smallest clip, so no frame is ever enlarged")
+                         "switched to a newer clip. The target is the MEDIAN clip")
     ap.add_argument("--scale", type=float, default=1.0,
                     help="resize every cell; 0.5 halves the atlas for the web, where "
                          "she is displayed small anyway")
@@ -154,7 +158,55 @@ def main():
         # taken, so the feet still land together afterwards.
         for c in clips:
             c["measure"] = clip_scale(c["images"])
-        target = min(c["measure"] for c in clips)
+
+        # THE MEDIAN CLIP, not the smallest. Taking the minimum let a single
+        # clip that happened to be drawn small decide the size of the whole
+        # cast, and it moved every time a new clip came in under the old floor.
+        # The median is decided by the middle of the set instead, so one odd
+        # sheet cannot drag everything down with it.
+        #
+        # The reason the minimum was chosen originally was to guarantee nothing
+        # is ever enlarged, and that guarantee survives anyway because --scale
+        # runs afterwards: a clip's NET factor is (target / measure) * scale,
+        # and at 0.75 nothing here reaches 1.0. It is checked rather than
+        # assumed -- the warning below fires if a clip really would be blown up.
+        target = float(np.median([c["measure"] for c in clips]))
+
+        # A clip that does not contain the character cannot be measured as one.
+        # The ash loop is the whole of her that is left after the Kindle-Shell,
+        # and asking how big "she" is in it returns the size of a pile -- which
+        # the median then tried to enlarge by 61% to make it person-sized.
+        #
+        # So a clip can instead be sized to CONTINUE from another: its first
+        # drawing is matched to that clip's last, after that clip's own factor
+        # is settled. The ash in the loop then lands exactly on the ash the
+        # death animation stopped at, which is the only relationship that
+        # actually matters between the two.
+        by_dir = {c["dir"]: c for c in clips}
+        follow = {}
+        for spec in args.scale_like:
+            d, _, o = spec.rpartition("=")
+            d, o = d.rstrip("/"), o.rstrip("/")
+            if d not in by_dir or o not in by_dir:
+                raise SystemExit(f"--scale-like names a directory that is not "
+                                 f"being packed: {spec!r}")
+            follow[d] = o
+        for d, o in follow.items():
+            this, other = by_dir[d], by_dir[o]
+            if other["dir"] in follow:
+                raise SystemExit("--scale-like cannot chain: "
+                                 f"{o} is itself following another clip")
+            k_other = target / other["measure"]
+            head = np.sqrt(body_area(this["images"][0]))
+            tail = np.sqrt(body_area(other["images"][-1]))
+            # measure = target / factor, so store the measure that yields it
+            this["measure"] = target / (k_other * tail / head) if head else this["measure"]
+            print(f"  {this['name']:<12s} sized to continue from {other['name']}")
+        blown = [c["name"] for c in clips
+                 if (target / c["measure"]) * args.scale > 1.0]
+        if blown:
+            print(f"  note: {', '.join(blown)} would be enlarged past its own "
+                  f"resolution at --scale {args.scale}")
         for c in clips:
             k = target / c["measure"]
             if abs(k - 1.0) < 0.005:

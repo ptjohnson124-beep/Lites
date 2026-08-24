@@ -1152,6 +1152,40 @@ $BUILD out/dahlia_death/frames -o out/dahlia_death -n dahlia_death \
   --travel 1:0,2:-26,3:-46,4:-58,5:-62,6:-64,7:-64,8:-64,9:-64,10:-64,11:-64,12:-64,13:-64,14:-64,15:-64 \
   --fps 24 --breathe 0 --bob 0 --sway 0
 
+# The dead loop -- the ash, for as long as she stays dead. One sheet, 8 drawn,
+# 7 played.
+#
+# POSE 8 IS BYTE-IDENTICAL TO POSE 1, so it is dropped rather than held: playing
+# both would put the same image on screen twice at the loop seam. The wrap is
+# 0.0 as a result, which is the only exactly seamless loop in the set.
+#
+# THE SILHOUETTE MEASURE IS BLIND TO THIS CLIP. Every step comes out 0 -- the
+# pile has the same outline on all eight drawings, which is exactly what was
+# asked for. What moves is the light: embers run 941, 542, 364, 115, 86, 180,
+# 418 and back to 941, a 10.9x swing that NEVER REACHES ZERO. That last part is
+# the whole job of the clip, because the tracker offers a Kindle Revive button
+# while she is like this and the picture has to say the button will work.
+#
+# --rows 2 --cols 4 instead of --components, and --despeckle 0. The smoke plume
+# is a thin faint thing that the component finder treated as junk below
+# --component-min and cut off; on the grid it survives. Whether it is WORTH
+# surviving is another matter -- see below.
+#
+# THE SMOKE WILL NOT BE VISIBLE AND THAT IS IN THE DRAWING, NOT HERE. It is
+# painted dark grey, mean RGB 48,43,44, at a median alpha of 29. Composited
+# over the panel's black stage that lands at luminance 2.9 with a peak of 20,
+# against 122 for the embers. It is kept because it costs nothing and it is
+# what was drawn, but a plume meant to read against black has to be LIGHTER
+# than the ground it plays over -- the same note the darks needed.
+$SLICE assets/dahlia_ashes_sheet.png -o out/dahlia_ashes_src \
+  --keyed --rows 2 --cols 4 --fill-holes 4 --despeckle 0 \
+  --align silhouette --single ashes
+python3 tools/merge_sheets.py out/dahlia_ashes_src/frames -o out/dahlia_ashes -n dahlia_ashes
+$BUILD out/dahlia_ashes/frames -o out/dahlia_ashes -n dahlia_ashes \
+  --poses 1,2,3,4,5,6,7 \
+  --holds 12,14,12,16,16,12,10 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
 # ---------------------------------------------------------------------
 # PACKING COMES LAST, and that is load-bearing rather than tidy. It reads
 # out/dahlia_* off disk, so anything rebuilt after it is packed in its
@@ -1176,10 +1210,20 @@ $BUILD out/dahlia_death/frames -o out/dahlia_death -n dahlia_death \
 # these clips the spread of sqrt(area) within a clip is under 6% where height
 # varies by 17%.
 #
-# Everything is brought DOWN to the smallest clip, so no frame is ever
-# enlarged: the newer sheets have resolution to spare and the idle does not.
-# Cross-clip spread goes from 1.70x to 1.14x, and what is left is pose rather
-# than scale.
+# The target is the MEDIAN clip, not the smallest. Taking the minimum let one
+# clip that happened to be drawn small decide the size of the whole cast, and
+# it moved every time a new clip came in under the old floor. The guarantee the
+# minimum was there to give -- that nothing is ever enlarged -- survives anyway,
+# because --scale runs afterwards: a clip's NET factor is (target/measure)*scale
+# and at 0.75 nothing here reaches 1.0. pack_clips checks that rather than
+# assuming it and says so if a clip really would be blown up.
+#
+# --scale-like is for a clip that is not the character. The ash loop is what is
+# left of her, and measuring "how big is she in it" returns the size of a pile,
+# which the median then tried to enlarge by 61% to make person-sized. Sized to
+# CONTINUE from the death instead, its first drawing matches the drawing the
+# death animation stops on, which is the only relationship between them that
+# matters.
 #
 # The assembler sizes each clip's canvas to that clip, which is right inside a
 # clip and wrong between them: the idle, the hit and the attack came out
@@ -1192,8 +1236,8 @@ $BUILD out/dahlia_death/frames -o out/dahlia_death -n dahlia_death \
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death \
-  --match-scale -o out/atlas -n dahlia --preview --preview-scale 0.5
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes \
+  --scale-like out/dahlia_ashes=out/dahlia_death --match-scale -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
 # bytes matter -- less than they did, since the tracker is opened off disk
@@ -1207,12 +1251,12 @@ python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack
 # "dahlia_hit", so roles are what the manifest carries and the atlas basename
 # is what matches a unit by name.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes \
   --role out/dahlia_flourish=idle --role out/dahlia_hit=hit \
   --role out/dahlia_attack=attack --role out/dahlia_block=block \
   --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
-  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down --role out/dahlia_death=death \
-  --match-scale -o out/web -n dahlia --scale 0.75 --format webp
+  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down --role out/dahlia_death=death --role out/dahlia_ashes=dead \
+  --scale-like out/dahlia_ashes=out/dahlia_death --match-scale -o out/web -n dahlia --scale 0.75 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 
 # Put the sprite feed into the combat tracker. Re-runnable: the injected block

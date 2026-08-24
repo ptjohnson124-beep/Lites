@@ -61,6 +61,16 @@
     the top only when the condition changes. */
  const HOLD_LAST = new Set(["down", "death"]);
 
+ /* One resting role that runs INTO another. The death animation plays through
+    once and ends on a pile of ash; the ash then has its own loop, and that loop
+    is what should be on screen for however long she stays dead. The table
+    cannot say that on its own -- both rows answer the same condition, and the
+    first would win forever -- so the handover lives here.
+
+    A character with the death and no ash loop falls back to HOLD_LAST and sits
+    on the last drawing, which is the same picture, just not breathing. */
+ const AFTER = { death: "dead" };
+
  /* 'down' still answers u.dead as well as u.down, and that is deliberate: it
     is the fallback for a character who has a down clip and no death clip. The
     table is ordered, so anyone with both gets the death. */
@@ -224,6 +234,12 @@
    acc -= step;
    i += 1;
    if (i >= clip.frames.length) {
+    const next = !oneShot && AFTER[current];
+    if (next && clipOf(subject, next)) {
+     current = next; i = 0; setState(current);
+     dirty = true;
+     continue;
+    }
     if (!oneShot && HOLD_LAST.has(current)) {
      i = clip.frames.length - 1;      // arrived, and it stays arrived
      acc = 0;
@@ -315,7 +331,10 @@
   // Crossing the line changes what she rests in. Only ever between clips --
   // a hit that is still playing finishes, and lands in the new resting state
   // when it hands back, because tick() asks rest() at that moment too.
-  if (!oneShot && current !== rest()) { current = rest(); i = 0; acc = 0; }
+  const want = rest();
+  if (!oneShot && current !== want && AFTER[want] !== current) {
+   current = want; i = 0; acc = 0;
+  }
   // The grey wash was a stand-in for not having a drawing of her on the floor.
   // A character who now HAS that drawing does not need it, and it would only
   // make the one clip that is already dark harder to see.
