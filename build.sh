@@ -1272,6 +1272,44 @@ $BUILD out/dahlia_rev/frames -o out/dahlia_rev -n dahlia_rev \
   --holds 5,3,6,4,3,6,4 \
   --fps 24 --breathe 0 --bob 1 --sway 0
 
+# The grab and the throw, built as TWO CLIPS from two sheets that join, so the
+# tracker can play the grab and sit on it before deciding to throw.
+#
+# The join is 2.0 and THE WRAP IS 2.5 -- the tightest pair in the project. The
+# throw ends on the reference guard, so it hands back to the idle with nothing
+# at the seam, and the grab's last drawing and the throw's first are the same
+# pose measured on silhouette.
+#
+# They differ on COLOUR though -- rgb 25.9 across that join against 2.0 on
+# shape -- so the same pose was drawn twice with different detail rather than
+# copied. It does not matter here because the two are separate clips and only
+# one of them is ever on screen, but it is why the silhouette number alone is
+# not proof of a copy.
+#
+# THE THROW'S SECOND DRAWING IS DROPPED. The prompt asked for the rotation to
+# start at her back foot with nothing above the hips moving, and that beat did
+# not get drawn: silhouette 6, rgb 5.7, and the feet band comes out 158-520
+# against 159-516 -- the foot did not turn. What IS drawn is a hold through
+# four drawings and then a fast release, so the timing follows the drawings
+# rather than the plan: 5,4,3,2,2,3,12, accelerating into the release and
+# settling after it.
+#
+# --scale-like on the throw, because it CONTINUES from the grab. Sized on its
+# own first frames it would be measured on her holding something with both arms
+# out, which is not the pose every other clip opens on.
+$SLICE assets/dahlia_grab_sheet.png -o out/dahlia_grab_src \
+  --keyed --rows 2 --cols 4 --fill-holes 4 --align silhouette --single grab
+$SLICE assets/dahlia_throw_sheet.png -o out/dahlia_throw_src \
+  --keyed --rows 2 --cols 4 --fill-holes 4 --align silhouette --single throw
+python3 tools/merge_sheets.py out/dahlia_grab_src/frames -o out/dahlia_grab -n dahlia_grab
+python3 tools/merge_sheets.py out/dahlia_throw_src/frames -o out/dahlia_throw -n dahlia_throw
+$BUILD out/dahlia_grab/frames -o out/dahlia_grab -n dahlia_grab \
+  --poses 1,2,3,4,5,6,7,8 --holds 5,3,3,3,4,3,3,16 --shake 6:5 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+$BUILD out/dahlia_throw/frames -o out/dahlia_throw -n dahlia_throw \
+  --poses 1,3,4,5,6,7,8 --holds 5,4,3,2,2,3,12 --shake 5:6 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
 # ---------------------------------------------------------------------
 # PACKING COMES LAST, and that is load-bearing rather than tidy. It reads
 # out/dahlia_* off disk, so anything rebuilt after it is packed in its
@@ -1322,7 +1360,7 @@ $BUILD out/dahlia_rev/frames -o out/dahlia_rev -n dahlia_rev \
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw \
   --scale-like out/dahlia_ashes=out/dahlia_death --match-scale -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
@@ -1337,12 +1375,13 @@ python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack
 # "dahlia_hit", so roles are what the manifest carries and the atlas basename
 # is what matches a unit by name.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw \
   --role out/dahlia_flourish=idle --role out/dahlia_hit=hit \
   --role out/dahlia_attack=attack --role out/dahlia_block=block \
   --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
-  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down --role out/dahlia_death=death --role out/dahlia_ashes=dead --role out/dahlia_soul=soul --role out/dahlia_rev=rev \
-  --scale-like out/dahlia_ashes=out/dahlia_death --match-scale -o out/web -n dahlia --scale 0.75 --format webp
+  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down --role out/dahlia_death=death --role out/dahlia_ashes=dead --role out/dahlia_soul=soul --role out/dahlia_rev=rev --role out/dahlia_grab=grab --role out/dahlia_throw=throw \
+  --scale-like out/dahlia_ashes=out/dahlia_death \
+  --scale-like out/dahlia_throw=out/dahlia_grab --match-scale -o out/web -n dahlia --scale 0.75 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 
 # Put the sprite feed into the combat tracker. Re-runnable: the injected block
