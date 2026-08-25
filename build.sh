@@ -1370,6 +1370,46 @@ $BUILD out/dahlia_ragdoll/frames -o out/dahlia_ragdoll -n dahlia_ragdoll \
   --travel 2:0,3:-2,4:-14,5:-28,6:-40,7:-51,8:-61,9:-70,10:-78,11:-85,12:-90,13:-94,14:-96,15:-97,16:-98,17:-99,18:-100,19:-106,20:-111,21:-115,22:-118,23:-119,24:-120,25:-120 \
   --fps 24 --breathe 0 --bob 0 --sway 0
 
+# The get-up, the other half of the knockdown and the same import path. 64
+# frames on the 8x8 grid, real alpha, already registered.
+#
+# Frame 0 is broken and is the only frame here that is: 22,626 opaque pixels
+# against a clip median of 15,000, a bounding box that stops at y=172 while
+# every other frame reaches 211, and a body centre 17px off its neighbour. It
+# is a crop of her, drawn at the wrong scale, not a pose. Dropped outright.
+#
+# Everything after it alternates drawing, copy, drawing, copy. Frames 2, 4, 6,
+# 8, 10, 12, 16, 18, 20, 23, 27, 29, 31, 33, 35, 37 and 39 change 161 to 1,114
+# pixels against a median of 5,269 -- seventeen of them, so the sheet is really
+# ~46 drawings padded to 64.
+#
+# The dwell is frames 22-41: twenty drawings on all fours with her body centre
+# moving 0.9px across the lot. That is the beat the prompt asked for and it is
+# four times longer than it should play, so five are kept. The rise, 42 to 56,
+# is where the drawing actually moves -- her top edge climbs from y=76 to y=11 --
+# and it is sampled every other frame rather than thinned.
+#
+# 64 drawings become 22 poses.
+#
+# Frame 63 is the ending, and it looked wrong on the first measurement: cyan
+# pixels fall from 1,088 to 77 over the last five frames, which reads as the
+# blade fading out. Looking at the drawings, it is the opposite -- the blade
+# RESOLVES, from a loose glowing mass into the crisp weapon the idle holds, and
+# the resolved version is mostly pale grey with cyan only in the fuller. The
+# measurement was counting glow, not blade.
+#
+# --travel 54px right, which is small on purpose. She gets up roughly where she
+# fell; the drift is the half step she takes catching her balance, not a walk.
+KEEP=1,7,13,17,19,21,22,26,32,38,42,44,46,48,50,52,54,56,57,59,61,63
+python3 tools/import_spritesheet.py assets/dahlia_getup_as64.png \
+  -o out/dahlia_getup -n dahlia_getup --rows 8 --cols 8 \
+  --drop "$(python3 -c "k={int(x) for x in '$KEEP'.split(',')}; print(','.join(str(i) for i in range(64) if i not in k))")"
+$BUILD out/dahlia_getup/frames -o out/dahlia_getup -n dahlia_getup \
+  --poses 1-22 --holds 3,2,2,2,2,2,2,3,3,3,2,2,2,2,2,2,2,2,2,2,2,8 \
+  --stabilize none \
+  --travel 2:2,3:4,4:6,5:8,6:10,7:12,8:14,9:16,10:18,11:22,12:26,13:30,14:34,15:38,16:42,17:46,18:49,19:51,20:52,21:53,22:54 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
 # ---------------------------------------------------------------------
 # PACKING COMES LAST, and that is load-bearing rather than tidy. It reads
 # out/dahlia_* off disk, so anything rebuilt after it is packed in its
@@ -1420,7 +1460,7 @@ $BUILD out/dahlia_ragdoll/frames -o out/dahlia_ragdoll -n dahlia_ragdoll \
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll out/dahlia_getup \
   --scale-like out/dahlia_ashes=out/dahlia_death --match-scale -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
@@ -1435,11 +1475,11 @@ python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack
 # "dahlia_hit", so roles are what the manifest carries and the atlas basename
 # is what matches a unit by name.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll out/dahlia_getup \
   --role out/dahlia_flourish=idle --role out/dahlia_hit=hit \
   --role out/dahlia_attack=attack --role out/dahlia_block=block \
   --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
-  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down --role out/dahlia_death=death --role out/dahlia_ashes=dead --role out/dahlia_soul=soul --role out/dahlia_rev=rev --role out/dahlia_grab=grab --role out/dahlia_throw=throw --role out/dahlia_ragdoll=ragdoll \
+  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down --role out/dahlia_death=death --role out/dahlia_ashes=dead --role out/dahlia_soul=soul --role out/dahlia_rev=rev --role out/dahlia_grab=grab --role out/dahlia_throw=throw --role out/dahlia_ragdoll=ragdoll --role out/dahlia_getup=recover \
   --scale-like out/dahlia_ashes=out/dahlia_death \
   --scale-like out/dahlia_throw=out/dahlia_grab --match-scale -o out/web -n dahlia --scale 0.75 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
