@@ -1488,6 +1488,37 @@ $BUILD out/dahlia_ritual/frames -o out/dahlia_ritual -n dahlia_ritual \
   --shake 2:6,3:4 --stabilize none \
   --fps 24 --breathe 0 --bob 0 --sway 0
 
+# The ritualized idle, and the clip the crown was the whole point of. It is
+# what the ritualization hands into once she is crowned, the way the death
+# animation hands into the ash loop.
+#
+# It loops, and the wrap is honest without help: frame 63 differs from frame 0
+# by 1,119 pixels against a median frame change of 2,584, so 0.43x. That ratio
+# reads worse than the stagger's 0.12x and is not -- this is a SUBTLE clip. Her
+# body barely moves, so a typical frame changes 4% of itself where the stagger
+# changed 14%, and half of a small number is still a small number.
+#
+# The crown does what was asked. Counting dark pixels in the top fifth of the
+# figure across the sheet: 1,482 at frame 0, 2,794 by 12, back to 1,868 by 24,
+# 2,743 by 30, 1,858 by 44, 2,664 by 51, and 1,488 by 63. Three full cycles of
+# it weaving itself up and coming apart, and its outer extent rises and falls
+# with it -- the top of the drawing runs 0, 18, 0, 16, 0, 19, 0. It never
+# finishes, which is what makes a clip out of a woman standing still.
+#
+# Nine holds come off. The rest is halved -- 55 real drawings to 28 -- and held
+# three frames each rather than two, which puts it at 3.5s against the source's
+# 4.04s. A crown assembling itself wants to look inevitable rather than busy.
+#
+# NOT in HOLD_LAST, unlike the ritualization it follows. That one clamps because
+# an eruption on repeat is absurd; this one is the resting state itself.
+KEEP=0,2,4,7,9,11,13,15,17,19,21,23,26,30,32,35,38,40,43,45,47,49,51,53,56,58,60,63
+python3 tools/import_spritesheet.py assets/dahlia_ritual_idle_as64.png \
+  -o out/dahlia_crowned -n dahlia_crowned --rows 8 --cols 8 \
+  --drop "$(python3 -c "k={int(x) for x in '$KEEP'.split(',')}; print(','.join(str(i) for i in range(64) if i not in k))")"
+$BUILD out/dahlia_crowned/frames -o out/dahlia_crowned -n dahlia_crowned \
+  --poses 1-28 --holds 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3 \
+  --stabilize none --fps 24 --breathe 0 --bob 0 --sway 0
+
 # ---------------------------------------------------------------------
 # PACKING COMES LAST, and that is load-bearing rather than tidy. It reads
 # out/dahlia_* off disk, so anything rebuilt after it is packed in its
@@ -1538,7 +1569,7 @@ $BUILD out/dahlia_ritual/frames -o out/dahlia_ritual -n dahlia_ritual \
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll out/dahlia_getup out/dahlia_stagger out/dahlia_ritual \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll out/dahlia_getup out/dahlia_stagger out/dahlia_ritual out/dahlia_crowned \
   --scale-like out/dahlia_ashes=out/dahlia_death --match-scale -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
@@ -1553,11 +1584,11 @@ python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack
 # "dahlia_hit", so roles are what the manifest carries and the atlas basename
 # is what matches a unit by name.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll out/dahlia_getup out/dahlia_stagger out/dahlia_ritual \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll out/dahlia_getup out/dahlia_stagger out/dahlia_ritual out/dahlia_crowned \
   --role out/dahlia_flourish=idle --role out/dahlia_hit=hit \
   --role out/dahlia_attack=attack --role out/dahlia_block=block \
   --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
-  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down --role out/dahlia_death=death --role out/dahlia_ashes=dead --role out/dahlia_soul=soul --role out/dahlia_rev=rev --role out/dahlia_grab=grab --role out/dahlia_throw=throw --role out/dahlia_ragdoll=ragdoll --role out/dahlia_getup=recover --role out/dahlia_stagger=staggered --role out/dahlia_ritual=ritualized \
+  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down --role out/dahlia_death=death --role out/dahlia_ashes=dead --role out/dahlia_soul=soul --role out/dahlia_rev=rev --role out/dahlia_grab=grab --role out/dahlia_throw=throw --role out/dahlia_ragdoll=ragdoll --role out/dahlia_getup=recover --role out/dahlia_stagger=staggered --role out/dahlia_ritual=ritualized --role out/dahlia_crowned=crowned \
   --scale-like out/dahlia_ashes=out/dahlia_death \
   --scale-like out/dahlia_throw=out/dahlia_grab --match-scale -o out/web -n dahlia --scale 0.75 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
