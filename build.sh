@@ -1344,11 +1344,17 @@ $BUILD out/dahlia_throw/frames -o out/dahlia_throw -n dahlia_throw \
 # the travel is the animation. An imported sheet is already registered, so
 # there is nothing for it to fix and everything for it to flatten.
 #
-# --flip because it drew her head to the left and this set lies head-RIGHT when
-# she goes down, which is measured against dahlia_down rather than eyeballed.
+# NO --flip, and that is the fling direction rather than a facing preference.
+# She is drawn being launched LEFT: her hair trails +51px to the RIGHT of her
+# body on the launch frames, and her measured centre runs 142 -> 102 across the
+# flight. The idle faces RIGHT, so left is away from whatever hit her, which is
+# the direction a knockback goes. Flipping her to match dahlia_down's head-right
+# landing would have her flung FORWARD, into the enemy, with the drawn hair drag
+# pointing the wrong way against the travel -- so the landing pose disagrees with
+# down and death, and that is the cheaper of the two disagreements.
 KEEP=0,3,4,5,7,8,9,12,15,17,19,20,21,22,24,26,28,30,32,34,36,40,43,46
 python3 tools/import_spritesheet.py assets/dahlia_ragdoll_as64.png \
-  -o out/dahlia_ragdoll -n dahlia_ragdoll --rows 8 --cols 8 --flip \
+  -o out/dahlia_ragdoll -n dahlia_ragdoll --rows 8 --cols 8 \
   --drop "$(python3 -c "k={int(x) for x in '$KEEP'.split(',')}; print(','.join(str(i) for i in range(64) if i not in k))")"
 #
 # --travel, and this is the part the export could not supply. Measured on her
@@ -1356,15 +1362,16 @@ python3 tools/import_spritesheet.py assets/dahlia_ragdoll_as64.png \
 # streams, so it drags the centroid around on its own -- she covers 17px net
 # across the whole clip and REVERSES twice: right through the flight, back left
 # on landing. That is a tumble on the spot, not a knockback. So the path is
-# imposed: 100px, one direction, decelerating from 9px a pose in the air to
-# nothing by the time she stops. 100 rather than more because the atlas cell is
+# imposed: 100px LEFT, one direction, decelerating from 9px a pose in the air
+# to nothing by the time she stops. Left because that is away from the side she
+# faces in the idle, which is where a knockback goes. 100 rather than more because the atlas cell is
 # 646px and she occupies 454 of it once matched to the set, so 100 native pixels
 # of travel is exactly the slack that does not force every other clip's cell to
 # grow with it.
 $BUILD out/dahlia_ragdoll/frames -o out/dahlia_ragdoll -n dahlia_ragdoll \
   --poses 1-24 --holds 2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,3,4,10 \
   --shake 12:6,13:4 --stabilize none \
-  --travel 2:5,3:12,4:20,5:29,6:38,7:48,8:57,9:66,10:73,11:79,12:85,13:89,14:92,15:94,16:96,17:97,18:98,19:99,20:99,21:100,22:100,23:100,24:100 \
+  --travel 2:-5,3:-12,4:-20,5:-29,6:-38,7:-48,8:-57,9:-66,10:-73,11:-79,12:-85,13:-89,14:-92,15:-94,16:-96,17:-97,18:-98,19:-99,20:-99,21:-100,22:-100,23:-100,24:-100 \
   --fps 24 --breathe 0 --bob 0 --sway 0
 
 # ---------------------------------------------------------------------
