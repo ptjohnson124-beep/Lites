@@ -1410,6 +1410,37 @@ $BUILD out/dahlia_getup/frames -o out/dahlia_getup -n dahlia_getup \
   --travel 2:2,3:4,4:6,5:8,6:10,7:12,8:14,9:16,10:18,11:22,12:26,13:30,14:34,15:38,16:42,17:46,18:49,19:51,20:52,21:53,22:54 \
   --fps 24 --breathe 0 --bob 0 --sway 0
 
+# The stagger, and the first clip out of AutoSprite that had to LOOP rather
+# than end. Everything else asked it not to; this one asked it to wrap, and it
+# is the best wrap in the whole set: frame 63 differs from frame 0 by 1052
+# pixels against a median frame change of 9008, so 0.12x. Nothing had to be
+# done to close it.
+#
+# The prompt named the first frame as a POINT MID-MOTION rather than a pose --
+# leaning, head down, knees soft, feet planted wide -- which is the part that
+# matters for a loop. Started on an extreme, a sway wraps extreme to extreme
+# and reads as a jerk once a cycle.
+#
+# Fourteen holds come off (1, 8, 12, 18, 27, 29, 35, 41, 44, 50, 58, 60, 62,
+# 63), changing 109 to 1070 pixels each. That leaves 50 real drawings across
+# three sway cycles, which the source plays at 12.4 drawings a second. Every
+# other one is kept: 25 poses at two frames each is the same 12 a second and
+# half the atlas, and a sway is smooth enough to survive the sampling.
+#
+# It ends on 61 rather than 59, which is not arbitrary -- 61 wraps to frame 0
+# at 1128 pixels and 59 wraps at 8604, a whole median apart. The last drawing
+# of a loop is chosen by measuring the wrap, not by counting.
+#
+# No --travel. She is rooted; the sway is the animation and moving her would
+# make it a stumble.
+KEEP=0,3,5,7,10,13,15,17,20,22,24,26,30,32,34,37,39,42,45,47,49,52,54,57,61
+python3 tools/import_spritesheet.py assets/dahlia_stagger_as64.png \
+  -o out/dahlia_stagger -n dahlia_stagger --rows 8 --cols 8 \
+  --drop "$(python3 -c "k={int(x) for x in '$KEEP'.split(',')}; print(','.join(str(i) for i in range(64) if i not in k))")"
+$BUILD out/dahlia_stagger/frames -o out/dahlia_stagger -n dahlia_stagger \
+  --poses 1-25 --holds 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2 \
+  --stabilize none --fps 24 --breathe 0 --bob 0 --sway 0
+
 # ---------------------------------------------------------------------
 # PACKING COMES LAST, and that is load-bearing rather than tidy. It reads
 # out/dahlia_* off disk, so anything rebuilt after it is packed in its
@@ -1460,7 +1491,7 @@ $BUILD out/dahlia_getup/frames -o out/dahlia_getup -n dahlia_getup \
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll out/dahlia_getup \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll out/dahlia_getup out/dahlia_stagger \
   --scale-like out/dahlia_ashes=out/dahlia_death --match-scale -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
@@ -1475,11 +1506,11 @@ python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack
 # "dahlia_hit", so roles are what the manifest carries and the atlas basename
 # is what matches a unit by name.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll out/dahlia_getup \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll out/dahlia_getup out/dahlia_stagger \
   --role out/dahlia_flourish=idle --role out/dahlia_hit=hit \
   --role out/dahlia_attack=attack --role out/dahlia_block=block \
   --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
-  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down --role out/dahlia_death=death --role out/dahlia_ashes=dead --role out/dahlia_soul=soul --role out/dahlia_rev=rev --role out/dahlia_grab=grab --role out/dahlia_throw=throw --role out/dahlia_ragdoll=ragdoll --role out/dahlia_getup=recover \
+  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down --role out/dahlia_death=death --role out/dahlia_ashes=dead --role out/dahlia_soul=soul --role out/dahlia_rev=rev --role out/dahlia_grab=grab --role out/dahlia_throw=throw --role out/dahlia_ragdoll=ragdoll --role out/dahlia_getup=recover --role out/dahlia_stagger=staggered \
   --scale-like out/dahlia_ashes=out/dahlia_death \
   --scale-like out/dahlia_throw=out/dahlia_grab --match-scale -o out/web -n dahlia --scale 0.75 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/

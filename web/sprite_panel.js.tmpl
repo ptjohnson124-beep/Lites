@@ -51,6 +51,7 @@
   ["down",           u => !!u.down || !!u.dead],
   ["cyberpsychosis", u => (u.cyber || 0) >= 100],
   ["fractured",      u => !!u.soulFractured],
+  ["staggered",      u => !!u.stunned],
   ["slipping",       u => ((typeof u.pmf === "number") ? u.pmf : 90) < 60],
  ];
 
