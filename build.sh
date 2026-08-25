@@ -1311,35 +1311,60 @@ $BUILD out/dahlia_throw/frames -o out/dahlia_throw -n dahlia_throw \
   --fps 24 --breathe 0 --bob 0 --sway 0
 
 # The ragdoll, and the first clip that did not come from a drawing sheet at
-# all. AutoSprite exports a finished spritesheet plus a manifest: 12 frames on
-# a uniform 256x256 grid, already in order and already registered to each
-# other, with real alpha. So it skips the slicer and the merger -- those exist
-# to order and register drawings -- and goes straight to the assembler.
+# all. AutoSprite exports a finished spritesheet plus a manifest: frames on a
+# uniform grid, already in order and already registered to each other, with
+# real alpha. So it skips the slicer and the merger -- those exist to order and
+# register drawings -- and goes straight to the assembler.
 #
-# It arrives better registered than most drawing sheets have: her feet land
-# within one pixel across all seven kept poses, her centre within nine, and
-# in-clip scale drift is 1.15x against a set median of 1.18x.
+# The 64-frame export is a LOOP, which is the one thing a knockdown must not
+# be. Traced end to end it runs: airborne tumble -> flight -> land -> slide ->
+# settle -> she curls up, rolls, and is thrown back into the air to meet frame
+# 0 again. Frame 63 is frame 0 to within 0.3px of centre. So the last thirteen
+# drawings are not part of the movement at all, they are the stitch that closes
+# the loop, and every one of them is dropped.
 #
-# --flip because it drew her FACING RIGHT and this whole set faces left. That
-# is measured rather than eyeballed: the blade sits at +0.26 of her width from
-# her body centre on the export, against -0.43 on the idle.
+# The generator also padded to 64 by HOLDING every fourth drawing. Frames 1, 2,
+# 6, 10, 14, 18, 23, 27, 31, 35, 39, 44 and 60-63 each change less than a
+# quarter of what the median frame changes -- 0.9k to 1.4k pixels against a
+# median of 4.4k. They are dropped too: a hold belongs in --holds as a number,
+# not on the sheet as a repeated drawing.
 #
-# --drop 0,1 because the clip opens on her standing still. A third of the
-# generated frames were a setup beat that a ragdoll should not have -- she is
-# hit with no anticipation.
+# Frames 38 and 39 are a genuine glitch rather than a hold. Her hair snaps from
+# a trailing streamer to a stub for exactly two drawings and then comes back,
+# which moves her measured centre -12.4px and then +12.3px and costs 8% of her
+# pixels. Kept, it reads as a one-frame pop. Dropped.
 #
-# Three more frames go automatically. The export ends on a held pose written
-# out four times, and frames 9, 10 and 11 differ from their neighbours by 0.2%,
-# 0.4% and 0.2%. Every one of those is a wasted pose, because the assembler
-# expresses a hold as a NUMBER rather than as repeated drawings -- which is
-# also why the source's 5.14 fps does not survive: retimed at 24 with --holds
-# the same seven poses carry far finer control than the tool offered.
-python3 tools/import_spritesheet.py assets/dahlia_ragdoll_autosprite.png \
-  -m assets/dahlia_ragdoll_autosprite.json \
-  -o out/dahlia_ragdoll -n dahlia_ragdoll --flip --drop 0,1
-python3 tools/merge_sheets.py out/dahlia_ragdoll/frames -o out/dahlia_ragdoll -n dahlia_ragdoll
+# What survives that is 38 real drawings, thinned to 24 by taking every other
+# one through the flight and the slide, where the pose barely changes between
+# neighbours and only the drift does. She still travels 40px across the clip.
+#
+# --stabilize none, and that matters more here than anywhere else in the file.
+# The default registers every pose onto the first one's body, which is right
+# for a sheet of drawings that arrived unregistered and WRONG for a knockdown:
+# the travel is the animation. An imported sheet is already registered, so
+# there is nothing for it to fix and everything for it to flatten.
+#
+# --flip because it drew her head to the left and this set lies head-RIGHT when
+# she goes down, which is measured against dahlia_down rather than eyeballed.
+KEEP=0,3,4,5,7,8,9,12,15,17,19,20,21,22,24,26,28,30,32,34,36,40,43,46
+python3 tools/import_spritesheet.py assets/dahlia_ragdoll_as64.png \
+  -o out/dahlia_ragdoll -n dahlia_ragdoll --rows 8 --cols 8 --flip \
+  --drop "$(python3 -c "k={int(x) for x in '$KEEP'.split(',')}; print(','.join(str(i) for i in range(64) if i not in k))")"
+#
+# --travel, and this is the part the export could not supply. Measured on her
+# body with the hair masked off -- the hair is a quarter of her pixels and it
+# streams, so it drags the centroid around on its own -- she covers 17px net
+# across the whole clip and REVERSES twice: right through the flight, back left
+# on landing. That is a tumble on the spot, not a knockback. So the path is
+# imposed: 100px, one direction, decelerating from 9px a pose in the air to
+# nothing by the time she stops. 100 rather than more because the atlas cell is
+# 646px and she occupies 454 of it once matched to the set, so 100 native pixels
+# of travel is exactly the slack that does not force every other clip's cell to
+# grow with it.
 $BUILD out/dahlia_ragdoll/frames -o out/dahlia_ragdoll -n dahlia_ragdoll \
-  --poses 1,2,3,4,5,6,7 --holds 3,2,2,3,4,4,14 --shake 3:6,5:4 \
+  --poses 1-24 --holds 2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,3,4,10 \
+  --shake 12:6,13:4 --stabilize none \
+  --travel 2:5,3:12,4:20,5:29,6:38,7:48,8:57,9:66,10:73,11:79,12:85,13:89,14:92,15:94,16:96,17:97,18:98,19:99,20:99,21:100,22:100,23:100,24:100 \
   --fps 24 --breathe 0 --bob 0 --sway 0
 
 # ---------------------------------------------------------------------
@@ -1392,7 +1417,7 @@ $BUILD out/dahlia_ragdoll/frames -o out/dahlia_ragdoll -n dahlia_ragdoll \
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll \
   --scale-like out/dahlia_ashes=out/dahlia_death --match-scale -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
@@ -1407,11 +1432,11 @@ python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack
 # "dahlia_hit", so roles are what the manifest carries and the atlas basename
 # is what matches a unit by name.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll \
   --role out/dahlia_flourish=idle --role out/dahlia_hit=hit \
   --role out/dahlia_attack=attack --role out/dahlia_block=block \
   --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
-  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down --role out/dahlia_death=death --role out/dahlia_ashes=dead --role out/dahlia_soul=soul --role out/dahlia_rev=rev --role out/dahlia_grab=grab --role out/dahlia_throw=throw \
+  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down --role out/dahlia_death=death --role out/dahlia_ashes=dead --role out/dahlia_soul=soul --role out/dahlia_rev=rev --role out/dahlia_grab=grab --role out/dahlia_throw=throw --role out/dahlia_ragdoll=ragdoll \
   --scale-like out/dahlia_ashes=out/dahlia_death \
   --scale-like out/dahlia_throw=out/dahlia_grab --match-scale -o out/web -n dahlia --scale 0.75 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/

@@ -58,8 +58,13 @@
     Every other resting clip loops, which is right for an idle and wrong for a
     collapse: looping it would have her fall over on repeat for as long as she
     is down. So these clamp instead of wrapping, and the state re-enters from
-    the top only when the condition changes. */
- const HOLD_LAST = new Set(["down", "death"]);
+    the top only when the condition changes.
+
+    The ragdoll is an EVENT clip rather than a resting one -- nothing in
+    RESTING selects it -- but it belongs here for the same reason: it ends
+    with her face down and skidding to a stop, and a knockdown that wraps has
+    her thrown across the floor again every two seconds. */
+ const HOLD_LAST = new Set(["down", "death", "ragdoll"]);
 
  /* One resting role that runs INTO another. The death animation plays through
     once and ends on a pile of ash; the ash then has its own loop, and that loop
