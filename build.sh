@@ -1441,6 +1441,53 @@ $BUILD out/dahlia_stagger/frames -o out/dahlia_stagger -n dahlia_stagger \
   --poses 1-25 --holds 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2 \
   --stabilize none --fps 24 --breathe 0 --bob 0 --sway 0
 
+# The ritualization, the longest one-shot in the set and the only clip whose
+# subject changes SHAPE rather than pose. She goes from a braced stance to a
+# figure standing on a trunk of wires with a thorned crown over her head, and
+# the drawing grows to match: 13,209 opaque pixels at rest, 29,044 at the peak
+# of the eruption, and a bounding box that runs from y=38..221 at the start to
+# y=0..251 by the end. Her own scale never changes; the structure around her is
+# what expands.
+#
+# Because of that it is NOT a loop and does not want to be -- frame 63 differs
+# from frame 0 by 21,293 pixels, twice a median frame change. Nothing to strip.
+#
+# The tail is where the padding went this time. Frames 45-63 change 650 to
+# 5,984 pixels against a median of 10,950, and 58-63 change under 1,300 each.
+# Seven are kept out of nineteen. The two opening frames that repeat frame 0
+# go too.
+#
+# The starburst, 9-20, is the other thin: twelve drawings of the wires held out
+# at full extension while the blood pools. Five are kept, including 17, which
+# is the single largest frame change on the sheet at 31,119 and the moment the
+# spikes let go and collapse into the column.
+#
+# 64 drawings become 28 poses, and the eruption keeps every one of its six.
+#
+# A little art is clipped and it is worth knowing rather than discovering: from
+# frame 4 onward, 26 to 54 pixels of wire tip touch the top edge of the 256px
+# cell. She fits; the wires at full extension do not, by a few pixels. Nothing
+# structural is lost, and there is no framing to fix it with -- the cell size is
+# the tool's.
+#
+# No --travel. She is rooted and the column grows under her.
+#
+# It goes into RESTING with HOLD_LAST rather than being played as an event,
+# which is the down/death treatment: a transformation that looped would have
+# her erupt over and over for as long as she stays ritualized. The tracker
+# already carries the state -- units have a `ritualized` flag, in the same
+# declaration as the `stunned` and `soulFractured` the panel reads. It sits
+# directly below `down`, because being dead outranks being taken and nothing
+# else does.
+KEEP=0,3,4,5,6,7,8,10,13,16,17,19,21,23,25,27,29,31,33,36,39,42,45,48,51,55,59,63
+python3 tools/import_spritesheet.py assets/dahlia_ritual_as64.png \
+  -o out/dahlia_ritual -n dahlia_ritual --rows 8 --cols 8 \
+  --drop "$(python3 -c "k={int(x) for x in '$KEEP'.split(',')}; print(','.join(str(i) for i in range(64) if i not in k))")"
+$BUILD out/dahlia_ritual/frames -o out/dahlia_ritual -n dahlia_ritual \
+  --poses 1-28 --holds 4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,2,2,2,2,3,10 \
+  --shake 2:6,3:4 --stabilize none \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
 # ---------------------------------------------------------------------
 # PACKING COMES LAST, and that is load-bearing rather than tidy. It reads
 # out/dahlia_* off disk, so anything rebuilt after it is packed in its
@@ -1491,7 +1538,7 @@ $BUILD out/dahlia_stagger/frames -o out/dahlia_stagger -n dahlia_stagger \
 # A clip is moved, not a frame. The frames inside a clip are already registered
 # and some of their motion is deliberate, so they all take the same offset.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll out/dahlia_getup out/dahlia_stagger \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll out/dahlia_getup out/dahlia_stagger out/dahlia_ritual \
   --scale-like out/dahlia_ashes=out/dahlia_death --match-scale -o out/atlas -n dahlia --preview --preview-scale 0.5
 
 # The same clips sized for a web page, where she is displayed small and the
@@ -1506,11 +1553,11 @@ python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack
 # "dahlia_hit", so roles are what the manifest carries and the atlas basename
 # is what matches a unit by name.
 python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
-  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll out/dahlia_getup out/dahlia_stagger \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll out/dahlia_getup out/dahlia_stagger out/dahlia_ritual \
   --role out/dahlia_flourish=idle --role out/dahlia_hit=hit \
   --role out/dahlia_attack=attack --role out/dahlia_block=block \
   --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
-  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down --role out/dahlia_death=death --role out/dahlia_ashes=dead --role out/dahlia_soul=soul --role out/dahlia_rev=rev --role out/dahlia_grab=grab --role out/dahlia_throw=throw --role out/dahlia_ragdoll=ragdoll --role out/dahlia_getup=recover --role out/dahlia_stagger=staggered \
+  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down --role out/dahlia_death=death --role out/dahlia_ashes=dead --role out/dahlia_soul=soul --role out/dahlia_rev=rev --role out/dahlia_grab=grab --role out/dahlia_throw=throw --role out/dahlia_ragdoll=ragdoll --role out/dahlia_getup=recover --role out/dahlia_stagger=staggered --role out/dahlia_ritual=ritualized \
   --scale-like out/dahlia_ashes=out/dahlia_death \
   --scale-like out/dahlia_throw=out/dahlia_grab --match-scale -o out/web -n dahlia --scale 0.75 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/

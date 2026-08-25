@@ -49,6 +49,7 @@
  const RESTING = [
   ["death",          u => !!u.dead],
   ["down",           u => !!u.down || !!u.dead],
+  ["ritualized",     u => !!u.ritualized],
   ["cyberpsychosis", u => (u.cyber || 0) >= 100],
   ["fractured",      u => !!u.soulFractured],
   ["staggered",      u => !!u.stunned],
@@ -68,7 +69,7 @@
     finishes, which for a knockdown is the idle, or down/death if she is
     actually out. The entry is here for the day something makes "knocked
     down" a state she sits in, and it costs nothing until then. */
- const HOLD_LAST = new Set(["down", "death", "ragdoll"]);
+ const HOLD_LAST = new Set(["down", "death", "ragdoll", "ritualized"]);
 
  /* One resting role that runs INTO another. The death animation plays through
     once and ends on a pile of ash; the ash then has its own loop, and that loop
