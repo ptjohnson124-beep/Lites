@@ -60,10 +60,13 @@
     is down. So these clamp instead of wrapping, and the state re-enters from
     the top only when the condition changes.
 
-    The ragdoll is an EVENT clip rather than a resting one -- nothing in
-    RESTING selects it -- but it belongs here for the same reason: it ends
-    with her face down and skidding to a stop, and a knockdown that wraps has
-    her thrown across the floor again every two seconds. */
+    The ragdoll is listed but INERT today, and that is worth saying plainly
+    rather than leaving to be discovered. This set is only consulted for a
+    resting clip; the ragdoll is played as a one-shot event, and a one-shot
+    is already play-once -- it hands back to whatever is resting when it
+    finishes, which for a knockdown is the idle, or down/death if she is
+    actually out. The entry is here for the day something makes "knocked
+    down" a state she sits in, and it costs nothing until then. */
  const HOLD_LAST = new Set(["down", "death", "ragdoll"]);
 
  /* One resting role that runs INTO another. The death animation plays through
