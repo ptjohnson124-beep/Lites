@@ -30,6 +30,12 @@ import numpy as np
 from PIL import Image
 
 
+# WebP refuses a single dimension over this. PNG has no such limit, which is why
+# the check below is asked about the format rather than applied to every write:
+# the full-scale preview atlas is legitimately 15932x17458 and encodes fine.
+LIMIT = 16383
+
+
 def ground(im):
     """Where a frame stands: the centre of her boots, and the floor under them.
 
@@ -259,8 +265,22 @@ def main():
         ax, ay = ax * args.scale, ay * args.scale
         cells = [c.resize((w, h), Image.LANCZOS) for c in cells]
 
+    # A square grid is the obvious shape and it is not always a legal one. WebP
+    # refuses either dimension over 16383, and the cells here are wide -- the
+    # ragdoll's travel alone carries its canvas past 800px once matched to the
+    # set -- so 20 columns of them overflows while the same cells in 16 columns
+    # do not. The square is therefore a starting point that gets narrowed until
+    # it fits, rather than a shape to hand to the encoder and hope.
     cols = args.cols or max(1, int(np.ceil(np.sqrt(len(cells)))))
+    capped = args.format == "webp"
+    if capped and not args.cols:
+        cols = max(1, min(cols, LIMIT // max(1, w)))
     rows = (len(cells) + cols - 1) // cols
+    if capped and (cols * w > LIMIT or rows * h > LIMIT):
+        raise SystemExit(
+            f"refusing to write: {cols}x{rows} cells of {w}x{h} is "
+            f"{cols * w}x{rows * h}, past the {LIMIT}px limit. The cell is what "
+            f"is too big -- a clip's canvas, not the number of clips.")
     sheet = Image.new("RGBA", (cols * w, rows * h), (0, 0, 0, 0))
     for i, cell in enumerate(cells):
         sheet.paste(cell, ((i % cols) * w, (i // cols) * h))

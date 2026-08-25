@@ -1311,67 +1311,63 @@ $BUILD out/dahlia_throw/frames -o out/dahlia_throw -n dahlia_throw \
   --fps 24 --breathe 0 --bob 0 --sway 0
 
 # The ragdoll, and the first clip that did not come from a drawing sheet at
-# all. AutoSprite exports a finished spritesheet plus a manifest: frames on a
-# uniform grid, already in order and already registered to each other, with
-# real alpha. So it skips the slicer and the merger -- those exist to order and
-# register drawings -- and goes straight to the assembler.
+# all. AutoSprite exports a finished spritesheet plus a manifest -- 64 frames on
+# a uniform 256x256 grid, in order, registered to each other, with real alpha --
+# so it skips the slicer and the merger and goes straight to the assembler.
 #
-# The 64-frame export is a LOOP, which is the one thing a knockdown must not
-# be. Traced end to end it runs: airborne tumble -> flight -> land -> slide ->
-# settle -> she curls up, rolls, and is thrown back into the air to meet frame
-# 0 again. Frame 63 is frame 0 to within 0.3px of centre. So the last thirteen
-# drawings are not part of the movement at all, they are the stitch that closes
-# the loop, and every one of them is dropped.
+# This is the second export. The first was a LOOP: it ran tumble, flight, land,
+# slide, settle, and then she curled up, rolled, and was thrown back into the
+# air to meet frame 0 again, within 0.3px. Asking for a stated FIRST frame and a
+# stated LAST frame fixed that outright. This one opens on her braced on her
+# feet and ends face down on the floor, and frame 63 is nothing like frame 0.
 #
-# The generator also padded to 64 by HOLDING every fourth drawing. Frames 1, 2,
-# 6, 10, 14, 18, 23, 27, 31, 35, 39, 44 and 60-63 each change less than a
-# quarter of what the median frame changes -- 0.9k to 1.4k pixels against a
-# median of 4.4k. They are dropped too: a hold belongs in --holds as a number,
-# not on the sheet as a repeated drawing.
+# It also bought the two beats the first export had no room for, because it was
+# spending them on the loop: an incoming slash, and the hit itself, flash and
+# all. Those are frames 3 and 4 and they are the reason the clip now reads as
+# something happening TO her rather than as a tumble that starts already in
+# progress.
 #
-# Frames 38 and 39 are a genuine glitch rather than a hold. Her hair snaps from
-# a trailing streamer to a stub for exactly two drawings and then comes back,
-# which moves her measured centre -12.4px and then +12.3px and costs 8% of her
-# pixels. Kept, it reads as a one-frame pop. Dropped.
+# What still has to come off:
 #
-# What survives that is 38 real drawings, thinned to 24 by taking every other
-# one through the flight and the slide, where the pose barely changes between
-# neighbours and only the drift does. She still travels 40px across the clip.
+#   · The tail. Frames 50-63 are one drawing written fourteen times -- each
+#     changes 91 to 233 pixels against a median of 6724. That is 22% of the
+#     sheet spent holding a pose, and a hold belongs in --holds as a number.
 #
-# --stabilize none, and that matters more here than anywhere else in the file.
-# The default registers every pose onto the first one's body, which is right
-# for a sheet of drawings that arrived unregistered and WRONG for a knockdown:
-# the travel is the animation. An imported sheet is already registered, so
-# there is nothing for it to fix and everything for it to flatten.
+#   · The hang. Frames 9-31 are 23 drawings of her horizontal in the air, and
+#     her body centre moves 13px across all of them. At 24fps that is a full
+#     second of hanging. Five are kept -- 9, 14, 19, 24, 29 -- which is enough
+#     to carry the slow rotation and the hair without the clip stopping dead in
+#     the middle of its own knockdown.
 #
-# NO --flip, and that is the fling direction rather than a facing preference.
-# She is drawn being launched LEFT: her hair trails +51px to the RIGHT of her
-# body on the launch frames, and her measured centre runs 142 -> 102 across the
-# flight. The idle faces RIGHT, so left is away from whatever hit her, which is
-# the direction a knockback goes. Flipping her to match dahlia_down's head-right
-# landing would have her flung FORWARD, into the enemy, with the drawn hair drag
-# pointing the wrong way against the travel -- so the landing pose disagrees with
-# down and death, and that is the cheaper of the two disagreements.
-KEEP=0,3,4,5,7,8,9,12,15,17,19,20,21,22,24,26,28,30,32,34,36,40,43,46
-python3 tools/import_spritesheet.py assets/dahlia_ragdoll_as64.png \
+#   · Three more mid-clip holds at 18, 23 and 31, and the two standing frames
+#     1 and 2 that repeat frame 0 before anything has happened.
+#
+# 64 drawings become 25 poses.
+#
+# --travel again, and for the same reason as before: measured on her body with
+# the hair masked off, she ends 11px to the RIGHT of where she started, having
+# gone left during the launch and drifted back right through the skid. The
+# launch is real -- one 41px frame when she is hit -- and nothing after it is.
+# So 120px left is imposed over the whole clip: nothing while she is braced, a
+# burst through the hit, decelerating across the flight, and the last 20px
+# spent on the skid, which is the part that reads as being dragged.
+#
+# NO --flip. Measured against the idle rather than eyeballed: this export drew
+# her hair trailing left and her body angled right, which is the idle's facing
+# exactly. She is hit from the front and thrown backwards, head first, which is
+# why the travel is leftward.
+#
+# --stabilize none. The default registers every pose onto the first one's body,
+# which is right for drawings that arrived unregistered and wrong here twice
+# over: the sheet is already registered, and the travel IS the animation.
+KEEP=0,3,4,5,6,7,8,9,14,19,24,29,32,33,34,35,36,37,38,40,42,44,46,48,49
+python3 tools/import_spritesheet.py assets/dahlia_knockback_as64.png \
   -o out/dahlia_ragdoll -n dahlia_ragdoll --rows 8 --cols 8 \
   --drop "$(python3 -c "k={int(x) for x in '$KEEP'.split(',')}; print(','.join(str(i) for i in range(64) if i not in k))")"
-#
-# --travel, and this is the part the export could not supply. Measured on her
-# body with the hair masked off -- the hair is a quarter of her pixels and it
-# streams, so it drags the centroid around on its own -- she covers 17px net
-# across the whole clip and REVERSES twice: right through the flight, back left
-# on landing. That is a tumble on the spot, not a knockback. So the path is
-# imposed: 100px LEFT, one direction, decelerating from 9px a pose in the air
-# to nothing by the time she stops. Left because that is away from the side she
-# faces in the idle, which is where a knockback goes. 100 rather than more because the atlas cell is
-# 646px and she occupies 454 of it once matched to the set, so 100 native pixels
-# of travel is exactly the slack that does not force every other clip's cell to
-# grow with it.
 $BUILD out/dahlia_ragdoll/frames -o out/dahlia_ragdoll -n dahlia_ragdoll \
-  --poses 1-24 --holds 2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,3,4,10 \
-  --shake 12:6,13:4 --stabilize none \
-  --travel 2:-5,3:-12,4:-20,5:-29,6:-38,7:-48,8:-57,9:-66,10:-73,11:-79,12:-85,13:-89,14:-92,15:-94,16:-96,17:-97,18:-98,19:-99,20:-99,21:-100,22:-100,23:-100,24:-100 \
+  --poses 1-25 --holds 3,2,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,10 \
+  --shake 3:8,18:5 --stabilize none \
+  --travel 2:0,3:-2,4:-14,5:-28,6:-40,7:-51,8:-61,9:-70,10:-78,11:-85,12:-90,13:-94,14:-96,15:-97,16:-98,17:-99,18:-100,19:-106,20:-111,21:-115,22:-118,23:-119,24:-120,25:-120 \
   --fps 24 --breathe 0 --bob 0 --sway 0
 
 # ---------------------------------------------------------------------
