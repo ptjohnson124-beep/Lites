@@ -782,4 +782,60 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
   -webkit-mask: url("__CNRBL__") no-repeat center / contain;
           mask: url("__CNRBL__") no-repeat center / contain; }
 
+/* ---- 28. NINE INSTRUMENT RINGS --------------------------------------
+   The dial wore one ring; there are nine on the callout sheet and every gauge
+   in the tracker was wearing the same face. They are handed out in DOM order
+   by the script, not at random, so a given bar keeps its ring across reloads --
+   a gauge that changed its own face between sessions would read as a different
+   gauge. 32KB for all nine.
+
+   The default in rule 26 stays as the fallback: a tenth bar, or a dial the
+   script did not reach, still gets a ring rather than a bare donut. */
+.hud-dial[data-ring="0"]::after { -webkit-mask-image: url("__DIAL0__"); mask-image: url("__DIAL0__"); }
+.hud-dial[data-ring="1"]::after { -webkit-mask-image: url("__DIAL1__"); mask-image: url("__DIAL1__"); }
+.hud-dial[data-ring="2"]::after { -webkit-mask-image: url("__DIAL2__"); mask-image: url("__DIAL2__"); }
+.hud-dial[data-ring="3"]::after { -webkit-mask-image: url("__DIAL3__"); mask-image: url("__DIAL3__"); }
+.hud-dial[data-ring="4"]::after { -webkit-mask-image: url("__DIAL4__"); mask-image: url("__DIAL4__"); }
+.hud-dial[data-ring="5"]::after { -webkit-mask-image: url("__DIAL5__"); mask-image: url("__DIAL5__"); }
+.hud-dial[data-ring="6"]::after { -webkit-mask-image: url("__DIAL6__"); mask-image: url("__DIAL6__"); }
+.hud-dial[data-ring="7"]::after { -webkit-mask-image: url("__DIAL7__"); mask-image: url("__DIAL7__"); }
+.hud-dial[data-ring="8"]::after { -webkit-mask-image: url("__DIAL8__"); mask-image: url("__DIAL8__"); }
+
+/* ---- 29. THE LIVE SIGNAL BAND ---------------------------------------
+   The first thing in this skin that MOVES. A 150-frame animated HUD panel,
+   cropped to its waveform box, recoloured to the tracker's cyan and re-encoded
+   as animated WebP: 9.3MB of GIF becomes 327KB at 238x68.
+
+   Three things made that affordable. Only the wave box is kept -- the source
+   carries labels reading CONTAINED, UNLEASHED and TRANCE baked into the art,
+   and a tracker is not improved by a band that says CONTAINED under everything.
+   Every second frame is dropped, which halves the weight and keeps the 4.5s
+   period by doubling the interval. And the whole thing is keyed to alpha, so
+   it lays over the panel instead of covering it.
+
+   It sits under the command header rather than on the frequency readout, which
+   is where it belongs thematically and where it cannot be put: nothing in that
+   panel's markup distinguishes it, and CSS still cannot read the text "33Hz".
+   The header band is the honest second choice -- it needs no text match, and a
+   live trace under the OS title says the same thing. */
+/* Sized to the source's own 3.5:1 and placed bottom-RIGHT, and both of those
+   were corrections. Squashed into a 238x20 band the sine waves flattened into
+   a single line -- 68px of vertical travel compressed to 20 leaves no wave to
+   see, which is the same mistake as squashing a divider's end caps. And put at
+   the bottom-left it would have needed real height added to a header this file
+   spent effort shortening; the right-hand end of that row is empty, so at
+   190x54 it costs eight pixels rather than fifty-four. */
+/* padding-bottom buys the band its own strip. At 18px the wave was drawn but
+   half of it sat behind the commentary field -- present, animating, and
+   invisible, which is the same failure mode as the frame that straddled the
+   panel edge. 40px is what 130x37 needs to clear the content, and 22px of
+   header against a 5,151px document is the price. */
+.cmd.cmd { padding-bottom: 40px; }
+.cmd.cmd::before {
+  background:
+    url("__WAVE__") no-repeat right 16px bottom 3px / 130px 37px,
+    repeating-linear-gradient(180deg, rgba(126,240,255,.03) 0 1px, transparent 1px 2px);
+  opacity: .8;
+}
+
 /* ================= END HUD SKIN ========================= */

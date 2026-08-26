@@ -20,6 +20,7 @@
    ========================================================================= */
 (function () {
   var SEEN = "hudDial";
+  var ring = 0;
 
   function readInto(dial, fill) {
     /* The inline width is authoritative and the computed one is not: an
@@ -42,6 +43,11 @@
 
       var dial = document.createElement("i");
       dial.className = "hud-dial";
+      /* Which instrument ring this one wears. There are nine on the sheet and
+         they are handed out in order rather than at random, so the same bar
+         gets the same ring on every reload -- a gauge that changed its own
+         face between sessions would read as a different gauge. */
+      dial.setAttribute("data-ring", String(ring++ % 9));
       /* Inserted BEFORE the bar, never inside it. Inside would put it under
          the bar's clip-path, which is exactly what cut the chevron end caps
          off when those were attempted: a clip applies to a child the same way

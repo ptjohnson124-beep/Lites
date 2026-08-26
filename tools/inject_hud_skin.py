@@ -86,13 +86,27 @@ def main():
                         ("__RULE8__", "web/hud_rule8.png"),
                         ("__RING__", "web/hud_ring2.png"),
                         ("__CNRTL__", "web/hud_cnrtl.png"),
-                        ("__CNRBL__", "web/hud_cnrbl.png")):
+                        ("__CNRBL__", "web/hud_cnrbl.png"),
+                        ("__DIAL0__", "web/hud_dial0.png"),
+                        ("__DIAL1__", "web/hud_dial1.png"),
+                        ("__DIAL2__", "web/hud_dial2.png"),
+                        ("__DIAL3__", "web/hud_dial3.png"),
+                        ("__DIAL4__", "web/hud_dial4.png"),
+                        ("__DIAL5__", "web/hud_dial5.png"),
+                        ("__DIAL6__", "web/hud_dial6.png"),
+                        ("__DIAL7__", "web/hud_dial7.png"),
+                        ("__DIAL8__", "web/hud_dial8.png"),
+                        ("__WAVE__", "web/hud_wave.webp")):
         if token not in skin:
             continue
         if not os.path.exists(path):
             raise SystemExit(f"{path} not found, and the skin asks for it via {token}.")
         b = base64.b64encode(open(path, "rb").read()).decode()
-        skin = skin.replace(token, f"data:image/png;base64,{b}")
+        # The wave is an animated WebP; everything else is a PNG. A wrong
+        # mime on a data URI is not a warning, it is an image that does
+        # not decode.
+        m = "image/webp" if path.endswith(".webp") else "image/png"
+        skin = skin.replace(token, f"data:{m};base64,{b}")
         total += os.path.getsize(path)
     if total:
         print(f"  frames {total / 1e3:.1f} KB")
