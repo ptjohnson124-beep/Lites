@@ -292,8 +292,15 @@ def main():
     else:
         sheet.save(os.path.join(args.outdir, png), optimize=True)
     with open(os.path.join(args.outdir, f"{args.name}_atlas.json"), "w", encoding="utf-8") as fh:
+        # How large the CHARACTER is drawn in the packed cells, which is not
+        # recoverable from the cell size. A cell is as wide as the widest clip
+        # needs -- the ragdoll's 120px of travel alone carries hers to 809px --
+        # so a player that fits the cell to the panel shrinks a character for
+        # owning one wide animation. The unit is what a second character has to
+        # be measured against, and there is nothing else in here that means it.
+        unit = float(np.median([np.sqrt(body_area(c)) for c in cells[:12]]))
         json.dump({"image": png, "cell": [w, h], "cols": cols, "rows": rows,
-                   "cells": len(cells),
+                   "cells": len(cells), "unit": round(unit, 1),
                    # Everything a playback loop needs to put her in the right
                    # place: her feet land here in every cell of every clip.
                    "anchor": [round(ax, 1), round(ay, 1)],

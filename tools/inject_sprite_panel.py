@@ -43,6 +43,9 @@ def main():
     ap.add_argument("tracker", help="the combat tracker HTML")
     ap.add_argument("-a", "--atlas-dir", default="out/web",
                     help="directory of <name>_atlas.json and their images")
+    ap.add_argument("-b", "--backdrop", default="web/backdrop.webp",
+                    help="battle-map image painted behind the sprite; omitted "
+                         "cleanly if the file is not there")
     ap.add_argument("-n", "--name", action="append", default=[],
                     help="restrict to these characters; default is every atlas found")
     ap.add_argument("-t", "--template", default="web/sprite_panel.js.tmpl")
@@ -75,8 +78,24 @@ def main():
               f"({', '.join(manifest['clips'])}), "
               f"{os.path.getsize(img_path) / 1e6:.2f} MB")
 
+    # The battle-map backdrop, inlined for the same reason the atlases are: the
+    # tracker is opened off disk and file:// will not fetch a sibling image, so
+    # a src= would silently render nothing. It is 10KB against 18MB of atlas,
+    # which is why it is not worth a second thought about size.
     block = (open(args.template, encoding="utf-8").read()
              .replace("__CAST__", json.dumps(cast, separators=(",", ":"))))
+    if "__BACKDROP__" in block:
+        if os.path.exists(args.backdrop):
+            b = base64.b64encode(open(args.backdrop, "rb").read()).decode()
+            mime = "image/webp" if args.backdrop.endswith(".webp") else "image/png"
+            block = block.replace("__BACKDROP__", f"data:{mime};base64,{b}")
+            print(f"  backdrop     {args.backdrop}, "
+                  f"{os.path.getsize(args.backdrop) / 1e3:.0f} KB")
+        else:
+            # No backdrop is a valid tracker, not a broken one: the stage keeps
+            # its flat --pit colour and the grid over it, which is what it was.
+            block = block.replace('background-image:url("__BACKDROP__");', "")
+            print(f"  backdrop     none ({args.backdrop} not found), flat stage")
 
     html = open(args.tracker, encoding="utf-8").read()
 

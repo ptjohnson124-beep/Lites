@@ -131,18 +131,34 @@
  .dsp-state{font-family:var(--mono);font-size:9px;letter-spacing:.1em;
    color:var(--ember);text-transform:uppercase;margin-left:auto}
  .dsp-sub{font-family:var(--mono);font-size:9px;color:var(--dim);margin-bottom:8px}
+ /* The stage is a painted battle map with the tactical grid laid OVER it,
+    rather than a grid with a picture behind. The distinction is what the
+    numbers are for below: a backdrop competes with the sprite for the eye,
+    and the sprite has to win. */
  .dsp-stage{position:relative;display:grid;place-items:center;border:1px solid var(--line);
-   border-radius:2px;overflow:hidden;background:var(--pit);padding:10px 0}
+   border-radius:2px;overflow:hidden;padding:10px 0;
+   background-color:var(--pit);
+   background-image:url("__BACKDROP__");
+   background-size:cover;background-position:center bottom;background-repeat:no-repeat}
+ /* The grid drops from .55/.14 to .30/.09 and the whole overlay is multiplied
+    down again by a scrim. Left at full strength over a painting it reads as
+    damage rather than as a HUD -- the map already carries texture at the same
+    24px pitch the grid uses, so the two interleave into noise. */
  .dsp-stage::before{content:"";position:absolute;inset:0;pointer-events:none;
    background-image:
-     linear-gradient(rgba(35,48,66,.55) 1px,transparent 1px),
-     linear-gradient(90deg,rgba(35,48,66,.55) 1px,transparent 1px),
-     linear-gradient(rgba(57,211,232,.14) 1px,transparent 1px),
-     linear-gradient(90deg,rgba(57,211,232,.14) 1px,transparent 1px);
-   background-size:24px 24px,24px 24px,96px 96px,96px 96px}
+     linear-gradient(rgba(20,30,44,.55),rgba(20,30,44,.12) 45%,rgba(12,18,28,.42)),
+     linear-gradient(rgba(35,48,66,.30) 1px,transparent 1px),
+     linear-gradient(90deg,rgba(35,48,66,.30) 1px,transparent 1px),
+     linear-gradient(rgba(57,211,232,.09) 1px,transparent 1px),
+     linear-gradient(90deg,rgba(57,211,232,.09) 1px,transparent 1px);
+   background-size:100% 100%,24px 24px,24px 24px,96px 96px,96px 96px}
+ /* The ground line stays, and now it has something to agree with. It is the
+    only thing in the panel that knows where the character's feet actually are
+    -- it is computed from the atlas anchor, not placed -- so it doubles as the
+    check that the sand is under her rather than behind her. */
  .dsp-stage::after{content:"";position:absolute;left:0;right:0;pointer-events:none;
    bottom:calc(10px + (var(--dsp-cell-h) - var(--dsp-anchor-y)) * var(--dsp-zoom));
-   height:1px;background:linear-gradient(90deg,transparent,rgba(57,211,232,.45),transparent)}
+   height:1px;background:linear-gradient(90deg,transparent,rgba(57,211,232,.32),transparent)}
  /* A quarter of her is darker than luminance 20 -- trousers, boots, the
     shadowed side of the hoodie -- and against any dark ground that is about
     1.1:1, which is invisible. No backdrop colour fixes it either: her dark
@@ -207,11 +223,41 @@
   return "idle";
  }
 
+ /* How big a character may be drawn, in packed pixels, so that EVERY character
+    is drawn that big.
+
+    Fitting the cell to the panel is not enough on its own and taking the
+    smaller of the two constraints is not either -- that was the first attempt
+    and it changed nothing, because the cell fit is what was shrinking her in
+    the first place. A cell is as wide as the widest clip inside it: Dahlia's
+    is 809px because her ragdoll travels 120px, Vergil's is 275px because his
+    idle stands still. Fitting each to the panel independently rendered her 30%
+    smaller than him although the two are packed to within 3% of each other,
+    and since the panel shows one unit at a time that lands as the character
+    changing size whenever the subject changes.
+
+    So the cast is solved together: work out the zoom each character CAN have
+    with its cell fitting, see how large that leaves it, and take the smallest
+    of those. Whoever is most constrained by their own widest animation sets
+    the size for everyone. Shrinking only -- enlarging past a sprite's own
+    resolution is the one loss that cannot be undone. */
+ function commonFigure(avail){
+  let best = Infinity;
+  for (const c of cast) {
+   const a = c.atlas; if (!a || !a.unit) continue;
+   best = Math.min(best, a.unit * Math.min(1, avail / a.cell[0]));
+  }
+  return best;
+ }
+
  function fit(){
   if (!subject) return;
   const [w, h] = subject.atlas.cell;
   const avail = Math.max(160, stage.clientWidth - 20);
-  zoom = Math.min(1, avail / w);
+  const target = commonFigure(avail);
+  zoom = (subject.atlas.unit && isFinite(target))
+       ? target / subject.atlas.unit
+       : Math.min(1, avail / w);
   const dpr = window.devicePixelRatio || 1;
   cv.width = Math.round(w * zoom * dpr);
   cv.height = Math.round(h * zoom * dpr);
