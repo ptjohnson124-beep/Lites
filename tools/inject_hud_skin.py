@@ -29,7 +29,7 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("tracker")
     ap.add_argument("-s", "--skin", default="web/hud_skin.css")
-    ap.add_argument("-i", "--icons", default="web/ui_icons.png")
+    ap.add_argument("-i", "--icons", default="web/ui_icons.webp")
     ap.add_argument("-f", "--frame", default="web/hud_frame.png")
     ap.add_argument("-j", "--dials", default="web/hud_dials.js")
     ap.add_argument("-o", "--out")
@@ -51,7 +51,23 @@ def main():
                              "Run tools/extract_ui_icons.py, or the icon rules "
                              "would paint solid blocks where icons should be.")
         b = base64.b64encode(open(args.icons, "rb").read()).decode()
-        skin = skin.replace("__ICONS__", f"data:image/png;base64,{b}")
+        # The one asset with a hard size ceiling, because it is the one asset
+        # that goes into a CSS custom property. Chromium drops a custom
+        # property longer than 2^21 characters -- exactly 2,097,152 -- and does
+        # it silently: var(--uic) computes to the empty string, mask-image
+        # falls back to none, and every icon in the skin paints as a solid
+        # block on its own background colour. That shipped once, undetected,
+        # because a solid 16px square in the right place still looks like a
+        # deliberate bullet until you look closely.
+        if len(b) > 2 ** 21:
+            raise SystemExit(
+                f"{args.icons} is {len(b)} base64 characters, past the "
+                f"{2 ** 21} a CSS custom property can hold. Every icon would "
+                "render as a solid block. Inline it as lossless WebP "
+                "(tools/extract_ui_icons.py writes one next to the PNG) or "
+                "shrink the sheet.")
+        m = "image/webp" if args.icons.endswith(".webp") else "image/png"
+        skin = skin.replace("__ICONS__", f"data:{m};base64,{b}")
         print(f"  icons {os.path.getsize(args.icons) / 1e3:.0f} KB "
               f"({json.load(open(os.path.splitext(args.icons)[0] + '.json'))['count']} icons)")
 
@@ -115,17 +131,28 @@ def main():
 
     html = open(args.tracker, encoding="utf-8").read()
 
-    # Drop any earlier skin. The bound is checked afterwards: a pattern that
-    # reaches past its own block eats the tracker silently, and this file is
-    # five megabytes of someone's campaign.
+    # Drop any earlier skin. The failure this guards against is a lazy .*?
+    # reaching PAST its own block -- a file with a START whose END is missing
+    # matches on to the next block's END and takes everything between with it,
+    # and this file is five megabytes of someone's campaign.
+    #
+    # Checked exactly rather than by size. The first version compared the bytes
+    # cut against the size of the NEW skin, which says nothing: it refused the
+    # first time the skin legitimately got SMALLER (the sprite moved from PNG
+    # to WebP and shrank by 1.2MB), and it would have passed a runaway cut on
+    # any build where the new skin happened to be large. What actually
+    # distinguishes a correct removal is that each span is one block, so that
+    # is what is tested -- no span may contain a second START.
     pat = re.compile(r"\n*" + re.escape(START) + r".*?" + re.escape(END) + r"\n?", re.S)
     before = len(html)
+    for m in pat.finditer(html):
+        if m.group(0).count(START) != 1:
+            raise SystemExit("refusing to write: a removal span holds more than one "
+                             f"'{START}' marker, so an unterminated block would take "
+                             "the tracker between them with it")
     html, removed = pat.subn("", html)
     if removed:
         cut = before - len(html)
-        if cut > removed * (len(skin) + 4096):
-            raise SystemExit(f"refusing to write: removing the old skin cut {cut} bytes, "
-                             f"far more than the {len(skin)} it should")
         print(f"  removed {removed} earlier skin(s), {cut} bytes")
 
     # Appended to the END of the tracker's own style block, which is what makes

@@ -1671,6 +1671,13 @@ cp out/web/vergil_atlas.webp out/web/vergil_atlas.json web/
 # python3 tools/extract_ui_icons.py <reference sheets...> -o web/ui_icons.png
 # python3 tools/inject_hud_skin.py path/to/BLACKBOX_MERC_OS.html
 #
+# The extractor writes web/ui_icons.webp next to the PNG and the injector
+# inlines THAT one. The PNG stays the master that --append extends; the WebP is
+# what gets base64'd, because the skin spells the sprite into a CSS custom
+# property and Chromium silently drops one longer than 2^21 characters -- past
+# which every icon in the tracker renders as a solid block. The injector
+# refuses to write a build that would cross it.
+#
 # Order matters only in that the skin has to be appended AFTER the tracker's own
 # </style>, and the sprite panel adds a <script> rather than a style, so the two
 # do not interact. Either can be re-run alone.

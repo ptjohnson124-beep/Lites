@@ -209,7 +209,23 @@
 :root { --uic: url("__ICONS__"); }
 /* Spelled out ONCE, into a custom property, and every rule below takes
    var(--uic). Written inline per rule it appeared eight times, and a 466KB PNG
-   is 620KB as base64, so the tracker went 5.6MB -> 10.6MB for one image. */
+   is 620KB as base64, so the tracker went 5.6MB -> 10.6MB for one image.
+
+   THAT PROPERTY HAS A CEILING, and crossing it costs the whole icon set.
+   Chromium drops a custom property whose value runs past 2^21 characters --
+   measured, not guessed: 2,097,152 computes, 2,097,153 computes to the empty
+   string. No warning, no error. var(--uic) then resolves to nothing,
+   mask-image falls back to none, and an element with a background colour and
+   no mask paints as a SOLID BLOCK.
+
+   The sprite crossed it at 848 icons and every icon in this file rendered as a
+   grey square for a whole build without anyone noticing, because a 16px filled
+   square in the right place still reads as a deliberate bullet.
+
+   base64 is 4/3 of the bytes, so the ceiling is 1.5MB of image and the PNG was
+   1.6MB. The sheet is inlined as LOSSLESS WebP instead -- identical pixels,
+   945KB, 61% of the ceiling -- and tools/inject_hud_skin.py now refuses to
+   write a build that would go past it. */
 
 .pool.pool > *:first-child::before,
 #btnReset::before, #btnBreak::before, #btnSpawn::before, #bmAmbushEnemy::before {
@@ -217,7 +233,7 @@
   vertical-align: -3px; margin-right: 6px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 848px; mask-size: 256px 848px;
+  -webkit-mask-size: 256px 864px; mask-size: 256px 864px;
   opacity: 1;
 }
 
@@ -253,7 +269,7 @@
   width: 15px; height: 15px; background: var(--cyand); pointer-events: none;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 848px; mask-size: 256px 848px;
+  -webkit-mask-size: 256px 864px; mask-size: 256px 864px;
   -webkit-mask-position: -160px -192px; mask-position: -160px -192px;
 }
 
@@ -273,7 +289,7 @@
   vertical-align: -2px; margin-right: 5px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 848px; mask-size: 256px 848px;
+  -webkit-mask-size: 256px 864px; mask-size: 256px 864px;
   -webkit-mask-position: 999px 999px; mask-position: 999px 999px;
 }
 /* The default position is off the sheet on purpose. Every state gets the box
@@ -440,7 +456,7 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
   vertical-align: -2px; margin-right: 5px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 848px; mask-size: 256px 848px;
+  -webkit-mask-size: 256px 864px; mask-size: 256px 864px;
   -webkit-mask-position: 999px 999px; mask-position: 999px 999px;
   opacity: .8;
 }
@@ -608,7 +624,7 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
   vertical-align: -1px; margin-right: 4px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 848px; mask-size: 256px 848px;
+  -webkit-mask-size: 256px 864px; mask-size: 256px 864px;
   opacity: .55;
 }
 .sk::before       { -webkit-mask-position: -32px -400px; mask-position: -32px -400px; }  /* 402 module */
@@ -896,5 +912,120 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
   -webkit-mask-position: -144px -752px; mask-position: -144px -752px; }
 .qb:nth-of-type(10)::before {                         /* 843 cupped hands, Harmonize */
   -webkit-mask-position: -176px -832px; mask-position: -176px -832px; }
+
+
+/* ---- 33. TWO MARKS: BATTLE AND RETALIATION --------------------------
+   850 icons. The last two are not pack icons -- they are the two logo marks
+   for the two systems this tracker actually spends its time in, and they are
+   wired to those systems rather than sprinkled.
+
+   Both arrived as single marks on their own black plates, so the component
+   search was run on a crop with a 41px dilation and a 150px minimum: one
+   component per sheet, kept whole. The swirl's plate carried CONCEPT DESIGNS
+   captions and four corner registration marks, which the search would have
+   returned as five more icons, so the crop cuts them off before keying.
+
+   848 is the ringed compass-star: BATTLE. 849 is the four-point swirl:
+   RETALIATION. 54 rows now, so mask-size moves to 256x864, and for the sixth
+   time no position moves, because the packer appends.
+
+   THE POOLS ARE CLASSED, so these two do not need nth-of-type. .pool.battle
+   and .pool.retal are real classes in the tracker's own stylesheet -- the ones
+   that colour the pool's top border cyan and violet -- which is a better
+   handle than counting, and it survives a pool being reordered or hidden. The
+   nth-of-type rules above still set special and save.
+
+   The class has to be doubled to WIN, though, and coming later is not enough:
+   .pool.pool:nth-of-type(1) > *:first-child is three classes and a
+   :first-child, and .pool.battle > *:first-child is one class short of that,
+   so the first pass left both pools showing their old icons. Doubling .pool
+   puts these one ahead. Measured rather than reasoned -- the browser reported
+   -32px -224px on Battle until the extra class went on. */
+.pool.pool.retal > *:first-child::before {            /* 849 swirl, was 201 chevrons */
+  -webkit-mask-position: -16px -848px; mask-position: -16px -848px; }
+
+/* THE COMPASS CANNOT GO ON A BUTTON, and that is a property of the drawing
+   rather than of the size it was given. Rendered at 11, 12, 13, 14, 15, 16,
+   18, 20 and 24px and looked at: below about 20 the four-pointed star inside
+   the ring loses its arms and what is left is a circle with one diagonal
+   through it -- the international sign for NOT ALLOWED. It was on "Resolve"
+   and on "actions (15)" for one build and both read as disabled controls.
+   Dilating the alpha before the downscale, the usual fix for a mark that goes
+   thin, does nothing here: the topology IS a slashed circle, so thickening it
+   just draws a bolder slashed circle. Tried at radii 4, 7, 10 and 14.
+
+   So it is used at sizes where the star survives, and the two buttons keep
+   what they had. The swirl has no such problem -- it reads from 14px, and its
+   own four points are the outline rather than the detail.
+
+   The Battle pool takes it at 20px. The pool headers are 10px type but the
+   cards are 130px tall and mostly empty, so a mark half again the size of the
+   other pools' icons reads as deliberate rather than as a mistake. */
+.pool.pool.battle > *:first-child::before {           /* 848 compass, was 226 blade */
+  width: 20px; height: 20px; vertical-align: -5px;
+  -webkit-mask-size: 320px 1080px; mask-size: 320px 1080px;
+  -webkit-mask-position: -0px -1060px; mask-position: -0px -1060px; }
+
+/* The Retaliation resolve button. .btn.vi already gave it the generic charge
+   mark from section 17; an ID beats a class, so this replaces that one without
+   touching any other .vi. */
+#btnRetal::before {
+  content: ""; display: inline-block; width: 14px; height: 14px;
+  vertical-align: -2px; margin-right: 6px; background: currentColor;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 864px; mask-size: 256px 864px;
+  -webkit-mask-position: -16px -848px; mask-position: -16px -848px;
+  opacity: .9;
+}
+
+/* And the battle-actions row on every unit card, which is where the compass
+   gets the pixels it needs: 26px, as a watermark rather than a control.
+
+   The space it sits in is BOUGHT rather than borrowed. z-index -1 was tried
+   first and the mark vanished: .u-acts is position:relative with z-index auto,
+   so it opens no stacking context and a negative child paints behind the unit
+   card's own background. z-index 0 shows it, but ::after is the last child and
+   so paints over any button that reaches the right edge. 32px of padding-right
+   on the row settles it -- the flex line wraps 32px earlier, the mark sits in
+   space no button can occupy, and nothing overlaps at any width. The waveform
+   was placed the same way for the same reason.
+
+   Its ::before is the divider rule from section 16, so this takes ::after. */
+.u-acts { padding-right: 32px; }
+.u-acts::after {
+  content: ""; position: absolute; right: 2px; top: 50%; z-index: 0;
+  width: 26px; height: 26px; margin-top: -13px; pointer-events: none;
+  background: var(--cyan); opacity: .34;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 416px 1404px; mask-size: 416px 1404px;
+  -webkit-mask-position: -0px -1378px; mask-position: -0px -1378px;
+}
+
+/* The 28 retaliation names, which are the retaliations themselves. They kept a
+   reticle up to now because nothing in the set said "retaliation" -- this mark
+   does, so it takes the slot. 13px is small for it and was checked rather than
+   assumed: the four points hold and the swirl inside reads as rotation. */
+.rn::before { -webkit-mask-position: -16px -848px; mask-position: -16px -848px; }
+
+/* Three pools were showing icon 0.
+
+   .pool.pool > *:first-child::before sets the BOX for every pool, and only
+   four nth-of-type rules ever set a position, so System Pressure, Harmonization
+   and Last Rites Stock fell back to 0% 0% -- the top-left cell of the sheet,
+   which is a glyph none of them mean. It was invisible until this build,
+   because until this build every icon on the page was a solid block. */
+.pool.pool.pressure > *:first-child::before {         /* 91 alert */
+  -webkit-mask-position: -176px -80px; mask-position: -176px -80px; }
+.pool.pool.harmon > *:first-child::before {           /* 843 cupped hands */
+  -webkit-mask-position: -176px -832px; mask-position: -176px -832px; }
+/* Last Rites Stock is a bare <div class="pool"> with nothing else on it, so it
+   gets the DEFAULT rather than a rule of its own: one generic mark on the
+   shared selector, which every classed pool above outranks. A stock of rebuild
+   material and a toolbox are close enough, and a pool added later inherits
+   something neutral instead of whatever happens to sit in cell 0. */
+.pool.pool > *:first-child::before {                  /* 595 toolbox */
+  -webkit-mask-position: -48px -592px; mask-position: -48px -592px; }
 
 /* ================= END HUD SKIN ========================= */

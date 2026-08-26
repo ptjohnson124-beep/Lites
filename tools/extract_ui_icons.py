@@ -168,6 +168,31 @@ def main():
 
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
     sheet.save(args.out, optimize=True)
+
+    # And the same sheet as lossless WebP, because the PNG cannot be inlined
+    # any more.
+    #
+    # The skin spells the sprite out ONCE, into a custom property, and takes
+    # var(--uic) in every icon rule -- otherwise a 1.6MB image is base64'd into
+    # eight separate declarations. But Chromium drops a custom property whose
+    # value exceeds 2^21 characters, measured exactly: 2,097,152 works and
+    # 2,097,153 computes to the empty string. It does not warn, it does not
+    # error; var(--uic) resolves to nothing, mask-image falls back to none, and
+    # an element with a background and no mask paints as a SOLID BLOCK.
+    #
+    # base64 is 4/3 of the bytes, so the sprite has a hard ceiling of 1.5MB and
+    # the PNG passed it at 848 icons. Lossless WebP of the same pixels is 945KB
+    # -- 1.26MB encoded, with room to keep growing. Nothing is lost: lossless
+    # means lossless, and a mask reads the alpha channel either way.
+    web = os.path.splitext(args.out)[0] + ".webp"
+    sheet.save(web, lossless=True, quality=100, method=6)
+    enc = int(os.path.getsize(web) * 4 / 3)
+    print(f"  -> {web} {os.path.getsize(web) / 1e3:.0f} KB "
+          f"({enc / 2 ** 21:.0%} of the custom-property ceiling)")
+    if enc > 2 ** 21:
+        print("  WARNING: past the 2^21 ceiling. Inlined into a custom "
+              "property this sheet computes to nothing and every icon in the "
+              "skin paints as a solid block.", file=sys.stderr)
     man = {"image": os.path.basename(args.out), "cell": args.cell,
            "cols": cols, "rows": rows, "count": base + len(icons)}
     with open(os.path.splitext(args.out)[0] + ".json", "w", encoding="utf-8") as fh:
