@@ -217,7 +217,7 @@
   vertical-align: -3px; margin-right: 6px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 384px; mask-size: 256px 384px;
+  -webkit-mask-size: 256px 416px; mask-size: 256px 416px;
   opacity: 1;
 }
 
@@ -253,7 +253,7 @@
   width: 15px; height: 15px; background: var(--cyand); pointer-events: none;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 384px; mask-size: 256px 384px;
+  -webkit-mask-size: 256px 416px; mask-size: 256px 416px;
   -webkit-mask-position: -160px -192px; mask-position: -160px -192px;
 }
 
@@ -273,7 +273,7 @@
   vertical-align: -2px; margin-right: 5px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 384px; mask-size: 256px 384px;
+  -webkit-mask-size: 256px 416px; mask-size: 256px 416px;
   -webkit-mask-position: 999px 999px; mask-position: 999px 999px;
 }
 /* The default position is off the sheet on purpose. Every state gets the box
@@ -440,7 +440,7 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
   vertical-align: -2px; margin-right: 5px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 384px; mask-size: 256px 384px;
+  -webkit-mask-size: 256px 416px; mask-size: 256px 416px;
   -webkit-mask-position: 999px 999px; mask-position: 999px 999px;
   opacity: .8;
 }
@@ -554,5 +554,64 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
    Doing it would need a wrapper around each bar to hang the caps on, and the
    tracker does not provide one. Adding markup is past what a skin should do,
    so the bars keep the shape and the ticks and go without the caps. */
+
+/* ---- 21. THE TIER BADGE ----------------------------------------------
+   The hex badges finally have somewhere to go, and it took the tracker having
+   a tier control rather than a level number. It does: a select of X / EX / UEX
+   inside .lvltop, five of them, one per unit.
+
+   CSS cannot read a select's value -- but it can read which OPTION is checked,
+   and :has() carries that up to the container. So
+
+     .lvltop:has(option:nth-child(3):checked)
+
+   matches the row whose select is on UEX, live, with no script.
+
+   It is nth-child rather than [value="UEX"], and that distinction cost a
+   debugging pass. The first version matched nothing at all, and the reason is
+   that these options carry NO value attribute -- option.value falls back to the
+   text when the attribute is absent, so reading the DOM said "X" while
+   [value="X"] matched zero elements. :has() itself was never the problem;
+   :has(select option:checked) was true the whole time.
+
+   The cost of nth-child is that it depends on the option ORDER, which was read
+   off the page rather than assumed: X, EX, UEX. Reordering that select silently
+   reorders these badges.
+
+   These are the one asset in the whole skin that KEEPS its own colour instead
+   of being recoloured through a mask. Everything else is a stencil so it can
+   take the palette it lands in; a rank badge is the opposite -- blue, purple
+   and gold ARE the distinction, and painting them all cyan would delete the
+   only thing they say.
+
+   .lvltop is display:flex, so the badge is a flex item and needs no
+   positioning at all. It has zero width until a tier matches, so a browser
+   without :has() gets nothing rather than an empty gap. */
+.lvltop::after {
+  content: ""; flex: none; width: 0; height: 19px; align-self: center;
+  margin-left: 7px; background: no-repeat center / contain;
+}
+.lvltop:has(option:nth-child(1):checked)::after   { width: 19px; background-image: url("__TIERX__"); }
+.lvltop:has(option:nth-child(2):checked)::after  { width: 19px; background-image: url("__TIEREX__"); }
+.lvltop:has(option:nth-child(3):checked)::after { width: 20px; background-image: url("__TIERUEX__"); }
+
+/* ---- 22. GEAR AND DAMAGE TYPE ---------------------------------------
+   26 more icons off the ability sheet -- armour plates, impact bursts, ammo,
+   shields, a medkit. Two hooks take them, and both are generic marks rather
+   than specific ones for the reason that keeps recurring: the 49 gear names
+   and the 31 damage-type tags differ only in their TEXT, and CSS cannot read
+   text. A chip for an installed module and a burst for a damage tag are true
+   of every one of them; guessing which is a slash and which is frequency
+   would be true of some. */
+.sk::before, .graft-st::before {
+  content: ""; display: inline-block; width: 11px; height: 11px;
+  vertical-align: -1px; margin-right: 4px; background: currentColor;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 416px; mask-size: 256px 416px;
+  opacity: .55;
+}
+.sk::before       { -webkit-mask-position: -32px -400px; mask-position: -32px -400px; }  /* 402 module */
+.graft-st::before { -webkit-mask-position: -96px -384px; mask-position: -96px -384px; }  /* 390 impact */
 
 /* ================= END HUD SKIN ========================= */
