@@ -71,6 +71,39 @@ def main():
         print(f"  icons {os.path.getsize(args.icons) / 1e3:.0f} KB "
               f"({json.load(open(os.path.splitext(args.icons)[0] + '.json'))['count']} icons)")
 
+    total = 0
+
+    # The typefaces, which are the only assets here that are not pictures.
+    #
+    # The tracker names THREE fonts it has never shipped -- Space Mono, Chakra
+    # Petch and Cinzel -- and names them with no @font-face at all, so on any
+    # machine without them installed the whole file falls back to
+    # ui-monospace, system-ui and Georgia. That is nearly every machine, which
+    # means the tracker has never once rendered the way its author specified.
+    # Embedding those three needs no rule changes: the var(--mono) that is
+    # already on 97 selectors starts resolving.
+    #
+    # All seven are SIL Open Font License faces from Google Fonts, latin subset
+    # only, woff2. The latin subset matters: the full family with Cyrillic and
+    # Vietnamese is several times the size for glyphs this tracker never sets.
+    for token, path in (("__F_MONO__", "web/fonts/SpaceMono-400.woff2"),
+                        ("__F_MONOB__", "web/fonts/SpaceMono-700.woff2"),
+                        ("__F_HUD__", "web/fonts/ChakraPetch-600.woff2"),
+                        ("__F_SACRED__", "web/fonts/Cinzel-700.woff2"),
+                        ("__F_DISP__", "web/fonts/Orbitron-800.woff2"),
+                        ("__F_HEAVY__", "web/fonts/Audiowide-400.woff2"),
+                        ("__F_WIDE__", "web/fonts/Syncopate-700.woff2")):
+        if token not in skin:
+            continue
+        if not os.path.exists(path):
+            raise SystemExit(f"{path} not found, and the skin asks for it via {token}.")
+        b = base64.b64encode(open(path, "rb").read()).decode()
+        skin = skin.replace(token, f"data:font/woff2;base64,{b}")
+        total += os.path.getsize(path)
+    if total:
+        print(f"  fonts  {total / 1e3:.1f} KB")
+    total = 0
+
     # Every frame the skin asks for, by placeholder. A missing one is fatal
     # rather than skipped: an unresolved url() in a border-image simply draws
     # nothing, and a panel silently losing its frame is the kind of failure

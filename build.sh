@@ -1686,6 +1686,13 @@ cp out/web/vergil_atlas.webp out/web/vergil_atlas.json web/
 # hud_glitch.webp for its fractured and cyberpsychosis bands. The skin resolves
 # them by token like every other frame.
 #
+# web/fonts/ holds seven latin-subset WOFF2 faces, inlined the same way. Three
+# of them -- Space Mono, Chakra Petch, Cinzel -- are fonts the TRACKER ITSELF
+# names in --mono, --hud and --sacred and never shipped an @font-face for, so
+# until they were bundled the file rendered in ui-monospace, system-ui and
+# Georgia on every machine that did not happen to have them installed. All
+# seven are SIL Open Font License; web/fonts/NOTICE.md travels with them.
+#
 # Order matters only in that the skin has to be appended AFTER the tracker's own
 # </style>, and the sprite panel adds a <script> rather than a style, so the two
 # do not interact. Either can be re-run alone.

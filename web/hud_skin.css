@@ -1373,4 +1373,92 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
   background-image: url("__PLATE6__");
 }
 
+/* ---- 40. THE TYPEFACES, WHICH WERE NEVER ACTUALLY SHIPPED ------------
+   The reference sheet is a JPEG of an After Effects title pack. There is no
+   font in it to take -- a raster image carries pixels, not outlines -- so what
+   follows is not that pack's type. It is seven open-licence faces chosen to
+   land in the same place: squared techno caps, one heavy italic-feeling
+   display, and a very wide letterspaced face for the small labels.
+
+   FIRST, THREE THAT WERE ALREADY ASKED FOR. The tracker declares
+
+     --mono:'Space Mono', ui-monospace, Menlo, monospace
+     --hud:'Chakra Petch', system-ui, sans-serif
+     --sacred:'Cinzel', Georgia, serif
+
+   and ships no @font-face for any of them. A font-family name is a request,
+   not a delivery: unless the reader happens to have those three installed --
+   and nobody does -- the file has been rendering in ui-monospace, system-ui
+   and Georgia since it was written. 97 selectors take var(--mono). Embedding
+   them here needs no rule changes at all; the names simply start resolving,
+   and the tracker looks the way it was specified for the first time.
+
+   All seven are SIL Open Font License, latin subset, woff2, inlined as data
+   URIs for the same reason every other asset is: this file gets opened off a
+   USB stick and file:// will not fetch a sibling.
+
+   font-display:block, not swap. A swap would paint every label in the fallback
+   and then reflow the entire page a moment later; these are inlined, so there
+   is no network to wait for and the block period is over before first paint. */
+@font-face { font-family:'Space Mono'; font-style:normal; font-weight:400;
+  font-display:block; src:url("__F_MONO__") format("woff2"); }
+@font-face { font-family:'Space Mono'; font-style:normal; font-weight:700;
+  font-display:block; src:url("__F_MONOB__") format("woff2"); }
+@font-face { font-family:'Chakra Petch'; font-style:normal; font-weight:600;
+  font-display:block; src:url("__F_HUD__") format("woff2"); }
+@font-face { font-family:'Cinzel'; font-style:normal; font-weight:700;
+  font-display:block; src:url("__F_SACRED__") format("woff2"); }
+@font-face { font-family:'Orbitron'; font-style:normal; font-weight:800;
+  font-display:block; src:url("__F_DISP__") format("woff2"); }
+@font-face { font-family:'Audiowide'; font-style:normal; font-weight:400;
+  font-display:block; src:url("__F_HEAVY__") format("woff2"); }
+@font-face { font-family:'Syncopate'; font-style:normal; font-weight:700;
+  font-display:block; src:url("__F_WIDE__") format("woff2"); }
+
+/* Then two roles the tracker did not have, because Chakra Petch was carrying
+   both the body text and every title and a face cannot do both jobs.
+
+   --disp is the squared techno cap from the sheet's CYBER DATA and LOADING
+   panels. --wide is its very wide, thin-spaced cousin -- the SCI-FI panel --
+   which only works in short strings and only in caps, so it goes on labels
+   that are already short and already uppercase and nowhere else. */
+:root { --disp: 'Orbitron', 'Chakra Petch', system-ui, sans-serif;
+        --wide: 'Syncopate', 'Chakra Petch', system-ui, sans-serif;
+        --heavy: 'Audiowide', 'Orbitron', system-ui, sans-serif; }
+
+/* The masthead takes the heaviest of them, once. It is the only string on the
+   page that is allowed to be pure styling. */
+.cmd-top h1 { font-family: var(--heavy); letter-spacing: .04em; }
+
+/* Section titles and unit names: the squared face, which is what makes a
+   panel header read as a header at a glance rather than as bolder body text. */
+h2, .u-nm, .dsp-who, .scan-titlebar h2 { font-family: var(--disp); }
+
+/* h2 sizes are UNCHANGED. Orbitron sets about 12% wider than Chakra Petch at
+   the same size, and a section header that grows enough to wrap is worse than
+   one in the wrong face; the tracker's own 14px is left alone and the letter
+   spacing is pulled in to pay for the width. */
+h2 { letter-spacing: -.01em; }
+
+/* And the wide face on the short uppercase labels only.
+
+   .pool-nm and .uag-h were the first choice and are not, because the measuring
+   said so: Syncopate sets about 30% wider than Space Mono, and while BATTLE
+   and SAVE looked exactly right, SYSTEM PRESSURE wrapped to two lines and
+   pushed its own gauge row down, HARMONIZATION jammed into its AUTO ON, and
+   LAST RITES STOCK ran straight into its count -- .pool-top is a flex row with
+   space-between and no gap, so a label that grows has nothing to give.
+
+   There is no selecting the four that fit. So the face went to labels that are
+   short because there is nothing else they could be: ACTING and REACTING on
+   the turn-order cards, and the sprite panel's one-word state.
+
+   The two pills at the head of the command row were a third and lasted one
+   build. LOG #0001 and REGULAR are short enough, but they sit at the front of
+   a twelve-button flex row that was already within a few pixels of full, and
+   30% more width on the first two items pushed Reset System onto a second
+   line. Short is not the only thing that matters; what is downstream of it
+   does. */
+.side-card .r, .dsp-state { font-family: var(--wide); }
+
 /* ================= END HUD SKIN ========================= */
