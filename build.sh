@@ -1520,6 +1520,40 @@ $BUILD out/dahlia_crowned/frames -o out/dahlia_crowned -n dahlia_crowned \
   --stabilize none --fps 24 --breathe 0 --bob 0 --sway 0
 
 # ---------------------------------------------------------------------
+# VERGIL, the second character, and the first thing in this file that is not
+# Dahlia. The panel matches a character by the BASENAME of its atlas, so
+# vergil_atlas.json plays for any unit whose name contains "vergil" and nothing
+# else has to change to add him.
+# ---------------------------------------------------------------------
+#
+# His idle, and the least padded sheet AutoSprite has produced: two holds in
+# 64 frames against seventeen on the get-up. 62 real drawings, halved to 31 and
+# held three frames each, which puts it at 3.88s against the source's 4.04s --
+# near enough the rate it was authored at.
+#
+# It loops, wrap 1,396 pixels against a median frame change of 2,683, so 0.52x.
+# Subtle clip, small numbers: a typical frame changes 4% of itself, the same
+# territory as the crowned idle rather than the stagger.
+#
+# It ends on 63 rather than 62 because the wrap was measured rather than
+# counted: 63 wraps at 1,396, 62 at 1,985, 61 at 2,761, 60 at 5,067 and 58 at
+# 7,603. The end of a loop gets steadily worse the earlier it is cut.
+#
+# NO --flip, and this is the first sheet that has not needed one. Measured
+# against Dahlia rather than eyeballed: her face sits 21px right of her hair
+# mass in every idle frame, so she faces right, and he was generated facing
+# right to match.
+#
+# No --travel. He is rooted; the movement is a slow bob, his hands parting from
+# a prayer to touch the earring, and the axe drifting with its gauntlet.
+python3 tools/import_spritesheet.py assets/vergil_idle_as64.png \
+  -o out/vergil_idle -n vergil_idle --rows 8 --cols 8 \
+  --drop "$(python3 -c "k={0,3,5,7,9,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,61,63}; print(','.join(str(i) for i in range(64) if i not in k))")"
+$BUILD out/vergil_idle/frames -o out/vergil_idle -n vergil_idle \
+  --poses 1-31 --holds 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3 \
+  --stabilize none --fps 24 --breathe 0 --bob 0 --sway 0
+
+# ---------------------------------------------------------------------
 # PACKING COMES LAST, and that is load-bearing rather than tidy. It reads
 # out/dahlia_* off disk, so anything rebuilt after it is packed in its
 # PREVIOUS state. This block used to sit in the middle of the file, which
@@ -1592,6 +1626,30 @@ python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack
   --scale-like out/dahlia_ashes=out/dahlia_death \
   --scale-like out/dahlia_throw=out/dahlia_grab --match-scale -o out/web -n dahlia --scale 0.75 --format webp
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
+
+# Vergil's own atlas, alongside hers rather than inside it. One atlas per
+# character is what lets the panel carry a cast: it reads every *_atlas.json in
+# out/web and matches each to a unit by name.
+#
+# No --match-scale, because that registers clips of ONE character against each
+# other and he has one clip. The scale that matters here is BETWEEN characters,
+# and it is the same failure as the intra-clip one: the panel shows a single
+# unit at a time, so a character half the size of the last one jumps when the
+# panel changes subject.
+#
+# --scale 1.446 rather than the 0.75 everything else uses, and it is measured.
+# Packed at 0.75 he stood 154px from the top of his hair to his boots against
+# her 297 -- he needed 1.929x, and 0.75 x 1.929 is 1.446. Packed at that he
+# measures 299 against her 297, which is 0.7% apart.
+#
+# He is enlarged past his own resolution to get there, and that is not a fault
+# in this sheet: AutoSprite draws into a fixed 256px cell, so anything from it
+# is roughly half the linear scale of the drawing sheets the rest of her set
+# came from. Her ragdoll pays the same 2.37x. Nothing in a prompt fixes it.
+python3 tools/pack_clips.py out/vergil_idle \
+  --role out/vergil_idle=idle \
+  -o out/web -n vergil --scale 1.446 --format webp
+cp out/web/vergil_atlas.webp out/web/vergil_atlas.json web/
 
 # Put the sprite feed into the combat tracker. Re-runnable: the injected block
 # is bounded by two markers and any earlier copy is removed first, so adding an
