@@ -53,23 +53,36 @@
   position: relative;
 }
 
-/* ---- 2. CORNER BRACKETS --------------------------------------------
-   The L-marks that make a box read as a targeting frame rather than a div.
-   Only the two square corners get them -- putting brackets on the chamfered
-   corners fights the cut and reads as a mistake. */
-.cmd.cmd::after, .card.card::after, .pool.pool::after, .unit.unit::after, .battlemap-panel.battlemap-panel::after, .resolve.resolve::after {
-  content: ""; position: absolute; inset: -1px; pointer-events: none; z-index: 2;
-  background:
-    linear-gradient(var(--cyan), var(--cyan)) top right / 2px 16px no-repeat,
-    linear-gradient(var(--cyan), var(--cyan)) top right / 16px 2px no-repeat,
-    linear-gradient(var(--cyan), var(--cyan)) bottom left / 2px 16px no-repeat,
-    linear-gradient(var(--cyan), var(--cyan)) bottom left / 16px 2px no-repeat,
-    /* and the rail: a broken bar along the top edge, which is the part of the
-       reference frames that reads as HUD from across the room. The gap is not
-       decoration -- an unbroken 2px line is just a thick border. */
-    linear-gradient(var(--cyand), var(--cyand)) top left / 34% 2px no-repeat,
-    linear-gradient(var(--cyand), var(--cyand)) top 0 right 12% / 22% 2px no-repeat;
-  opacity: .9;
+/* ---- 2. THE FRAME ---------------------------------------------------
+   A real HUD frame lifted off the reference sheet rather than four corner
+   marks drawn in CSS, which is what this was. 764x272 of white line art keyed
+   the same way the icons were -- and the interior of the source is a dark
+   gradient fill, so keying on luminance hollows it out on its own. That is the
+   whole reason it can be a BORDER rather than a picture. 4.4KB.
+
+   It is drawn on a positioned ::after with zero layout impact, not with
+   border-image on the panel itself. border-image consumes the border box, so
+   an 18px frame would have taken 18px of padding off every panel or grown
+   every panel by 18px -- and growing them undoes the density work that this
+   same file just did. An overlay inset by -8px sits AROUND the panel and costs
+   nothing.
+
+   border-image-slice 58 because that is how far the corner detail reaches in:
+   the notch plus the hatch marks measure about 58px on a 764px-wide source,
+   and slicing inside that cuts a corner in half.
+
+   inset and border-width MATCH, and that is the part that was wrong first. At
+   inset -8px with an 18px border the ring straddled the panel edge, so 10px of
+   it lay INSIDE the panel at z-index 2 -- on top of the content. The command
+   panel's first button sits within that band and came out reading "OG #0001".
+   Setting both to 14px puts the ring entirely in the -14..0 strip outside the
+   box, where a frame belongs and where it cannot cover anything. */
+.cmd.cmd::after, .card.card::after, .pool.pool::after, .unit.unit::after,
+.battlemap-panel.battlemap-panel::after, .resolve.resolve::after {
+  content: ""; position: absolute; inset: -14px; pointer-events: none; z-index: 2;
+  border: 14px solid transparent;
+  border-image: url("__FRAME__") 58 stretch;
+  opacity: .85;
 }
 
 /* ---- 3. SCANLINE ----------------------------------------------------
@@ -81,7 +94,16 @@
   background: repeating-linear-gradient(
     180deg, rgba(126,240,255,.03) 0 1px, transparent 1px 2px);
 }
-.cmd.cmd > *, .card.card > *, .pool.pool > *, .unit.unit > *, .battlemap-panel.battlemap-panel > *, .resolve.resolve > * { position: relative; z-index: 1; }
+/* There was a rule here that gave every direct child position:relative and
+   z-index:1, to lift the content above the scanline. It is gone, but it should
+   be said that it was NOT the bug it was removed for -- the clipped header was
+   the frame overlay above, and pulling this rule changed nothing. It stays out
+   because it is not needed: a 3% white wash over the text rather than under it
+   is what a scanline does anyway, and at 3% the difference is invisible.
+
+   Worth keeping as a rule of thumb even so. A skin should not change the
+   POSITIONING of elements it did not author; position is layout, and layout is
+   behaviour. */
 
 /* ---- 4. TABBED HEADERS ---------------------------------------------
    The "SELECT 01" motif: a filled label block with an angled trailing edge,

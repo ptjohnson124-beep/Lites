@@ -28,6 +28,7 @@ def main():
     ap.add_argument("tracker")
     ap.add_argument("-s", "--skin", default="web/hud_skin.css")
     ap.add_argument("-i", "--icons", default="web/ui_icons.png")
+    ap.add_argument("-f", "--frame", default="web/hud_frame.png")
     ap.add_argument("-o", "--out")
     args = ap.parse_args()
 
@@ -50,6 +51,13 @@ def main():
         skin = skin.replace("__ICONS__", f"data:image/png;base64,{b}")
         print(f"  icons {os.path.getsize(args.icons) / 1e3:.0f} KB "
               f"({json.load(open(os.path.splitext(args.icons)[0] + '.json'))['count']} icons)")
+
+    if "__FRAME__" in skin:
+        if not os.path.exists(args.frame):
+            raise SystemExit(f"{args.frame} not found, and the skin asks for it.")
+        b = base64.b64encode(open(args.frame, "rb").read()).decode()
+        skin = skin.replace("__FRAME__", f"data:image/png;base64,{b}")
+        print(f"  frame {os.path.getsize(args.frame) / 1e3:.1f} KB")
 
     html = open(args.tracker, encoding="utf-8").read()
 
