@@ -614,4 +614,85 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
 .sk::before       { -webkit-mask-position: -32px -400px; mask-position: -32px -400px; }  /* 402 module */
 .graft-st::before { -webkit-mask-position: -96px -384px; mask-position: -96px -384px; }  /* 390 impact */
 
+/* ---- 23. RADIAL DIALS, THE REAL KIND --------------------------------
+   Every reference sheet in this project has arc gauges on it and not one of
+   them could be used, for a reason worth stating once: a picture of a dial at
+   70% is a picture. These numbers move.
+
+   So the ring is drawn rather than pasted -- a conic-gradient swept to
+   calc(var(--v) * 1%) and punched through with a radial mask -- and a small
+   script in the same injection keeps --v equal to the bar it sits beside. The
+   tracker publishes that value in the one place that makes it cheap: every
+   .bar holds an <i> whose inline style.width is a percentage.
+
+   The dial is a SIBLING of the bar, never a child. Inside it would fall under
+   the bar's clip-path, which is exactly what cut the chevron end caps off when
+   those were attempted. */
+.hud-dial {
+  --v: 0;
+  display: inline-block; flex: none; width: 20px; height: 20px;
+  vertical-align: -5px; margin-right: 7px; border-radius: 50%;
+  background: conic-gradient(var(--cyan) calc(var(--v) * 1%), rgba(35,48,66,.5) 0);
+  -webkit-mask: radial-gradient(closest-side, transparent 57%, #000 60%);
+          mask: radial-gradient(closest-side, transparent 57%, #000 60%);
+}
+/* The bar and its dial have to share a line, and .bar is a block. Making it
+   inline-block is not enough on its own: an inline-block shrinks to its
+   content, and a bar's content is a fill sized in PERCENT, so the two collapse
+   each other and every bar came out a few pixels wide. The width has to be
+   given back explicitly, and it is taken off the parent rather than guessed --
+   100% minus exactly the dial and its gap. */
+.bar.bar { display: inline-block; vertical-align: middle; width: calc(100% - 29px); }
+
+/* ---- 24. FACTION EMBLEMS --------------------------------------------
+   38 emblems keyed off the logo sheet, wired the same way the tier badge is:
+   :has() on a checked option, which needs no script and updates live.
+
+   Which select is which took measuring. There are five distinct select groups
+   in .u-meta and .uag, and one .u-meta container holds FOUR selects at once --
+   15, 8, 3 and 11 options -- so an option-count test on that container reads
+   whichever select is largest. The three that hold exactly one select each are
+   the safe ones, and they are told apart by how deep their options go:
+   :has(option:nth-child(24)) is true only of the Soul Engine list, because
+   nth-child counts within a select and no other select here is that long.
+
+   Emblems are stencils like everything else, so they take the panel's colour
+   rather than importing the sheet's. */
+.u-meta:has(option:nth-child(24))::after, .uag:has(option:nth-child(4))::after {
+  content: ""; display: inline-block; flex: none; width: 0; height: 17px;
+  vertical-align: -4px; margin-left: 7px; background: currentColor; opacity: .75;
+  -webkit-mask-image: url("__EMB__"); mask-image: url("__EMB__");
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 170px 68px; mask-size: 170px 68px;
+}
+/* Width stays 0 until a row matches, so an unlisted option -- or a browser
+   without :has() -- shows nothing rather than an empty gap or a wrong emblem. */
+.u-meta:has(option:nth-child(24)):has(option:nth-child(2):checked)::after { -webkit-mask-position:-34px -0px; mask-position:-34px -0px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(3):checked)::after { -webkit-mask-position:-51px -0px; mask-position:-51px -0px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(4):checked)::after { -webkit-mask-position:-102px -0px; mask-position:-102px -0px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(5):checked)::after { -webkit-mask-position:-119px -0px; mask-position:-119px -0px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(6):checked)::after { -webkit-mask-position:-0px -17px; mask-position:-0px -17px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(7):checked)::after { -webkit-mask-position:-34px -17px; mask-position:-34px -17px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(8):checked)::after { -webkit-mask-position:-51px -17px; mask-position:-51px -17px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(9):checked)::after { -webkit-mask-position:-85px -17px; mask-position:-85px -17px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(10):checked)::after { -webkit-mask-position:-136px -17px; mask-position:-136px -17px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(11):checked)::after { -webkit-mask-position:-153px -17px; mask-position:-153px -17px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(12):checked)::after { -webkit-mask-position:-0px -34px; mask-position:-0px -34px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(13):checked)::after { -webkit-mask-position:-34px -34px; mask-position:-34px -34px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(14):checked)::after { -webkit-mask-position:-68px -34px; mask-position:-68px -34px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(15):checked)::after { -webkit-mask-position:-102px -34px; mask-position:-102px -34px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(16):checked)::after { -webkit-mask-position:-119px -34px; mask-position:-119px -34px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(17):checked)::after { -webkit-mask-position:-0px -51px; mask-position:-0px -51px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(18):checked)::after { -webkit-mask-position:-17px -51px; mask-position:-17px -51px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(19):checked)::after { -webkit-mask-position:-34px -51px; mask-position:-34px -51px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(20):checked)::after { -webkit-mask-position:-51px -51px; mask-position:-51px -51px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(21):checked)::after { -webkit-mask-position:-68px -51px; mask-position:-68px -51px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(22):checked)::after { -webkit-mask-position:-85px -51px; mask-position:-85px -51px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(23):checked)::after { -webkit-mask-position:-102px -51px; mask-position:-102px -51px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(24):checked)::after { -webkit-mask-position:-119px -51px; mask-position:-119px -51px; width:17px; }
+.uag:has(option:nth-child(4)):has(option:nth-child(1):checked)::after { -webkit-mask-position:-51px -51px; mask-position:-51px -51px; width:17px; }
+.uag:has(option:nth-child(4)):has(option:nth-child(2):checked)::after { -webkit-mask-position:-153px -17px; mask-position:-153px -17px; width:17px; }
+.uag:has(option:nth-child(4)):has(option:nth-child(3):checked)::after { -webkit-mask-position:-102px -51px; mask-position:-102px -51px; width:17px; }
+.uag:has(option:nth-child(4)):has(option:nth-child(4):checked)::after { -webkit-mask-position:-119px -0px; mask-position:-119px -0px; width:17px; }
+
 /* ================= END HUD SKIN ========================= */

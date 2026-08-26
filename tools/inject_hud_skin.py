@@ -20,6 +20,8 @@ import sys
 
 START = "/* ==== BEGIN HUD SKIN"
 END = "/* ================= END HUD SKIN ========================= */"
+JS_START = "/* ==== BEGIN HUD DIALS"
+JS_END = "/* ================= END HUD DIALS ========================= */"
 
 
 def main():
@@ -29,6 +31,7 @@ def main():
     ap.add_argument("-s", "--skin", default="web/hud_skin.css")
     ap.add_argument("-i", "--icons", default="web/ui_icons.png")
     ap.add_argument("-f", "--frame", default="web/hud_frame.png")
+    ap.add_argument("-j", "--dials", default="web/hud_dials.js")
     ap.add_argument("-o", "--out")
     args = ap.parse_args()
 
@@ -70,7 +73,8 @@ def main():
                         ("__FTR__", "web/hud_ftr.png"),
                         ("__TIERX__", "web/hud_tier_x.png"),
                         ("__TIEREX__", "web/hud_tier_ex.png"),
-                        ("__TIERUEX__", "web/hud_tier_uex.png")):
+                        ("__TIERUEX__", "web/hud_tier_uex.png"),
+                        ("__EMB__", "web/ui_emblems.png")):
         if token not in skin:
             continue
         if not os.path.exists(path):
@@ -105,7 +109,21 @@ def main():
         raise SystemExit(f"expected exactly one </style>, found {html.count(close)} — "
                          "the tracker's shape has changed and the splice point "
                          "is no longer safe")
-    out = html.replace(close, "\n" + skin + "\n" + close)
+
+    # The dial script rides along after the style block rather than in its own
+    # injection pass, because it is useless without the CSS that draws the ring
+    # and the CSS is inert without it. Two halves of one feature should not be
+    # able to get out of step by someone running one command and not the other.
+    tail = ""
+    if os.path.exists(args.dials):
+        js = open(args.dials, encoding="utf-8").read()
+        pat_js = re.compile(r"\n*<script>\s*" + re.escape(JS_START) + r".*?"
+                            + re.escape(JS_END) + r"\s*</script>\n?", re.S)
+        html = pat_js.sub("", html)
+        tail = "\n<script>\n" + js + "\n</script>"
+        print(f"  dials {os.path.getsize(args.dials) / 1e3:.1f} KB")
+
+    out = html.replace(close, "\n" + skin + "\n" + close + tail)
 
     dest = args.out or args.tracker
     with open(dest, "w", encoding="utf-8") as fh:
