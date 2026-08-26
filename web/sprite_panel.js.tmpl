@@ -381,14 +381,15 @@
     rather than borrow the hit. */
  /* Which events get a comic impact behind them, and which burst. Only the
     roles where something LANDS -- a dodge is the absence of an impact and a
-    taunt is not one either, so neither flashes. Two bursts for the two common
-    roles so a long exchange does not repeat the same drawing every time; the
-    counter and the block get one each because they are rarer.
+    taunt is not one either, so neither flashes. Four bursts each for the two
+    common roles so a long exchange does not repeat the same drawing every
+    time, two each for the counter and the block because they are rarer. It
+    was two and one, and two came round again inside a single round.
 
     The artwork is not named here. The panel sets a NUMBER on the element and
     the skin decides what that number draws, which keeps the sprite sheet in
     one place and means a tracker with no skin simply never flashes. */
- const IMPACT = { hit: [0, 1], attack: [3, 5], counter: [4], block: [2] };
+ const IMPACT = { hit: [0, 1, 7, 10], attack: [3, 5, 8, 11], counter: [4, 9], block: [2, 6] };
  let impactN = 0;
  function flash(role){
   if (!impactEl) return;

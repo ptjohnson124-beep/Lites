@@ -119,6 +119,9 @@ def main():
                         ("__PLATE1__", "web/hud_plate1.webp"),
                         ("__PLATE2__", "web/hud_plate2.webp"),
                         ("__PLATE3__", "web/hud_plate3.webp"),
+                        ("__PLATE4__", "web/hud_plate4.webp"),
+                        ("__PLATE5__", "web/hud_plate5.webp"),
+                        ("__PLATE6__", "web/hud_plate6.webp"),
                         ("__HAZARD__", "web/hud_hazard.png"),
                         ("__ALERT__", "web/hud_alert.png")):
         if token not in skin:

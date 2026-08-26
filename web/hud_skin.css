@@ -1181,16 +1181,24 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
    The panel names a NUMBER and this decides what it draws. The panel positions
    the element and leaves it invisible, so a tracker with the panel and no skin
    never flashes rather than showing an empty box mid-stage. */
-.dsp-impact[data-k] { background-image: url("__IMPACT__"); background-size: 600% 100%; }
-.dsp-impact[data-k="0"] { background-position:   0% 50%; }   /* BLAM   — struck */
-.dsp-impact[data-k="1"] { background-position:  20% 50%; }   /* BRAM   — struck */
-.dsp-impact[data-k="2"] { background-position:  40% 50%; }   /* KRAK   — blocked */
-.dsp-impact[data-k="3"] { background-position:  60% 50%; }   /* BRAAAK — attack */
-.dsp-impact[data-k="4"] { background-position:  80% 50%; }   /* POCK   — countered */
-.dsp-impact[data-k="5"] { background-position: 100% 50%; }   /* wordless — attack */
-/* Six cells in one strip, so background-size is 600% and each cell lands on a
-   fifth of the remaining travel: 0%, 20%, 40%, 60%, 80%, 100% is what
-   background-position means on an image six times the box, not 0/6..5/6. */
+.dsp-impact[data-k] { background-image: url("__IMPACT__"); background-size: 1200% 100%; }
+.dsp-impact[data-k="0"]  { background-position:   0%      50%; }   /* BLAM    */
+.dsp-impact[data-k="1"]  { background-position:   9.0909% 50%; }   /* BRAM    */
+.dsp-impact[data-k="2"]  { background-position:  18.1818% 50%; }   /* KRAK    */
+.dsp-impact[data-k="3"]  { background-position:  27.2727% 50%; }   /* BRAAAK  */
+.dsp-impact[data-k="4"]  { background-position:  36.3636% 50%; }   /* POCK    */
+.dsp-impact[data-k="5"]  { background-position:  45.4545% 50%; }
+.dsp-impact[data-k="6"]  { background-position:  54.5455% 50%; }
+.dsp-impact[data-k="7"]  { background-position:  63.6364% 50%; }
+.dsp-impact[data-k="8"]  { background-position:  72.7273% 50%; }
+.dsp-impact[data-k="9"]  { background-position:  81.8182% 50%; }
+.dsp-impact[data-k="10"] { background-position:  90.9091% 50%; }   /* WABAM   */
+.dsp-impact[data-k="11"] { background-position: 100%      50%; }   /* VWAAM   */
+/* Twelve cells now, up from six, because six repeated visibly in a long
+   exchange. background-size is 1200% and the cells are NOT at multiples of
+   1/12: a percentage background-position aligns that point of the image with
+   the same point of the box, so with an image twelve times the box the cells
+   land on multiples of 100/11. Sixth of the way along is not cell 2. */
 
 .dsp-impact.go { animation: dsp-pop .46s cubic-bezier(.16,.9,.3,1) 1; }
 @keyframes dsp-pop {
@@ -1246,6 +1254,123 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
 @keyframes hud-tear {
   from { background-position-x: 0; }
   to   { background-position-x: -320px; }
+}
+
+/* ---- 38. SPENDING THE REST OF THE PERK SHEET -------------------------
+   Seventeen of the 35 glyphs were wired in section 34 and eighteen were left
+   in the sheet. These are the ones that had somewhere real to go.
+
+   THE TOP COMMAND ROW HAS IDS, which is better than anything counted. Every
+   button in it carries one -- #btnSetup, #btnPick, #btnSparPick -- so these
+   rules cannot be broken by a button being added, removed or reordered, which
+   is the standing risk with every nth-of-type in this file.
+
+   Only six of the eleven get a mark. Save, Export and Save Slots have no glyph
+   in this sheet that means saving rather than merely fitting, and Begin
+   Engagement and Reset System already read on their own. Each rule carries its
+   own box, so a button with no rule gets no pseudo-element at all -- rather
+   than a box with no position, which is how three pools ended up displaying
+   cell 0. */
+#btnSetup::before, #btnPick::before, #btnSparPick::before,
+#btnImportGear::before, #btnNewLog::before, #btnBeginEngagement::before {
+  content: ""; display: inline-block; width: 12px; height: 12px;
+  vertical-align: -2px; margin-right: 5px; background: currentColor;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
+  opacity: .8;
+}
+#btnBeginEngagement::before { -webkit-mask-position:-240px -880px; mask-position:-240px -880px; } /* 895 stance */
+#btnSetup::before           { -webkit-mask-position:-80px -864px; mask-position:-80px -864px; } /* 869 gear-eye */
+#btnPick::before            { -webkit-mask-position:-224px -880px; mask-position:-224px -880px; } /* 894 two faces */
+#btnSparPick::before        { -webkit-mask-position:-32px -896px; mask-position:-32px -896px; } /* 898 grapple  */
+#btnImportGear::before      { -webkit-mask-position:-16px -880px; mask-position:-16px -880px; } /* 881 hardware */
+#btnNewLog::before          { -webkit-mask-position:-64px -880px; mask-position:-64px -880px; } /* 884 scroll   */
+
+/* The battle map controls, which are nine buttons and one select in a fixed
+   row. nth-of-type counts BUTTONs, so the select does not shift the numbering
+   -- but the numbering is still counted, so it is written against the row as
+   it actually renders: Day, Sandstorm, Acid Pools, Freq. Storm, Ambush
+   (Party), Ambush (Hostiles), Reroll Terrain, Reset Positions, collapse.
+
+   Four of the nine. Day and collapse already carry a glyph in their own label
+   text, and nothing in this sheet means sandstorm or reroll.
+
+   Ambush (Hostiles) was a fifth and is not: it is #bmAmbushEnemy, one of the
+   four destructive controls, and the hazard bang is set on that ID -- which
+   beats a counted selector. That is the right outcome and the rule was deleted
+   rather than fought, because what the button most needs to say is that it
+   turns the ambush on the party. */
+.bm-controls .btn:nth-of-type(3)::before,
+.bm-controls .btn:nth-of-type(4)::before,
+.bm-controls .btn:nth-of-type(5)::before,
+.bm-controls .btn:nth-of-type(8)::before {
+  content: ""; display: inline-block; width: 11px; height: 11px;
+  vertical-align: -1px; margin-right: 4px; background: currentColor;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
+  opacity: .75;
+}
+.bm-controls .btn:nth-of-type(3)::before { -webkit-mask-position:-208px -880px; mask-position:-208px -880px; } /* 893 droplet  Acid Pools */
+.bm-controls .btn:nth-of-type(4)::before { -webkit-mask-position:-224px -864px; mask-position:-224px -864px; } /* 878 signal   Freq. Storm */
+.bm-controls .btn:nth-of-type(5)::before { -webkit-mask-position:-160px -880px; mask-position:-160px -880px; } /* 890 blade    Ambush (Party) */
+.bm-controls .btn:nth-of-type(8)::before { -webkit-mask-position:-0px -896px; mask-position:-0px -896px; }     /* 896 runners  Reset Positions */
+
+/* The damage nudgers on every unit card: two that take integrity off and one
+   that puts it back. Three siblings, so the split is by position, and it is
+   the one place in the file where the icon carries the SIGN rather than the
+   subject -- a claw for the two that hurt, a medical heart for the one that
+   heals. */
+.hp-quick .btn::before {
+  content: ""; display: inline-block; width: 10px; height: 10px;
+  vertical-align: -1px; margin-right: 3px; background: currentColor;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
+  -webkit-mask-position: -208px -864px; mask-position: -208px -864px;  /* 877 claw */
+  opacity: .7;
+}
+.hp-quick .btn:nth-of-type(3)::before {                /* 871 medical heart */
+  -webkit-mask-position: -112px -864px; mask-position: -112px -864px; }
+
+/* And one state swap: a striking fist says attack more plainly than what was
+   there, which was a blade shared with three other things. */
+.dsp-state[data-role="attack"]::before { -webkit-mask-position:-176px -880px; mask-position:-176px -880px; } /* 891 fist */
+
+/* ---- 39. THREE MORE PLATES, WHERE THE SLACK ACTUALLY IS --------------
+   Four plates were left over after the pools. Rather than guess at homes for
+   them, every panel on the page was measured for the gap between its own
+   bottom edge and the bottom of its lowest child -- dead space, in other
+   words -- and three places came back with enough of it.
+
+   The two resolve readouts are the best of them: 535 by 82 with a single line
+   of placeholder text in the top-left corner, so the whole right half is
+   empty until a result is written into it. They take a background rather than
+   a pseudo-element, which puts the plate BEHIND the text automatically -- when
+   a long resolution does fill the box, the words are on top of the plate
+   rather than fighting it.
+
+   The modals take the third, in the corner of the title row. They are only on
+   screen while something is being configured, so the plate is chrome for a
+   moment rather than furniture.
+
+   The eighth plate is not used. There is nowhere left with slack that is not
+   already spoken for, and hanging it somewhere at 8% to say it was used would
+   be worse than leaving it in the folder. */
+#resOut, #retOut {
+  background-repeat: no-repeat;
+  background-size: 72px 72px;
+  background-position: right 8px bottom -6px;
+}
+#resOut { background-image: url("__PLATE4__"); }
+#retOut { background-image: url("__PLATE5__"); }
+
+.modal {
+  background-repeat: no-repeat;
+  background-size: 104px 104px;
+  background-position: right -12px top -10px;
+  background-image: url("__PLATE6__");
 }
 
 /* ================= END HUD SKIN ========================= */
