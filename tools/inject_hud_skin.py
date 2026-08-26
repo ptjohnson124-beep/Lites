@@ -12,6 +12,8 @@ re-running this and nothing else.
 """
 
 import argparse
+import base64
+import json
 import os
 import re
 import sys
@@ -25,6 +27,7 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("tracker")
     ap.add_argument("-s", "--skin", default="web/hud_skin.css")
+    ap.add_argument("-i", "--icons", default="web/ui_icons.png")
     ap.add_argument("-o", "--out")
     args = ap.parse_args()
 
@@ -32,6 +35,21 @@ def main():
     if START not in skin or END not in skin:
         raise SystemExit(f"{args.skin} is missing its markers; refusing to inject "
                          "something that cannot be removed again")
+
+    # The icon sheet, inlined for the reason every other asset here is: the
+    # tracker is opened off disk and file:// will not fetch a sibling image, so
+    # a url() pointing at a neighbour renders nothing at all and does it
+    # silently -- a mask that fails to load is an element with no mask, which
+    # paints as a solid block rather than as nothing.
+    if "__ICONS__" in skin:
+        if not os.path.exists(args.icons):
+            raise SystemExit(f"{args.icons} not found, and the skin asks for it. "
+                             "Run tools/extract_ui_icons.py, or the icon rules "
+                             "would paint solid blocks where icons should be.")
+        b = base64.b64encode(open(args.icons, "rb").read()).decode()
+        skin = skin.replace("__ICONS__", f"data:image/png;base64,{b}")
+        print(f"  icons {os.path.getsize(args.icons) / 1e3:.0f} KB "
+              f"({json.load(open(os.path.splitext(args.icons)[0] + '.json'))['count']} icons)")
 
     html = open(args.tracker, encoding="utf-8").read()
 

@@ -158,4 +158,72 @@
 .field { margin-bottom: 5px; }
 .retalopt { padding: 3px 7px; }
 
+/* ---- 10. THE ICON SET ------------------------------------------------
+   263 icons lifted off the four reference sheets by tools/extract_ui_icons.py
+   and packed 16 across at 64px. They are STENCILS -- white with the keyed
+   alpha, no colour of their own -- and they are painted with mask-image plus a
+   background, never with background-image. That is the whole reason one sprite
+   can serve a crimson danger button and a cyan panel header at once; an icon
+   carrying the pack's own red would have imported a fourth palette into a UI
+   that already has three.
+
+   HOW A POSITION IS WORKED OUT. The sheet is 16 cells across at 64px, so it is
+   1024x1088. Shown in a 16px box it has to be SCALED to 256x272 first, and
+   then icon N sits at -(N % 16 * 16)px -(N / 16 * 16)px.
+
+   The scaling is what was wrong on the first pass: the box was 15px but
+   mask-size was left at the native 1024x1088, so every icon showed the
+   top-left fifteen pixels of its 64px cell. On screen that is a corner
+   fragment, and four in a row read as a rendering bug rather than an offset. */
+:root { --uic: url("__ICONS__"); }
+/* Spelled out ONCE, into a custom property, and every rule below takes
+   var(--uic). Written inline per rule it appeared eight times, and a 466KB PNG
+   is 620KB as base64, so the tracker went 5.6MB -> 10.6MB for one image. */
+
+.pool.pool > *:first-child::before,
+.btn.cr::before, .cr.cr::before {
+  content: ""; display: inline-block; width: 16px; height: 16px;
+  vertical-align: -3px; margin-right: 6px; background: currentColor;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 272px; mask-size: 256px 272px;
+  opacity: 1;
+}
+
+/* The four resource pools, by position. No class distinguishes them -- they
+   are .pool elements differing only in their text, and CSS cannot select on
+   text -- so nth-of-type is the only handle. Checked against their contents
+   rather than assumed: Battle, Retaliation, Special, Save, in that order. */
+/* Picked for how they survive being shrunk, not for how they look on the
+   sheet. The first set used icons drawn INSIDE a box -- crossed blades in a
+   square, a cross in a square -- and at 16px the box wins and the glyph inside
+   it turns to mush, so Battle read as a cancel button. These four are bare
+   glyphs with no enclosure. */
+.pool.pool:nth-of-type(1) > *:first-child::before {   /* 226 blade */
+  -webkit-mask-position: -32px -224px; mask-position: -32px -224px; }
+.pool.pool:nth-of-type(2) > *:first-child::before {   /* 201 double chevron */
+  -webkit-mask-position: -144px -192px; mask-position: -144px -192px; }
+.pool.pool:nth-of-type(3) > *:first-child::before {   /* 205 lightning */
+  -webkit-mask-position: -208px -192px; mask-position: -208px -192px; }
+.pool.pool:nth-of-type(4) > *:first-child::before {   /* 194 charged heart */
+  -webkit-mask-position: -32px -192px; mask-position: -32px -192px; }
+
+/* The destructive controls, which already carry the hazard stripe. The icon is
+   the half of the warning that survives being glanced at: a stripe says "this
+   one is different", a bang says "this one is dangerous". */
+.btn.cr::before, .cr.cr::before {                     /* 91  bang */
+  width: 13px; height: 13px; margin-right: 5px;
+  -webkit-mask-position: -176px -80px; mask-position: -176px -80px; }
+
+/* And the mark that says a capped panel keeps going. The fade at .u-detail's
+   bottom edge says there is more; this says which way. */
+.unit.unit .u-detail::after {                         /* 202 chevrons */
+  content: ""; position: absolute; right: 12px; bottom: 4px; z-index: 3;
+  width: 15px; height: 15px; background: var(--cyand); pointer-events: none;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 272px; mask-size: 256px 272px;
+  -webkit-mask-position: -160px -192px; mask-position: -160px -192px;
+}
+
 /* ================= END HUD SKIN ========================= */

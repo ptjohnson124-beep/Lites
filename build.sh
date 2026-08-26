@@ -1668,6 +1668,7 @@ cp out/web/vergil_atlas.webp out/web/vergil_atlas.json web/
 # And then the HUD skin over the top, which is a second bounded block and a
 # second thing that can be deleted without touching the tracker:
 #
+# python3 tools/extract_ui_icons.py <reference sheets...> -o web/ui_icons.png
 # python3 tools/inject_hud_skin.py path/to/BLACKBOX_MERC_OS.html
 #
 # Order matters only in that the skin has to be appended AFTER the tracker's own
