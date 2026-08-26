@@ -217,7 +217,7 @@
   vertical-align: -3px; margin-right: 6px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 672px; mask-size: 256px 672px;
+  -webkit-mask-size: 256px 848px; mask-size: 256px 848px;
   opacity: 1;
 }
 
@@ -253,7 +253,7 @@
   width: 15px; height: 15px; background: var(--cyand); pointer-events: none;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 672px; mask-size: 256px 672px;
+  -webkit-mask-size: 256px 848px; mask-size: 256px 848px;
   -webkit-mask-position: -160px -192px; mask-position: -160px -192px;
 }
 
@@ -273,7 +273,7 @@
   vertical-align: -2px; margin-right: 5px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 672px; mask-size: 256px 672px;
+  -webkit-mask-size: 256px 848px; mask-size: 256px 848px;
   -webkit-mask-position: 999px 999px; mask-position: 999px 999px;
 }
 /* The default position is off the sheet on purpose. Every state gets the box
@@ -440,7 +440,7 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
   vertical-align: -2px; margin-right: 5px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 672px; mask-size: 256px 672px;
+  -webkit-mask-size: 256px 848px; mask-size: 256px 848px;
   -webkit-mask-position: 999px 999px; mask-position: 999px 999px;
   opacity: .8;
 }
@@ -608,7 +608,7 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
   vertical-align: -1px; margin-right: 4px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 672px; mask-size: 256px 672px;
+  -webkit-mask-size: 256px 848px; mask-size: 256px 848px;
   opacity: .55;
 }
 .sk::before       { -webkit-mask-position: -32px -400px; mask-position: -32px -400px; }  /* 402 module */
@@ -877,5 +877,24 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
    the asset, because what this needs is a texture that gets out of the way and
    the asset is a graphic that does not. web/hud_hazard.png is kept for a place
    with no text over it, if one turns up. */
+
+/* ---- 32. 848 ICONS, AND FIVE MORE REPLACEMENTS ----------------------
+   185 more: an ability-upgrade sheet, a set of Korean skill effects, and
+   eighteen hand seals. 53 rows now, so mask-size moves to 256x848 -- and once
+   again no POSITION moves, which is the fifth time that has held.
+
+   The hand seals are the find. Nothing else in 663 icons said "a frequency
+   being worked by hand", and this whole character set is built on exactly
+   that. The baseline spec takes one, and Harmonize takes cupped hands. */
+.dsp-state[data-role="soul"]::before {                /* 826 swirl, was a blade */
+  -webkit-mask-position: -160px -816px; mask-position: -160px -816px; }
+.dsp-state[data-role="spec"]::before {                /* 832 hand seal, was a bolt */
+  -webkit-mask-position: -0px -832px; mask-position: -0px -832px; }
+.dsp-state[data-role="rev"]::before {                 /* 812 orbit */
+  -webkit-mask-position: -192px -800px; mask-position: -192px -800px; }
+.dsp-state[data-role="block"]::before {               /* 761 honeycomb guard */
+  -webkit-mask-position: -144px -752px; mask-position: -144px -752px; }
+.qb:nth-of-type(10)::before {                         /* 843 cupped hands, Harmonize */
+  -webkit-mask-position: -176px -832px; mask-position: -176px -832px; }
 
 /* ================= END HUD SKIN ========================= */
