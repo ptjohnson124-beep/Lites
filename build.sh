@@ -1624,7 +1624,7 @@ python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack
   --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
   --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down --role out/dahlia_death=death --role out/dahlia_ashes=dead --role out/dahlia_soul=soul --role out/dahlia_rev=rev --role out/dahlia_grab=grab --role out/dahlia_throw=throw --role out/dahlia_ragdoll=ragdoll --role out/dahlia_getup=recover --role out/dahlia_stagger=staggered --role out/dahlia_ritual=ritualized --role out/dahlia_crowned=crowned \
   --scale-like out/dahlia_ashes=out/dahlia_death \
-  --scale-like out/dahlia_throw=out/dahlia_grab --match-scale -o out/web -n dahlia --scale 0.75 --format webp
+  --scale-like out/dahlia_throw=out/dahlia_grab --match-scale -o out/web -n dahlia --scale 0.75 --format webp --quality 78
 cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 
 # Vergil's own atlas, alongside hers rather than inside it. One atlas per
@@ -1648,7 +1648,7 @@ cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
 # came from. Her ragdoll pays the same 2.37x. Nothing in a prompt fixes it.
 python3 tools/pack_clips.py out/vergil_idle \
   --role out/vergil_idle=idle \
-  -o out/web -n vergil --scale 1.446 --format webp
+  -o out/web -n vergil --scale 1.446 --format webp --quality 78
 cp out/web/vergil_atlas.webp out/web/vergil_atlas.json web/
 
 # Put the sprite feed into the combat tracker. Re-runnable: the injected block

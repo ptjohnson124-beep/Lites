@@ -131,6 +131,11 @@ def main():
     ap.add_argument("--scale", type=float, default=1.0,
                     help="resize every cell; 0.5 halves the atlas for the web, where "
                          "she is displayed small anyway")
+    ap.add_argument("--quality", type=int, default=90,
+                    help="WebP quality. 90 is the default and was fine while the "
+                         "tracker was one character; at two it pushed the file "
+                         "past 30MB, and a sprite atlas shown at 0.75 scale "
+                         "gives up very little between 90 and 78.")
     ap.add_argument("--format", choices=("png", "webp"), default="png",
                     help="webp is a still image here, not an animation -- same pixels "
                          "at a third of the bytes, and a browser reads it either way")
@@ -288,7 +293,7 @@ def main():
     os.makedirs(args.outdir, exist_ok=True)
     png = f"{args.name}_atlas.{args.format}"
     if args.format == "webp":
-        sheet.save(os.path.join(args.outdir, png), quality=90, method=6)
+        sheet.save(os.path.join(args.outdir, png), quality=args.quality, method=6)
     else:
         sheet.save(os.path.join(args.outdir, png), optimize=True)
     with open(os.path.join(args.outdir, f"{args.name}_atlas.json"), "w", encoding="utf-8") as fh:
