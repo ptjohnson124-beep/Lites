@@ -45,6 +45,41 @@ def key_alpha(path, floor, ceil):
     return np.clip((lum - floor) / max(1.0, ceil - floor), 0.0, 1.0)
 
 
+def unbox(crop, thresh):
+    """Drop the square frame some icon packs draw around every glyph.
+
+    Boxed icons do not survive being shrunk: at 16px the box wins and the glyph
+    inside turns to mush -- the resource pools shipped with a Battle icon that
+    read as a cancel button for exactly this reason.
+
+    The test is whether there is a CLOSED RECTANGULAR OUTLINE, checked by
+    sampling four lines just inside the ink's own bounding box and asking
+    whether each is more than 70% covered. Only a frame is. The first version
+    tested the edges of the crop itself and never fired once, because the
+    component search dilates before it labels, so every crop arrives with a
+    margin of empty pixels around whatever it found.
+    """
+    m = crop > thresh
+    ys, xs = np.nonzero(m)
+    if not len(ys):
+        return crop
+    y0, y1, x0, x1 = ys.min(), ys.max(), xs.min(), xs.max()
+    h, w = y1 - y0 + 1, x1 - x0 + 1
+    if h < 24 or w < 24:
+        return crop
+    d = max(1, int(min(h, w) * 0.08))
+    ring = [m[y0 + d, x0:x1 + 1].mean(), m[y1 - d, x0:x1 + 1].mean(),
+            m[y0:y1 + 1, x0 + d].mean(), m[y0:y1 + 1, x1 - d].mean()]
+    if min(ring) < 0.70:
+        return crop
+    pad = max(3, int(min(h, w) * 0.17))
+    inner = crop[y0 + pad:y1 - pad + 1, x0 + pad:x1 - pad + 1]
+    if inner.size == 0 or (inner > thresh).sum() < 40:
+        return crop
+    iy, ix = np.nonzero(inner > thresh)
+    return inner[iy.min():iy.max() + 1, ix.min():ix.max() + 1]
+
+
 def find_icons(alpha, thresh, min_w, min_h, gap):
     """Whole icons, not the strokes they are made of.
 
@@ -77,17 +112,29 @@ def main():
     ap.add_argument("--min-w", type=int, default=26)
     ap.add_argument("--min-h", type=int, default=20)
     ap.add_argument("--gap", type=int, default=9)
+    ap.add_argument("--crop-top", type=float, default=0.0,
+                    help="ignore this fraction of the sheet's height; icon packs "
+                         "ship a marketing banner above the grid and its title "
+                         "text otherwise arrives as icons")
+    ap.add_argument("--unbox", action="store_true",
+                    help="drop the square frame packs draw around each glyph")
+    ap.add_argument("--append", help="an existing sprite to extend rather than replace")
     ap.add_argument("--contact", help="also write a numbered contact sheet here")
     args = ap.parse_args()
 
     icons = []
     for path in args.sheets:
         alpha = key_alpha(path, args.floor, args.ceil)
+        if args.crop_top:
+            alpha = alpha[int(alpha.shape[0] * args.crop_top):]
         boxes = find_icons(alpha, 0.25, args.min_w, args.min_h, args.gap)
         print(f"  {os.path.basename(path)}  {alpha.shape[1]}x{alpha.shape[0]}  "
               f"{len(boxes)} icons")
         for (x, y, w, h) in boxes:
             crop = alpha[y:y + h, x:x + w]
+            if args.unbox:
+                crop = unbox(crop, 0.4)
+            h, w = crop.shape
             # Fit into the cell on the LONGER side, so a wide button and a
             # square check come out at a consistent visual weight rather than
             # a consistent width.
@@ -96,10 +143,23 @@ def main():
                 (max(1, int(w * s)), max(1, int(h * s))), Image.LANCZOS)
             icons.append(im)
 
+    # Appending rather than rebuilding, so indices already wired into CSS keep
+    # pointing at the same glyphs. A pack that renumbered its own sprite would
+    # silently move every icon in the stylesheet by one.
+    base = 0
+    old = None
+    if args.append and os.path.exists(args.append):
+        old = Image.open(args.append).convert("RGBA")
+        base = (old.width // args.cell) * (old.height // args.cell)
+        print(f"  appending to {args.append}: {base} cells already there")
+
     cols = args.cols
-    rows = (len(icons) + cols - 1) // cols
+    rows = ((base + len(icons)) + cols - 1) // cols
     sheet = Image.new("RGBA", (cols * args.cell, rows * args.cell), (0, 0, 0, 0))
-    for i, im in enumerate(icons):
+    if old is not None:
+        sheet.paste(old, (0, 0))
+    for k, im in enumerate(icons):
+        i = base + k
         cx, cy = (i % cols) * args.cell, (i // cols) * args.cell
         ox, oy = cx + (args.cell - im.width) // 2, cy + (args.cell - im.height) // 2
         # White with the keyed alpha: the sprite is a stencil, and every pixel
@@ -109,10 +169,10 @@ def main():
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
     sheet.save(args.out, optimize=True)
     man = {"image": os.path.basename(args.out), "cell": args.cell,
-           "cols": cols, "rows": rows, "count": len(icons)}
+           "cols": cols, "rows": rows, "count": base + len(icons)}
     with open(os.path.splitext(args.out)[0] + ".json", "w", encoding="utf-8") as fh:
         json.dump(man, fh, indent=1)
-    print(f"  -> {len(icons)} icons, {cols}x{rows} of {args.cell}px, "
+    print(f"  -> {base + len(icons)} icons, {cols}x{rows} of {args.cell}px, "
           f"{os.path.getsize(args.out) / 1e3:.0f} KB")
 
     if args.contact:
@@ -120,7 +180,10 @@ def main():
         pad = 18
         c = Image.new("RGB", (cols * args.cell, rows * (args.cell + pad)), (14, 18, 26))
         d = ImageDraw.Draw(c)
-        for i, im in enumerate(icons):
+        allic = ([old.crop(((j % cols) * args.cell, (j // cols) * args.cell,
+                            (j % cols + 1) * args.cell, (j // cols + 1) * args.cell))
+                  for j in range(base)] if old is not None else []) + icons
+        for i, im in enumerate(allic):
             cx, cy = (i % cols) * args.cell, (i // cols) * (args.cell + pad)
             c.paste((80, 210, 230), (cx + (args.cell - im.width) // 2,
                                      cy + (args.cell - im.height) // 2), im)

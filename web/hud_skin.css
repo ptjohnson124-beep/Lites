@@ -217,7 +217,7 @@
   vertical-align: -3px; margin-right: 6px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 272px; mask-size: 256px 272px;
+  -webkit-mask-size: 256px 384px; mask-size: 256px 384px;
   opacity: 1;
 }
 
@@ -253,7 +253,7 @@
   width: 15px; height: 15px; background: var(--cyand); pointer-events: none;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 272px; mask-size: 256px 272px;
+  -webkit-mask-size: 256px 384px; mask-size: 256px 384px;
   -webkit-mask-position: -160px -192px; mask-position: -160px -192px;
 }
 
@@ -273,7 +273,7 @@
   vertical-align: -2px; margin-right: 5px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 272px; mask-size: 256px 272px;
+  -webkit-mask-size: 256px 384px; mask-size: 256px 384px;
   -webkit-mask-position: 999px 999px; mask-position: 999px 999px;
 }
 /* The default position is off the sheet on purpose. Every state gets the box
@@ -420,6 +420,93 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
   content: ""; position: absolute; left: 0; right: 0; top: -7px; height: 9px;
   pointer-events: none; opacity: .5;
   background: url("__RULE__") no-repeat left center / 150px 9px;
+}
+
+/* ---- 17. THE ICON SET, ACROSS THE FILE -------------------------------
+   373 icons now, after 101 more were unboxed off two 512px packs. Wiring them
+   broadly is the point of this section, and the constraint is the same one
+   that has bitten twice: CSS cannot read text, so an icon can only be attached
+   where the markup distinguishes one label from another.
+
+   Where it does, the icon is specific. Where it does not, one generic mark is
+   used rather than a guessed-specific one -- a wrong icon is worse than a
+   neutral one, because a reader trusts it.
+
+   One shared box, then a position per role. Everything inherits currentColor,
+   so an icon on a crimson control comes out crimson without a second rule. */
+.qb::before, .uag-h::before, .g::before, .vi::before, .rn::before,
+.u-expand-tog::before, .pmf .gk::before, .mf .gk::before, .tech .gk::before {
+  content: ""; display: inline-block; width: 13px; height: 13px;
+  vertical-align: -2px; margin-right: 5px; background: currentColor;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 384px; mask-size: 256px 384px;
+  -webkit-mask-position: 999px 999px; mask-position: 999px 999px;
+  opacity: .8;
+}
+/* mask-size is 256x384 now, not 256x272: the sheet grew from 17 rows to 24
+   when the second pack was appended. Every position below is arithmetic on the
+   16-across grid -- icon N at -(N%16*16)px -(N/16*16)px -- and it only stays
+   correct because the packer APPENDS rather than repacks. A tool that
+   renumbered its own sprite would move every icon in this file by one. */
+
+/* The eleven action buttons, which share one parent and so can be told apart
+   by position. Verified against their own text in DOM order rather than
+   assumed: Strike, Light, Ranged, Heavy, Engine Lt, Combo, QQC Lock, Daze,
+   Pressure, Harmonize, Rotate. */
+.qb:nth-of-type(1)::before { -webkit-mask-position:-32px -224px; mask-position:-32px -224px; } /* Strike */
+.qb:nth-of-type(2)::before { -webkit-mask-position:-0px -272px; mask-position:-0px -272px; } /* Light */
+.qb:nth-of-type(3)::before { -webkit-mask-position:-160px -304px; mask-position:-160px -304px; } /* Ranged */
+.qb:nth-of-type(4)::before { -webkit-mask-position:-0px -320px; mask-position:-0px -320px; } /* Heavy */
+.qb:nth-of-type(5)::before { -webkit-mask-position:-48px -352px; mask-position:-48px -352px; } /* Engine Lt */
+.qb:nth-of-type(6)::before { -webkit-mask-position:-176px -320px; mask-position:-176px -320px; } /* Combo */
+.qb:nth-of-type(7)::before { -webkit-mask-position:-64px -288px; mask-position:-64px -288px; } /* QQC Lock */
+.qb:nth-of-type(8)::before { -webkit-mask-position:-80px -208px; mask-position:-80px -208px; } /* Daze */
+.qb:nth-of-type(9)::before { -webkit-mask-position:-208px -192px; mask-position:-208px -192px; } /* Pressure */
+.qb:nth-of-type(10)::before { -webkit-mask-position:-64px -272px; mask-position:-64px -272px; } /* Harmonize */
+.qb:nth-of-type(11)::before { -webkit-mask-position:-48px -272px; mask-position:-48px -272px; } /* Rotate */
+
+/* The four kit sections, four to a unit card and repeating, so nth-of-type
+   cycles correctly inside each card. */
+.uag-h:nth-of-type(1)::before { -webkit-mask-position:-48px -320px; mask-position:-48px -320px; } /* Character Kit */
+.uag-h:nth-of-type(2)::before { -webkit-mask-position:-144px -304px; mask-position:-144px -304px; } /* Gear & Loadout */
+.uag-h:nth-of-type(3)::before { -webkit-mask-position:-80px -272px; mask-position:-80px -272px; } /* Mask / State */
+.uag-h:nth-of-type(4)::before { -webkit-mask-position:-192px -288px; mask-position:-192px -288px; } /* Table / GM */
+
+/* The three gauge labels. These CANNOT be told apart by position -- all 15
+   sit alone in 15 different parents, so nth-of-type sees each as the first of
+   its kind -- but their containers are classed, which is the handle. */
+.pmf .gk::before { -webkit-mask-position:-64px -272px; mask-position:-64px -272px; }   /* 276 balance */
+.mf .gk::before   { -webkit-mask-position:-48px -352px; mask-position:-48px -352px; }   /* 355 charge  */
+.tech .gk::before { -webkit-mask-position:-192px -288px; mask-position:-192px -288px; }   /* 300 system  */
+
+/* Generic marks, where the markup gives nothing to distinguish on. A banner is
+   always an alert, an expander always points, a retaliation is always a guard;
+   none of those need to know WHICH one they are. */
+.g::before            { -webkit-mask-position:-176px -80px; mask-position:-176px -80px; }   /* 91  alert */
+.u-expand-tog::before { -webkit-mask-position:-144px -192px; mask-position:-144px -192px; } /* 201 chevrons */
+.rn::before           { -webkit-mask-position:-192px -128px; mask-position:-192px -128px; } /* 140 guard */
+.vi::before           { -webkit-mask-position:-208px -192px; mask-position:-208px -192px; } /* 205 charge */
+
+/* ---- 18. THE NAMEPLATE ----------------------------------------------
+   The unit card header, on the decal plate from the sticker sheet.
+
+   That sheet is the one asset here that could not be used as drawn: its labels
+   are compositions with words baked into them, and a tracker is not improved
+   by every unit card saying CRYPTO_PASS/2. What survives is the SILHOUETTE --
+   keyed, closed, holes filled so the knocked-out lettering does not punch
+   through, and reduced to the largest blob. 1.1KB of shape with no content.
+
+   It is a mask on a background rather than an image, for the same reason the
+   icons are: the plate takes the panel's own colour instead of importing the
+   sheet's. */
+.u-top { position: relative; }
+.u-top::before {
+  content: ""; position: absolute; left: -6px; top: -3px; bottom: -3px; width: 190px;
+  pointer-events: none; z-index: 0; opacity: .18;
+  background: linear-gradient(90deg, var(--cyand), transparent);
+  -webkit-mask: url("__DECAL__") no-repeat left center / 100% 100%;
+          mask: url("__DECAL__") no-repeat left center / 100% 100%;
 }
 
 /* ================= END HUD SKIN ========================= */
