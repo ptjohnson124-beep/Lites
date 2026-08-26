@@ -52,12 +52,26 @@ def main():
         print(f"  icons {os.path.getsize(args.icons) / 1e3:.0f} KB "
               f"({json.load(open(os.path.splitext(args.icons)[0] + '.json'))['count']} icons)")
 
-    if "__FRAME__" in skin:
-        if not os.path.exists(args.frame):
-            raise SystemExit(f"{args.frame} not found, and the skin asks for it.")
-        b = base64.b64encode(open(args.frame, "rb").read()).decode()
-        skin = skin.replace("__FRAME__", f"data:image/png;base64,{b}")
-        print(f"  frame {os.path.getsize(args.frame) / 1e3:.1f} KB")
+    # Every frame the skin asks for, by placeholder. A missing one is fatal
+    # rather than skipped: an unresolved url() in a border-image simply draws
+    # nothing, and a panel silently losing its frame is the kind of failure
+    # that ships.
+    total = 0
+    for token, path in (("__FRAME__", args.frame),
+                        ("__CARD__", "web/hud_card.png"),
+                        ("__SOFT__", "web/hud_soft.png"),
+                        ("__TAB__", "web/hud_tab.png"),
+                        ("__RULE__", "web/hud_rule.png"),
+                        ("__SQ__", "web/hud_sq.png")):
+        if token not in skin:
+            continue
+        if not os.path.exists(path):
+            raise SystemExit(f"{path} not found, and the skin asks for it via {token}.")
+        b = base64.b64encode(open(path, "rb").read()).decode()
+        skin = skin.replace(token, f"data:image/png;base64,{b}")
+        total += os.path.getsize(path)
+    if total:
+        print(f"  frames {total / 1e3:.1f} KB")
 
     html = open(args.tracker, encoding="utf-8").read()
 

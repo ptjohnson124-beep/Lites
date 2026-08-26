@@ -133,12 +133,21 @@
 }
 .btn.btn:hover { box-shadow: inset 2px 0 0 var(--cyanb), 0 0 10px rgba(57,211,232,.18); }
 
-/* Destructive controls get the hazard bar from the reference sheet. .cr is the
-   tracker's own class for them and it is exactly the right set -- Reset System,
-   Force System Break, Spawn Ritualized, Ambush (Hostiles). The first version
-   guessed at #btnReset and [onclick*=reset] and marked nothing, which is worse
-   than not marking: a warning that does not appear reads as "this is safe". */
-.btn.cr, .cr.cr {
+/* Destructive controls get the hazard bar from the reference sheet, and WHICH
+   controls those are took three passes to get right.
+
+   The first guessed at #btnReset and [onclick*=reset] and marked nothing. The
+   second used .cr, the tracker's own class, on the strength of a four-element
+   sample that read Reset System, Force System Break, Spawn Ritualized, Ambush.
+   Counted properly there are 41 of them and .cr means "crimson", not
+   "dangerous": it also covers the damage nudgers, +15, Confirm and Close. A
+   hazard stripe on a heal button is the same failure as no stripe on a reset
+   -- the mark stops meaning anything.
+
+   So it is four IDs, which the buttons turn out to have. Narrow and checkable,
+   and a new destructive control has to be added here on purpose rather than
+   inheriting a warning by being red. */
+#btnReset, #btnBreak, #btnSpawn, #bmAmbushEnemy {
   background-image: repeating-linear-gradient(
     45deg, rgba(224,70,76,.22) 0 6px, transparent 6px 12px) !important;
   box-shadow: inset 2px 0 0 var(--crim);
@@ -203,7 +212,7 @@
    is 620KB as base64, so the tracker went 5.6MB -> 10.6MB for one image. */
 
 .pool.pool > *:first-child::before,
-.btn.cr::before, .cr.cr::before {
+#btnReset::before, #btnBreak::before, #btnSpawn::before, #bmAmbushEnemy::before {
   content: ""; display: inline-block; width: 16px; height: 16px;
   vertical-align: -3px; margin-right: 6px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
@@ -233,7 +242,7 @@
 /* The destructive controls, which already carry the hazard stripe. The icon is
    the half of the warning that survives being glanced at: a stripe says "this
    one is different", a bang says "this one is dangerous". */
-.btn.cr::before, .cr.cr::before {                     /* 91  bang */
+#btnReset::before, #btnBreak::before, #btnSpawn::before, #bmAmbushEnemy::before { /* 91 bang */
   width: 13px; height: 13px; margin-right: 5px;
   -webkit-mask-position: -176px -80px; mask-position: -176px -80px; }
 
@@ -306,5 +315,111 @@
   -webkit-mask-position: -128px -192px; mask-position: -128px -192px; }
 .dsp-state[data-role="rev"]::before { /* 205 */
   -webkit-mask-position: -208px -192px; mask-position: -208px -192px; }
+
+/* ---- 12. GAUGES -----------------------------------------------------
+   Reshaped rather than re-imaged. A gauge's fill changes width every time the
+   number changes, so a picture of a gauge is the wrong tool -- the shape has
+   to be a clip the fill lives inside, not a frame drawn around it.
+
+   The reference sheet names fifteen; two of them fit what is here. .bar is
+   8px tall, and at 8px the pointed gauge's chevron ends are a two-pixel bevel
+   that reads as an artefact, so these take the SLANTED box instead -- the same
+   parallelogram, which survives being short. The tick overlay is the
+   segmented gauge from the same sheet, at 12px pitch.
+
+   Both the track and its fill are clipped by clipping the parent, because
+   these already carry overflow:hidden. That is load-bearing: clip-path on the
+   parent alone would leave a square fill poking out of a slanted track. */
+.bar.bar {
+  border-radius: 0;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  position: relative;
+}
+.bar.bar::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(90deg,
+    transparent 0 10px, rgba(7,10,14,.85) 10px 12px);
+}
+/* .track is the layer bar and is already segmented by real elements, so it
+   takes the shape and not the ticks -- ticks over segments is two grids. */
+.track.track { border-radius: 0;
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%); }
+
+/* ---- 13. FRAMES BY ROLE ---------------------------------------------
+   Four more frames off the MOOVOR sheet, keyed and tinted the same way, put
+   where their shape means something rather than everywhere at once.
+
+   Every one is drawn the way rule 2 established: a ::after whose inset EQUALS
+   its border-width, so the ring sits entirely in the strip outside the box.
+   That is not a style choice, it is the fix for the frame that covered the
+   command panel's first button. */
+.unit.unit::after, .resolve.resolve::after {          /* the long notched bar */
+  border-width: 15px; inset: -15px;
+  border-image: url("__CARD__") 46 stretch; opacity: .8; }
+
+.retaltypes::after, #econ::after, #passivesPanel::after {
+  content: ""; position: absolute; inset: -12px; pointer-events: none; z-index: 2;
+  border: 12px solid transparent;
+  border-image: url("__SOFT__") 40 stretch; opacity: .75; }
+.retaltypes, #econ, #passivesPanel { position: relative; }
+/* position:relative is added to exactly these three, by name, and only because
+   an absolutely positioned ::after needs a positioned parent. The blanket
+   version of this on every panel CHILD is what the note in rule 3 is about. */
+
+/* ---- 14. THE DIVIDER -------------------------------------------------
+   The chevron rule, as a background rather than a border-image, because it is
+   not a frame -- it has a direction and stretching it round four sides would
+   lose that. It goes on the top edge of the unit detail panel, which is the
+   one place in a unit card where two unrelated things meet. */
+.u-detail.u-detail {
+  border-top: 0;
+  background-image: url("__RULE__");
+  background-repeat: no-repeat;
+  background-position: left top;
+  background-size: 210px 12px;
+  padding-top: 14px;
+}
+
+/* ---- 15. CONTROLS ---------------------------------------------------
+   84 selects and 222 inputs, which between them are most of what a person
+   actually touches. The notch matches the buttons; nothing here changes a hit
+   area or a focus behaviour.
+
+   appearance:none removes the native dropdown arrow, so one is drawn back on.
+   Leaving it off would have been the same class of failure as the hazard
+   stripes that marked nothing: a select that does not look like a select. */
+select {
+  appearance: none; -webkit-appearance: none;
+  border-radius: 0;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  padding-right: 20px !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--cyan) 50%),
+    linear-gradient(135deg, var(--cyan) 50%, transparent 50%);
+  background-position: right 11px center, right 6px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+input[type="text"], input[type="number"], input:not([type]), textarea {
+  border-radius: 0;
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  box-shadow: inset 2px 0 0 rgba(57,211,232,.28);
+}
+
+/* ---- 16. RETALIATION AND ACTIONS ------------------------------------
+   36 .retalopt chips and the action rows. Chips take the button notch at a
+   smaller radius so a dense row of them still reads as separate objects, and
+   the row they sit in takes the tab frame. */
+.retalopt.retalopt {
+  border-radius: 0;
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  box-shadow: inset 2px 0 0 rgba(57,211,232,.30);
+}
+.u-acts, .u-acts-more { position: relative; }
+.u-acts::before, .u-acts-more::before {
+  content: ""; position: absolute; left: 0; right: 0; top: -7px; height: 9px;
+  pointer-events: none; opacity: .5;
+  background: url("__RULE__") no-repeat left center / 150px 9px;
+}
 
 /* ================= END HUD SKIN ========================= */
