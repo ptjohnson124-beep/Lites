@@ -233,7 +233,7 @@
   vertical-align: -3px; margin-right: 6px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 864px; mask-size: 256px 864px;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
   opacity: 1;
 }
 
@@ -269,7 +269,7 @@
   width: 15px; height: 15px; background: var(--cyand); pointer-events: none;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 864px; mask-size: 256px 864px;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
   -webkit-mask-position: -160px -192px; mask-position: -160px -192px;
 }
 
@@ -289,7 +289,7 @@
   vertical-align: -2px; margin-right: 5px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 864px; mask-size: 256px 864px;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
   -webkit-mask-position: 999px 999px; mask-position: 999px 999px;
 }
 /* The default position is off the sheet on purpose. Every state gets the box
@@ -456,7 +456,7 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
   vertical-align: -2px; margin-right: 5px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 864px; mask-size: 256px 864px;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
   -webkit-mask-position: 999px 999px; mask-position: 999px 999px;
   opacity: .8;
 }
@@ -624,7 +624,7 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
   vertical-align: -1px; margin-right: 4px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 864px; mask-size: 256px 864px;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
   opacity: .55;
 }
 .sk::before       { -webkit-mask-position: -32px -400px; mask-position: -32px -400px; }  /* 402 module */
@@ -963,7 +963,7 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
    other pools' icons reads as deliberate rather than as a mistake. */
 .pool.pool.battle > *:first-child::before {           /* 848 compass, was 226 blade */
   width: 20px; height: 20px; vertical-align: -5px;
-  -webkit-mask-size: 320px 1080px; mask-size: 320px 1080px;
+  -webkit-mask-size: 320px 1140px; mask-size: 320px 1140px;
   -webkit-mask-position: -0px -1060px; mask-position: -0px -1060px; }
 
 /* The Retaliation resolve button. .btn.vi already gave it the generic charge
@@ -974,7 +974,7 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
   vertical-align: -2px; margin-right: 6px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 864px; mask-size: 256px 864px;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
   -webkit-mask-position: -16px -848px; mask-position: -16px -848px;
   opacity: .9;
 }
@@ -999,7 +999,7 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
   background: var(--cyan); opacity: .34;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 416px 1404px; mask-size: 416px 1404px;
+  -webkit-mask-size: 416px 1482px; mask-size: 416px 1482px;
   -webkit-mask-position: -0px -1378px; mask-position: -0px -1378px;
 }
 
@@ -1027,5 +1027,225 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
    something neutral instead of whatever happens to sit in cell 0. */
 .pool.pool > *:first-child::before {                  /* 595 toolbox */
   -webkit-mask-position: -48px -592px; mask-position: -48px -592px; }
+
+/* ---- 34. THE PERK SHEET: 35 GLYPHS OFF THEIR PLATES ------------------
+   899 cells, 35 of them new. The sheet they came from is 35 hexagonal badges,
+   and the hexagon is the problem: this file already learned once that a glyph
+   drawn INSIDE a box does not survive being shrunk, because at 16px the box
+   wins and the contents turn to mush. The resource pools shipped with a Battle
+   icon that read as a cancel button for exactly that reason.
+
+   So the plate was thrown away rather than unboxed. The badges are three
+   luminances -- near-black ground, mid-slate hexagon, near-white glyph -- and
+   keying with the floor raised to 130 drops the middle one entirely. What
+   comes out is 35 bare glyphs, which is what the set wanted anyway. Measured
+   before it was run: the ground is 84% of the sheet under luminance 25, the
+   hexagons 10% between 26 and 51, the glyphs 4% above 230. A wide gap either
+   side of 130.
+
+   THEY LANDED AT 864, not 850. --append counts CELLS, not icons, and the
+   sheet was 16x54 with fourteen empty cells at the end. That is the right
+   behaviour -- padding cells are still cells, and reusing them would shift
+   nothing but would make the arithmetic depend on the manifest rather than the
+   image -- but it is worth writing down, because the obvious guess is wrong.
+   57 rows now, so mask-size moves to 256x912. */
+
+/* The six stats, which are the same six in the same order on every unit card:
+   PWR, PREC, SOUL, DEF, EVA, INTEG-DMG. Six .stedit siblings to a grid, so
+   nth-of-type cycles correctly inside each card. Verified against their own
+   text on three cards rather than assumed. */
+.sl::before, .adv::before, .ftg::before {
+  content: ""; display: inline-block; width: 12px; height: 12px;
+  vertical-align: -2px; margin-right: 4px; background: currentColor;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
+  -webkit-mask-position: -32px -880px; mask-position: -32px -880px;  /* 882 default */
+  opacity: .7;
+}
+.stedit:nth-of-type(1) .sl::before { -webkit-mask-position:-16px -896px; mask-position:-16px -896px; } /* 897 flexed arm   PWR */
+.stedit:nth-of-type(2) .sl::before { -webkit-mask-position:-64px -864px; mask-position:-64px -864px; } /* 868 lens         PREC */
+.stedit:nth-of-type(3) .sl::before { -webkit-mask-position:-160px -816px; mask-position:-160px -816px; } /* 826 swirl      SOUL */
+.stedit:nth-of-type(4) .sl::before { -webkit-mask-position:-240px -864px; mask-position:-240px -864px; } /* 879 shield      DEF */
+.stedit:nth-of-type(5) .sl::before { -webkit-mask-position:-0px -896px; mask-position:-0px -896px; }   /* 896 runners      EVA */
+.stedit:nth-of-type(6) .sl::before { -webkit-mask-position:-128px -864px; mask-position:-128px -864px; } /* 872 vitals    INTEG-DMG */
+/* SOUL takes the swirl the sprite panel already uses for its soul state rather
+   than a new glyph. The same idea should not have two marks in one file. */
+
+/* The four unit flags, identical in content and order on all five cards --
+   checked, because nth-of-type on a list that varies per unit would silently
+   mislabel the ones that differ.
+
+   FIFTH THROUGH EIGHTH, not first through fourth. nth-of-type counts by TAG,
+   and every flag in this row is a <label>: four toggles (DOWN, SKIP, WPN
+   BREAK, REV) come first and the four .adv flags follow them, so .adv:nth-of-
+   type(1) matches nothing at all. It matched nothing quietly, too -- all eight
+   labels simply kept the shared default and the row looked deliberate. The
+   four toggles are unconditional in the markup, so the offset is fixed. */
+.adv:nth-of-type(5)::before { -webkit-mask-position:-96px -864px; mask-position:-96px -864px; }   /* 870 burst+key  ADV +15% */
+.adv:nth-of-type(6)::before { -webkit-mask-position:-144px -864px; mask-position:-144px -864px; } /* 873 brute      ELITE */
+.adv:nth-of-type(7)::before { -webkit-mask-position:-160px -864px; mask-position:-160px -864px; } /* 874 machine    COLOSSAL/MACHINE */
+.adv:nth-of-type(8)::before { -webkit-mask-position:-144px -880px; mask-position:-144px -880px; } /* 889 droplet    WATER-VULNERABLE */
+
+/* The battle map legend was tried and taken out again. Three of its five
+   entries have an exact glyph here -- plate, droplet, cell -- and the other two,
+   high ground and low ground, have nothing this sheet can say. Marking three
+   and defaulting two put a meaningless glyph next to a coloured swatch that
+   was already the key, so the row gained noise and no information. A wrong
+   icon is worse than none, and a neutral one next to a real key is worse than
+   nothing at all. .bm-leg-item stays out of the shared box rule. */
+
+/* And five sprite-panel states that now have a glyph that says what they are
+   instead of one that merely fits. */
+.dsp-state[data-role="death"]::before      { -webkit-mask-position:-16px -864px; mask-position:-16px -864px; }   /* 865 skull */
+.dsp-state[data-role="fractured"]::before  { -webkit-mask-position:-96px -880px; mask-position:-96px -880px; }   /* 886 cracked */
+.dsp-state[data-role="counter"]::before    { -webkit-mask-position:-32px -896px; mask-position:-32px -896px; }   /* 898 grapple */
+.dsp-state[data-role="cyberpsychosis"]::before { -webkit-mask-position:-0px -880px; mask-position:-0px -880px; } /* 880 rage */
+.dsp-state[data-role="recover"]::before    { -webkit-mask-position:-128px -880px; mask-position:-128px -880px; } /* 888 stim */
+.dsp-state[data-role="hit"]::before        { -webkit-mask-position:-48px -864px; mask-position:-48px -864px; }   /* 867 impact */
+.dsp-state[data-role="staggered"]::before  { -webkit-mask-position:-176px -864px; mask-position:-176px -864px; } /* 875 bandaged */
+
+/* ---- 35. FOUR HUD PLATES IN THE POOLS' DEAD SPACE --------------------
+   The plate sheet is eight label frames -- violet blocks with cyan outlined
+   capsules, hatching, pixel drift and corner brackets. They are compositions
+   rather than icons: 240px square, with an empty label box in the middle that
+   is the whole point of the drawing. Cropping one to a 16px glyph would throw
+   away everything that makes it a plate.
+
+   So they are used near their own size, in the one place on this page with
+   room. Four of the seven pools -- Battle, Retaliation, Special, Save -- put
+   their pips and their control row in the top 60px of a 130px card and leave
+   the rest empty. The other three do not: System Pressure, Harmonization and
+   Last Rites Stock fill their cards with gauges and notes, and a plate behind
+   them made the text unreadable, which is what the first pass shipped. They
+   are excluded by name rather than dimmed.
+
+   Colour is kept rather than keyed to a stencil, deliberately. The sheet is
+   already violet and pale cyan, which is this tracker's --vio and --cyan;
+   recolouring it would be work that changes nothing. What IS keyed is the
+   ground: the plates were drawn on near-black, and that black is transparent
+   now, so what reaches the panel is the artwork alone at 17% -- baked into the
+   file rather than applied in CSS, because a background-image has no opacity
+   of its own and .pool has already spent both its pseudo-elements on the panel
+   texture and the frame.
+
+   FOUR FILES, NOT ONE STRIP. The obvious packing -- all eight plates in one
+   sheet, offset into place like the icons -- does not work for a background on
+   a wide element: background-repeat:no-repeat draws the whole image once, and
+   the visible part is however much of it lands inside the box. A 340px pool
+   showed four and a half plates in a row. There is no cropping the background
+   of an element to less than the element, and .pool has already spent both
+   pseudo-elements on the panel texture and the frame, so each plate is its own
+   file at 14KB.
+
+   Positioned in the four-value form, "right 6px bottom 2px". It was written
+   first as "calc(100% + 504px) bottom -2px", which is not valid: an x
+   expression cannot be mixed with a keyword-and-offset pair, so the whole
+   declaration was dropped and all four pools fell back to 0% 0% -- over the
+   name and the count. An invalid background-position does not warn; it just
+   puts the image somewhere plausible enough to look deliberate. */
+.pool.battle, .pool.retal, .pool.special, .pool.save {
+  background-repeat: no-repeat;
+  background-size: 72px 72px;
+  background-position: right 6px bottom 2px;
+}
+.pool.battle  { background-image: url("__PLATE0__"); }
+.pool.retal   { background-image: url("__PLATE1__"); }
+.pool.special { background-image: url("__PLATE2__"); }
+.pool.save    { background-image: url("__PLATE3__"); }
+
+/* ---- 36. SIX COMIC IMPACTS, ON THE ONE SURFACE THAT WANTS THEM -------
+   Two sheets of hand-drawn comic bursts -- BLAM, BRAM, KRAK, and three
+   wordless ones -- in full colour on a flat grey plate.
+
+   THESE DO NOT BELONG ANYWHERE IN THE HUD, and that is worth saying plainly.
+   Every other asset in this file became a stencil the CSS paints in cyan, gold
+   or crimson; these are twelve-colour paintings with their own black line work,
+   and behind 9px letterspaced type they would do exactly what the real hazard
+   bar did to FORCE SYSTEM BREAK. There is no size at which a magenta starburst
+   backs a control instead of competing with it.
+
+   The one surface on this page that is not HUD chrome is the sprite stage: a
+   painted battle map with characters animating on it, already full colour,
+   already not trying to be read as text. A comic impact is native there. So
+   they are the ONLY asset here used as artwork rather than as a mask, and they
+   appear for 460ms when something lands.
+
+   KEYED ON SATURATION, NOT ON DISTANCE FROM THE GROUND. The plate is flat grey
+   and each burst sits on a soft grey drop shadow, and a shadow is exactly as
+   far from mid-grey as a thin pale stroke is -- so a distance key either kept
+   the shadows or ate the highlights. What separates them is that the ink is
+   saturated and the shadow is not, with the black line work and the white
+   sparks picked up by luminance at either end instead.
+
+   The panel names a NUMBER and this decides what it draws. The panel positions
+   the element and leaves it invisible, so a tracker with the panel and no skin
+   never flashes rather than showing an empty box mid-stage. */
+.dsp-impact[data-k] { background-image: url("__IMPACT__"); background-size: 600% 100%; }
+.dsp-impact[data-k="0"] { background-position:   0% 50%; }   /* BLAM   — struck */
+.dsp-impact[data-k="1"] { background-position:  20% 50%; }   /* BRAM   — struck */
+.dsp-impact[data-k="2"] { background-position:  40% 50%; }   /* KRAK   — blocked */
+.dsp-impact[data-k="3"] { background-position:  60% 50%; }   /* BRAAAK — attack */
+.dsp-impact[data-k="4"] { background-position:  80% 50%; }   /* POCK   — countered */
+.dsp-impact[data-k="5"] { background-position: 100% 50%; }   /* wordless — attack */
+/* Six cells in one strip, so background-size is 600% and each cell lands on a
+   fifth of the remaining travel: 0%, 20%, 40%, 60%, 80%, 100% is what
+   background-position means on an image six times the box, not 0/6..5/6. */
+
+.dsp-impact.go { animation: dsp-pop .46s cubic-bezier(.16,.9,.3,1) 1; }
+@keyframes dsp-pop {
+  0%   { opacity: 0;   transform: translate(-50%, -50%) scale(.55) rotate(-7deg); }
+  16%  { opacity: 1;   transform: translate(-50%, -50%) scale(1.06) rotate(2deg); }
+  38%  { opacity: .95; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+  100% { opacity: 0;   transform: translate(-50%, -50%) scale(1.14) rotate(1deg); }
+}
+/* The transform is respecified in every keyframe including the translate,
+   because a keyframe REPLACES the property rather than adding to it -- leaving
+   translate(-50%,-50%) out of the frames would drop the centring the moment
+   the animation started and snap the burst to the stage's middle-right. */
+
+/* ---- 37. THREE TEARING BANDS, FOR THE STATES THAT ARE BREAKING -------
+   The glitch sheet is three horizontal bars of digital tearing -- displaced
+   scanlines in magenta, cyan and lime. Like the impact bursts they are full
+   colour and cannot be a stencil, and like the bursts there is exactly one
+   surface here that can carry them: the sprite stage.
+
+   They were shipped on a JPEG of a TRANSPARENCY CHECKERBOARD, which means the
+   transparency is painted rather than stored -- there is no alpha to recover,
+   only a grey check to remove. The same saturation key the bursts use handles
+   it: the tearing is saturated and the checker is not, with the white blowouts
+   picked up by luminance.
+
+   Which state gets which bar is by severity rather than by looks. Fractured
+   and cyberpsychosis are the mind going, and take the two loudest; slipping is
+   the quiet one and takes the softest. down, dead and ragdoll get nothing --
+   she is not glitching, she is on the floor, and the panel already says so.
+
+   THE ANIMATION STEPS RATHER THAN SLIDES. A smooth scroll of a torn scanline
+   reads as a moving texture, which is the opposite of the point; steps(5)
+   makes it jump, and a jump is what tearing looks like. */
+.dsp-panel[data-state="fractured"] .dsp-glitch,
+.dsp-panel[data-state="cyberpsychosis"] .dsp-glitch,
+.dsp-panel[data-state="slipping"] .dsp-glitch {
+  opacity: .9;
+  background-image: url("__GLITCH__");
+  background-repeat: repeat-x;
+  background-size: 320px 300%;
+  animation: hud-tear 1.15s steps(5) infinite;
+}
+/* 300% and then 0/50/100 percent, not three pixel offsets. The band's height
+   is a share of the stage and so is not known here; sizing the image to three
+   times the band makes one bar exactly one band tall whatever that works out
+   to, and a percentage background-position aligns that point of the image with
+   the same point of the box -- which for an image three times the box means 0%
+   is the first bar, 50% the second and 100% the third. Fixed -40px and -80px
+   offsets showed all three bars stacked in a 113px band. */
+.dsp-panel[data-state="fractured"] .dsp-glitch      { background-position-y: 0%; }
+.dsp-panel[data-state="cyberpsychosis"] .dsp-glitch { background-position-y: 50%; }
+.dsp-panel[data-state="slipping"] .dsp-glitch       { background-position-y: 100%; opacity: .55; }
+@keyframes hud-tear {
+  from { background-position-x: 0; }
+  to   { background-position-x: -320px; }
+}
 
 /* ================= END HUD SKIN ========================= */

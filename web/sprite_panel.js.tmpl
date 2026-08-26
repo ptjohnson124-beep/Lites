@@ -144,6 +144,30 @@
     down again by a scrim. Left at full strength over a painting it reads as
     damage rather than as a HUD -- the map already carries texture at the same
     24px pitch the grid uses, so the two interleave into noise. */
+ /* The impact flash sits OVER the stage and out of its flow. .dsp-stage is a
+    grid with place-items:center, so a static child would become a second grid
+    item and push the canvas off centre; absolute takes it out of the grid
+    entirely. It is invisible by default and stays invisible without the HUD
+    skin, which is where the artwork and the animation live -- the same split
+    the state icon uses, and for the same reason: the panel should degrade to
+    no flash rather than to a blank box in the middle of the stage. */
+ /* A tearing band for the states that mean something is WRONG with her. Same
+    arrangement as the impact: the panel positions it and leaves it empty, and
+    the skin decides whether it draws anything at all. The state is put on the
+    PANEL as well as on the label, because the thing that needs to change is
+    inside the stage and a sibling cannot be selected from a label. */
+ .dsp-glitch{position:absolute;left:0;right:0;top:38%;height:24%;
+   pointer-events:none;opacity:0;z-index:2}
+
+ .dsp-impact{position:absolute;left:50%;top:47%;height:62%;aspect-ratio:1;
+   transform:translate(-50%,-50%);pointer-events:none;opacity:0;z-index:3;
+   background-repeat:no-repeat;background-position:center}
+ /* SQUARE, sized off the stage's height. The bursts are packed one to a square
+    cell, and the skin shows a cell by scaling the strip to six box-widths --
+    which only leaves the cell undistorted if the box itself is square. Sized
+    58% by 58% of a stage four times wider than it is tall, the first hit came
+    out as a burst stretched to four times its width. */
+
  .dsp-stage::before{content:"";position:absolute;inset:0;pointer-events:none;
    background-image:
      linear-gradient(rgba(20,30,44,.55),rgba(20,30,44,.12) 45%,rgba(12,18,28,.42)),
@@ -185,7 +209,9 @@
    '<span class="dsp-who" id="dspWho">—</span>' +
    '<span class="dsp-state" id="dspState">idle</span></div>' +
    '<div class="dsp-sub" id="dspSub">Follows whoever is acting. Countered, avoided, soaked or taken — it plays whichever actually happened.</div>' +
-   '<div class="dsp-stage" id="dspStage"><canvas class="dsp-canvas" id="dspCanvas"></canvas></div>';
+   '<div class="dsp-stage" id="dspStage"><canvas class="dsp-canvas" id="dspCanvas"></canvas>' +
+   '<i class="dsp-impact" id="dspImpact"></i>' +
+   '<i class="dsp-glitch" id="dspGlitch"></i></div>';
 
  const anchor = document.getElementById("passivesPanel") ||
                 document.getElementById("battleMapPanel");
@@ -193,6 +219,7 @@
  else document.body.appendChild(panel);
 
  const stage = panel.querySelector("#dspStage");
+ const impactEl = panel.querySelector("#dspImpact");
  const cv = panel.querySelector("#dspCanvas");
  const stateEl = panel.querySelector("#dspState");
  const whoEl = panel.querySelector("#dspWho");
@@ -326,8 +353,10 @@
     where the sprite is means a tracker with the panel and no skin simply has
     no icons, rather than a row of blocks where the state should be. */
  function setState(txt){
+  const role = String(txt).toLowerCase().replace(/[^a-z]/g, "");
   stateEl.textContent = txt;
-  stateEl.setAttribute("data-role", String(txt).toLowerCase().replace(/[^a-z]/g, ""));
+  stateEl.setAttribute("data-role", role);
+  panel.setAttribute("data-state", role);
  }
 
  /* Switching who is on screen. A clip that is mid-play is not interrupted by a
@@ -350,11 +379,36 @@
     rather than to a stand-in: a wrong animation is worse than no animation,
     and a character with three clips should simply keep idling through a block
     rather than borrow the hit. */
+ /* Which events get a comic impact behind them, and which burst. Only the
+    roles where something LANDS -- a dodge is the absence of an impact and a
+    taunt is not one either, so neither flashes. Two bursts for the two common
+    roles so a long exchange does not repeat the same drawing every time; the
+    counter and the block get one each because they are rarer.
+
+    The artwork is not named here. The panel sets a NUMBER on the element and
+    the skin decides what that number draws, which keeps the sprite sheet in
+    one place and means a tracker with no skin simply never flashes. */
+ const IMPACT = { hit: [0, 1], attack: [3, 5], counter: [4], block: [2] };
+ let impactN = 0;
+ function flash(role){
+  if (!impactEl) return;
+  const set = IMPACT[role];
+  impactEl.classList.remove("go");
+  if (!set) return;
+  impactEl.dataset.k = set[impactN++ % set.length];
+  // Reading offsetWidth between the two class changes is what restarts a
+  // running animation. Without it a second hit inside half a second does
+  // nothing at all, because the class never actually left the element.
+  void impactEl.offsetWidth;
+  impactEl.classList.add("go");
+ }
+
  function play(unit, role, label){
   const who = forUnit(unit);
   if (!who || !who.ready) return false;
   if (!clipOf(who, role)) return false;
   show(who, true);
+  flash(role);
   oneShot = role === "idle" ? null : role;
   current = role; i = 0; acc = 0; last = performance.now();
   setState(label || role);

@@ -113,6 +113,12 @@ def main():
                         ("__DIAL7__", "web/hud_dial7.png"),
                         ("__DIAL8__", "web/hud_dial8.png"),
                         ("__WAVE__", "web/hud_wave.webp"),
+                        ("__IMPACT__", "web/hud_impact.webp"),
+                        ("__GLITCH__", "web/hud_glitch.webp"),
+                        ("__PLATE0__", "web/hud_plate0.webp"),
+                        ("__PLATE1__", "web/hud_plate1.webp"),
+                        ("__PLATE2__", "web/hud_plate2.webp"),
+                        ("__PLATE3__", "web/hud_plate3.webp"),
                         ("__HAZARD__", "web/hud_hazard.png"),
                         ("__ALERT__", "web/hud_alert.png")):
         if token not in skin:

@@ -1678,6 +1678,14 @@ cp out/web/vergil_atlas.webp out/web/vergil_atlas.json web/
 # which every icon in the tracker renders as a solid block. The injector
 # refuses to write a build that would cross it.
 #
+# Three of the reference sheets are not icon sheets and do not go through that
+# tool at all. The HUD plates, the comic impacts and the glitch bands are full
+# colour and are used as artwork rather than as masks, so each is keyed to RGBA
+# once by hand and written straight to web/: hud_plate0..3.webp behind the four
+# resource pools, hud_impact.webp for the sprite panel's hit flash, and
+# hud_glitch.webp for its fractured and cyberpsychosis bands. The skin resolves
+# them by token like every other frame.
+#
 # Order matters only in that the skin has to be appended AFTER the tracker's own
 # </style>, and the sprite panel adds a <script> rather than a style, so the two
 # do not interact. Either can be re-run alone.
