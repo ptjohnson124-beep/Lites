@@ -63,7 +63,11 @@ def main():
                         ("__TAB__", "web/hud_tab.png"),
                         ("__RULE__", "web/hud_rule.png"),
                         ("__SQ__", "web/hud_sq.png"),
-                        ("__DECAL__", "web/hud_decal.png")):
+                        ("__DECAL__", "web/hud_decal.png"),
+                        ("__HDR__", "web/hud_hdr.png"),
+                        ("__HDRD__", "web/hud_hdr_d.png"),
+                        ("__BODY__", "web/hud_body.png"),
+                        ("__FTR__", "web/hud_ftr.png")):
         if token not in skin:
             continue
         if not os.path.exists(path):

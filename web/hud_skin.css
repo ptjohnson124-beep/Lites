@@ -509,4 +509,50 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
           mask: url("__DECAL__") no-repeat left center / 100% 100%;
 }
 
+/* ---- 19. SECTION PLATES ---------------------------------------------
+   The tabbed header, finally. It was attempted in rule 4 and abandoned: the
+   rule was written for .card > h2 and matched nothing, because the resource
+   cards label themselves with a bare SPAN and there are exactly two .k
+   elements in the whole document. The plate sheet solves it from the other
+   end -- the shape no longer has to come from the markup, it comes from a
+   mask, so any wide element can wear it.
+
+   Two layers, because the source plates are SOLID with dark hatch marks drawn
+   on them. Filling the holes gives the silhouette, which is the part worth
+   having; the marks are recovered separately and painted back over it, so the
+   detail is not simply lost to the fill. 2.9KB and 2.6KB.
+
+   Both sit on ::before/::after at z-index 0 with the content above, rather than
+   as a mask on the element itself -- mask clips descendants exactly like
+   clip-path does, and these headers contain text. */
+.uag-h, .g { position: relative; padding: 4px 12px 4px 14px; }
+.uag-h > *, .g > * { position: relative; z-index: 1; }
+.uag-h::after, .g::after {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(90deg, rgba(28,127,142,.55), rgba(28,127,142,.06));
+  -webkit-mask: url("__HDR__") no-repeat center / 100% 100%;
+          mask: url("__HDR__") no-repeat center / 100% 100%;
+}
+/* The hatch marks, over the plate and under the text. */
+.uag-h::before, .g::before { z-index: 0; }
+.uag-h, .g { isolation: isolate; }
+
+/* ---- 20. BAR END CAPS: NOT DONE, AND WHY -----------------------------
+   The two HUD references that came with this batch could not be extracted at
+   all -- both are labelled presentation boards with their own captions baked
+   in, not asset sheets. What they carry is a TREATMENT rather than art: a bar
+   bracketed by chevrons and broken by segment ticks.
+
+   The ticks were already added in rule 12. The chevron caps were written,
+   rendered, and taken out again, because they cannot work here: the caps have
+   to sit OUTSIDE the bar, and the bar is clip-pathed to get its slanted shape.
+   clip-path clips a pseudo-element exactly like it clips a child, so the cap
+   was drawn and immediately cut off -- present in the computed style, invisible
+   on screen. That is the same failure as the frame that straddled the panel
+   edge, in the other direction.
+
+   Doing it would need a wrapper around each bar to hang the caps on, and the
+   tracker does not provide one. Adding markup is past what a skin should do,
+   so the bars keep the shape and the ticks and go without the caps. */
+
 /* ================= END HUD SKIN ========================= */
