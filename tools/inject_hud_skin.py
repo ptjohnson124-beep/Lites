@@ -74,7 +74,19 @@ def main():
                         ("__TIERX__", "web/hud_tier_x.png"),
                         ("__TIEREX__", "web/hud_tier_ex.png"),
                         ("__TIERUEX__", "web/hud_tier_uex.png"),
-                        ("__EMB__", "web/ui_emblems.png")):
+                        ("__EMB__", "web/ui_emblems.png"),
+                        ("__RULE0__", "web/hud_rule0.png"),
+                        ("__RULE1__", "web/hud_rule1.png"),
+                        ("__RULE2__", "web/hud_rule2.png"),
+                        ("__RULE3__", "web/hud_rule3.png"),
+                        ("__RULE4__", "web/hud_rule4.png"),
+                        ("__RULE5__", "web/hud_rule5.png"),
+                        ("__RULE6__", "web/hud_rule6.png"),
+                        ("__RULE7__", "web/hud_rule7.png"),
+                        ("__RULE8__", "web/hud_rule8.png"),
+                        ("__RING__", "web/hud_ring2.png"),
+                        ("__CNRTL__", "web/hud_cnrtl.png"),
+                        ("__CNRBL__", "web/hud_cnrbl.png")):
         if token not in skin:
             continue
         if not os.path.exists(path):

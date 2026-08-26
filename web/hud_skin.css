@@ -695,4 +695,91 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
 .uag:has(option:nth-child(4)):has(option:nth-child(3):checked)::after { -webkit-mask-position:-102px -51px; mask-position:-102px -51px; width:17px; }
 .uag:has(option:nth-child(4)):has(option:nth-child(4):checked)::after { -webkit-mask-position:-119px -0px; mask-position:-119px -0px; width:17px; }
 
+/* ---- 25. NINE DIVIDERS ----------------------------------------------
+   The rule sheet is nine separate horizontal dividers rather than one, so the
+   sections stop sharing a mark. Until now every divider in this file was the
+   same MOOVOR chevron, which reads as decoration repeated rather than as a
+   system: a reader learns nothing from a rule that is identical everywhere.
+   These are 0.5KB to 2.5KB each, keyed white-on-black like the icons.
+
+   Each is sized to its own aspect rather than to a round number -- squashing a
+   550x54 rule into a 200x12 box turns its hexagonal end caps into blobs. The
+   height is chosen and the width computed from it. */
+.u-detail.u-detail  { background-image: url("__RULE7__"); background-size: 191px 18px; }
+.u-acts::before, .u-acts-more::before {
+  background: url("__RULE5__") no-repeat left center / 207px 14px; }
+.retaltypes::before {
+  content: ""; position: absolute; left: 0; right: 0; top: -8px; height: 14px;
+  pointer-events: none; opacity: .6;
+  background: url("__RULE1__") no-repeat left center / 222px 12px; }
+#econ::before {
+  content: ""; position: absolute; left: 10px; right: 10px; top: 4px; height: 16px;
+  pointer-events: none; opacity: .5; z-index: 1;
+  background: url("__RULE8__") no-repeat left center / 195px 16px; }
+/* Right-aligned, not left. Left-aligned it landed straight across the words
+   BATTLE MAP, which is the failure a divider is least able to survive: a rule
+   over a title reads as a strikethrough. Both panels that carry a rule inside
+   their own header put it on the side the heading is not. */
+.battlemap-panel.battlemap-panel::before {
+  background: url("__RULE3__") no-repeat right 14px top 6px / 212px 14px,
+    repeating-linear-gradient(180deg, rgba(126,240,255,.03) 0 1px, transparent 1px 2px); }
+.resolve.resolve::before {
+  background: url("__RULE0__") no-repeat right 14px top 6px / 196px 16px,
+    repeating-linear-gradient(180deg, rgba(126,240,255,.03) 0 1px, transparent 1px 2px); }
+
+/* ---- 26. THE DIAL RING ----------------------------------------------
+   The dial was a bare donut. It now sits inside the decorative ring off the
+   same sheet, which is what an instrument looks like in every one of these
+   references and what a plain circle does not.
+
+   That needed the dial restructured rather than decorated. It used to carry
+   the conic-gradient and the donut mask ITSELF, and a mask applies to an
+   element's pseudo-elements as well -- so a ring added on ::after was punched
+   out by the same hole that shapes the gauge. The element is now an unmasked
+   box: ::before is the masked gauge, ::after is the ring, and neither clips
+   the other. */
+.hud-dial {
+  position: relative; background: none;
+  -webkit-mask: none; mask: none;
+  width: 26px; height: 26px; vertical-align: -8px;
+}
+.hud-dial::before {
+  content: ""; position: absolute; inset: 4px; border-radius: 50%;
+  background: conic-gradient(var(--cyan) calc(var(--v) * 1%), rgba(35,48,66,.5) 0);
+  -webkit-mask: radial-gradient(closest-side, transparent 54%, #000 58%);
+          mask: radial-gradient(closest-side, transparent 54%, #000 58%);
+}
+.hud-dial::after {
+  content: ""; position: absolute; inset: 0; opacity: .55;
+  background: var(--cyand);
+  -webkit-mask: url("__RING__") no-repeat center / contain;
+          mask: url("__RING__") no-repeat center / contain;
+}
+.bar.bar { width: calc(100% - 35px); }
+
+/* ---- 27. CORNER BRACKETS --------------------------------------------
+   Real ones, on the two STAGES rather than on the panels. The panels already
+   wear a border-image frame and a second corner mark on top of it is two
+   frames arguing; a stage is a viewport into something and brackets are what
+   sits at the corner of a viewport.
+
+   One image per pair, mirrored for the other side, because the sheet draws
+   only the left-hand corners and a scaleX(-1) is exact where a second export
+   would be a second thing to keep in step. */
+.bm-stage, .dsp-stage { position: relative; }
+.bm-stage::before, .bm-stage::after,
+.dsp-stage > .dsp-cnr { pointer-events: none; }
+.bm-stage::before, .bm-stage::after {
+  content: ""; position: absolute; width: 22px; height: 22px; z-index: 4;
+  background: var(--cyand); opacity: .7;
+}
+.bm-stage::before {
+  left: 3px; top: 3px;
+  -webkit-mask: url("__CNRTL__") no-repeat center / contain;
+          mask: url("__CNRTL__") no-repeat center / contain; }
+.bm-stage::after {
+  right: 3px; bottom: 3px; transform: scaleX(-1);
+  -webkit-mask: url("__CNRBL__") no-repeat center / contain;
+          mask: url("__CNRBL__") no-repeat center / contain; }
+
 /* ================= END HUD SKIN ========================= */
