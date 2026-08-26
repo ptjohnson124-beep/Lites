@@ -1664,3 +1664,12 @@ cp out/web/vergil_atlas.webp out/web/vergil_atlas.json web/
 # contains "dahlia". Adding a character is packing an atlas next to the others
 # and re-running this.
 # python3 tools/inject_sprite_panel.py path/to/BLACKBOX_MERC_OS.html -a out/web
+#
+# And then the HUD skin over the top, which is a second bounded block and a
+# second thing that can be deleted without touching the tracker:
+#
+# python3 tools/inject_hud_skin.py path/to/BLACKBOX_MERC_OS.html
+#
+# Order matters only in that the skin has to be appended AFTER the tracker's own
+# </style>, and the sprite panel adds a <script> rather than a style, so the two
+# do not interact. Either can be re-run alone.

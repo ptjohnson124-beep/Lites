@@ -1,0 +1,161 @@
+/* ==== BEGIN HUD SKIN — injected block, delete to the END marker to revert ====
+
+   A skin, not a rewrite. The tracker carries 1.3MB of its own CSS across one
+   style block, and editing that in place is not reversible and not reviewable.
+   This is appended after it, wins on cascade order, and deleting the block
+   between the two markers restores the file byte for byte.
+
+   It answers two complaints, and they need different tools.
+
+   "TAKES UP TOO MUCH SCREEN" is a measurement, not a mood: at 1440x900 the
+   document is 7,432px, which is 8.3 screens. It is not spread evenly. The
+   board alone is 5,590px of it, one unit card is 1,080px, and .u-detail inside
+   each card is 790px -- five of those is 3,850px, over half the page, for the
+   panel a player looks at least often. The battle map stage is another 781px.
+   So the density work is aimed at those two and nothing else; trimming padding
+   everywhere would have cost the layout and saved a couple of hundred pixels.
+
+   "GENERIC AND BLAND" is about FORM rather than colour. The palette is already
+   the reference palette -- cyan #39d3e8, gold #e8b13a, crimson on near-black --
+   what it lacks is the angular vocabulary: cut corners, corner brackets, tabbed
+   headers with an angled trailing edge, hazard stripes on the destructive
+   controls, a scanline over the glass.
+
+   None of that is done with clip-path, deliberately. clip-path clips every
+   descendant, and these panels contain dropdowns, tooltips and absolutely
+   positioned overlays that would be cut off. A corner cut painted as a
+   background gradient looks identical and clips nothing.
+   ==================================================================== */
+
+/* ---- 1. THE CUT CORNER ---------------------------------------------
+   The single form that carries the whole look. Two opposite corners are
+   chamfered by painting the panel's own fill as a pair of diagonal gradients
+   over a transparent box, so the corner reads as cut without any clipping. */
+/* Selectors are doubled -- .card.card rather than .card -- and that is not a
+   typo. A skin appended after the tracker's own CSS only wins at EQUAL
+   specificity, and the tracker states these panels through more specific
+   selectors of its own, so the first version of this rule lost silently: the
+   corners stayed round and the frame never appeared. Doubling the class costs
+   nothing and beats a plain class without reaching for !important, which on a
+   sheet this size stops being a fix and becomes a fight. */
+.cmd.cmd, .card.card, .pool.pool, .unit.unit, #econ, .battlemap-panel.battlemap-panel,
+#passivesPanel, .resolve.resolve {
+  --cut: 12px;
+  background:
+    linear-gradient(135deg, transparent var(--cut), var(--panel) 0) top left / 51% 100% no-repeat,
+    linear-gradient(-45deg, transparent var(--cut), var(--panel) 0) bottom right / 51% 100% no-repeat;
+  /* No solid fallback under those two. The first attempt kept one and the cut
+     corners simply did not appear -- a background-color paints beneath every
+     background-image, so the transparent triangles were filled straight back
+     in. The two gradients cover 51% each and meet in the middle. */
+  border: 1px solid var(--line);
+  border-radius: 0;
+  position: relative;
+}
+
+/* ---- 2. CORNER BRACKETS --------------------------------------------
+   The L-marks that make a box read as a targeting frame rather than a div.
+   Only the two square corners get them -- putting brackets on the chamfered
+   corners fights the cut and reads as a mistake. */
+.cmd.cmd::after, .card.card::after, .pool.pool::after, .unit.unit::after, .battlemap-panel.battlemap-panel::after, .resolve.resolve::after {
+  content: ""; position: absolute; inset: -1px; pointer-events: none; z-index: 2;
+  background:
+    linear-gradient(var(--cyan), var(--cyan)) top right / 2px 16px no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) top right / 16px 2px no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) bottom left / 2px 16px no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) bottom left / 16px 2px no-repeat,
+    /* and the rail: a broken bar along the top edge, which is the part of the
+       reference frames that reads as HUD from across the room. The gap is not
+       decoration -- an unbroken 2px line is just a thick border. */
+    linear-gradient(var(--cyand), var(--cyand)) top left / 34% 2px no-repeat,
+    linear-gradient(var(--cyand), var(--cyand)) top 0 right 12% / 22% 2px no-repeat;
+  opacity: .9;
+}
+
+/* ---- 3. SCANLINE ----------------------------------------------------
+   2px pitch at 3% -- deliberately below the threshold where it reads as
+   texture on its own. At 6% it moires against the tracker's own 1px rules and
+   the battle map's grid, which is how the first attempt looked broken. */
+.cmd.cmd::before, .card.card::before, .pool.pool::before, .unit.unit::before, .battlemap-panel.battlemap-panel::before, .resolve.resolve::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: repeating-linear-gradient(
+    180deg, rgba(126,240,255,.03) 0 1px, transparent 1px 2px);
+}
+.cmd.cmd > *, .card.card > *, .pool.pool > *, .unit.unit > *, .battlemap-panel.battlemap-panel > *, .resolve.resolve > * { position: relative; z-index: 1; }
+
+/* ---- 4. TABBED HEADERS ---------------------------------------------
+   The "SELECT 01" motif: a filled label block with an angled trailing edge,
+   rather than a line of small caps floating over the panel. */
+/* Only .cmd > h1, and that is a retreat from where this started. The rule was
+   written for .card > h2 as well and matched nothing: the resource cards label
+   themselves with a bare SPAN, and there are exactly two .k elements in the
+   whole document, so there is no class that means "this panel's title". The
+   frame carries the look instead -- cut corners, brackets and the top rail
+   need no markup knowledge at all, which is why they are doing the work. */
+.cmd > h1 {
+  display: inline-block; margin: 0 0 8px; padding: 3px 22px 3px 10px;
+  background: linear-gradient(90deg, var(--cyand), rgba(28,127,142,.15));
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  color: var(--ice); letter-spacing: .14em; text-transform: uppercase;
+}
+
+/* ---- 5. BUTTONS -----------------------------------------------------
+   271 of them, so this is the change with the widest reach and the one most
+   able to make the page look broken. A notch on the leading corner and a 2px
+   accent bar down the left, nothing that changes a hit area. */
+.btn.btn {
+  border-radius: 0;
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  box-shadow: inset 2px 0 0 rgba(57,211,232,.45);
+  letter-spacing: .06em;
+}
+.btn.btn:hover { box-shadow: inset 2px 0 0 var(--cyanb), 0 0 10px rgba(57,211,232,.18); }
+
+/* Destructive controls get the hazard bar from the reference sheet. .cr is the
+   tracker's own class for them and it is exactly the right set -- Reset System,
+   Force System Break, Spawn Ritualized, Ambush (Hostiles). The first version
+   guessed at #btnReset and [onclick*=reset] and marked nothing, which is worse
+   than not marking: a warning that does not appear reads as "this is safe". */
+.btn.cr, .cr.cr {
+  background-image: repeating-linear-gradient(
+    45deg, rgba(224,70,76,.22) 0 6px, transparent 6px 12px) !important;
+  box-shadow: inset 2px 0 0 var(--crim);
+}
+
+/* ---- 6. DENSITY: the unit detail ------------------------------------
+   790px per card, five cards, 3,850px -- the largest single block on the page
+   and the one that is open least often. Capped and made to scroll rather than
+   collapsed behind a click: collapsing hides that there IS anything there,
+   and this panel is where a player's kit lives. */
+.u-detail.u-detail {
+  max-height: 300px; overflow-y: auto; overscroll-behavior: contain;
+  border-top: 1px solid var(--line);
+  -webkit-mask-image: linear-gradient(180deg, #000 0 88%, rgba(0,0,0,.25) 100%);
+          mask-image: linear-gradient(180deg, #000 0 88%, rgba(0,0,0,.25) 100%);
+}
+/* The fade at the bottom edge is the only thing that says "there is more".
+   Without it a capped scroller reads as a panel that happens to end. */
+
+/* ---- 7. DENSITY: the battle map ------------------------------------- */
+.bm-stage.bm-stage { max-height: 430px; overflow: auto; }
+
+/* ---- 8. HUD SCROLLBARS ----------------------------------------------
+   Two capped scrollers now exist that did not before, so they have to look
+   deliberate rather than like a browser default landing in a dark UI. */
+.u-detail::-webkit-scrollbar, .bm-stage::-webkit-scrollbar { width: 9px; height: 9px; }
+.u-detail::-webkit-scrollbar-track, .bm-stage::-webkit-scrollbar-track {
+  background: rgba(35,48,66,.35); }
+.u-detail::-webkit-scrollbar-thumb, .bm-stage::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--cyand), rgba(28,127,142,.35));
+  border: 1px solid rgba(126,240,255,.25); }
+.u-detail, .bm-stage { scrollbar-width: thin; scrollbar-color: var(--cyand) rgba(35,48,66,.35); }
+
+/* ---- 9. TIGHTENING ---------------------------------------------------
+   Small and broad. The resource cards are 130px tall for two lines, which is
+   padding rather than content. */
+.card.card, .pool.pool { padding: 9px 11px; }
+.cmd.cmd  { padding: 12px 14px; }
+.field { margin-bottom: 5px; }
+.retalopt { padding: 3px 7px; }
+
+/* ================= END HUD SKIN ========================= */

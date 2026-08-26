@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+"""Put a HUD skin over the combat tracker, without editing the tracker.
+
+The tracker carries 1.3MB of its own CSS in one style block. Editing that in
+place is neither reversible nor reviewable, and it is the file a campaign is
+being run on. So the skin is appended AFTER it instead: same specificity rules,
+later in the cascade, and bounded by two markers so removing it restores the
+tracker byte for byte.
+
+Re-runnable. Any earlier copy is removed first, so changing the skin means
+re-running this and nothing else.
+"""
+
+import argparse
+import os
+import re
+import sys
+
+START = "/* ==== BEGIN HUD SKIN"
+END = "/* ================= END HUD SKIN ========================= */"
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("tracker")
+    ap.add_argument("-s", "--skin", default="web/hud_skin.css")
+    ap.add_argument("-o", "--out")
+    args = ap.parse_args()
+
+    skin = open(args.skin, encoding="utf-8").read()
+    if START not in skin or END not in skin:
+        raise SystemExit(f"{args.skin} is missing its markers; refusing to inject "
+                         "something that cannot be removed again")
+
+    html = open(args.tracker, encoding="utf-8").read()
+
+    # Drop any earlier skin. The bound is checked afterwards: a pattern that
+    # reaches past its own block eats the tracker silently, and this file is
+    # five megabytes of someone's campaign.
+    pat = re.compile(r"\n*" + re.escape(START) + r".*?" + re.escape(END) + r"\n?", re.S)
+    before = len(html)
+    html, removed = pat.subn("", html)
+    if removed:
+        cut = before - len(html)
+        if cut > removed * (len(skin) + 4096):
+            raise SystemExit(f"refusing to write: removing the old skin cut {cut} bytes, "
+                             f"far more than the {len(skin)} it should")
+        print(f"  removed {removed} earlier skin(s), {cut} bytes")
+
+    # Appended to the END of the tracker's own style block, which is what makes
+    # a plain selector here beat the same plain selector there. Anything less
+    # would need !important on every rule, and !important on 271 buttons is not
+    # a skin, it is a fight.
+    close = "</style>"
+    if html.count(close) != 1:
+        raise SystemExit(f"expected exactly one </style>, found {html.count(close)} — "
+                         "the tracker's shape has changed and the splice point "
+                         "is no longer safe")
+    out = html.replace(close, "\n" + skin + "\n" + close)
+
+    dest = args.out or args.tracker
+    with open(dest, "w", encoding="utf-8") as fh:
+        fh.write(out)
+    print(f"  skin  {os.path.getsize(args.skin) / 1e3:.1f} KB -> {dest} "
+          f"({os.path.getsize(dest) / 1e6:.2f} MB)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
