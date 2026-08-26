@@ -217,7 +217,7 @@
   vertical-align: -3px; margin-right: 6px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 416px; mask-size: 256px 416px;
+  -webkit-mask-size: 256px 672px; mask-size: 256px 672px;
   opacity: 1;
 }
 
@@ -253,7 +253,7 @@
   width: 15px; height: 15px; background: var(--cyand); pointer-events: none;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 416px; mask-size: 256px 416px;
+  -webkit-mask-size: 256px 672px; mask-size: 256px 672px;
   -webkit-mask-position: -160px -192px; mask-position: -160px -192px;
 }
 
@@ -273,7 +273,7 @@
   vertical-align: -2px; margin-right: 5px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 416px; mask-size: 256px 416px;
+  -webkit-mask-size: 256px 672px; mask-size: 256px 672px;
   -webkit-mask-position: 999px 999px; mask-position: 999px 999px;
 }
 /* The default position is off the sheet on purpose. Every state gets the box
@@ -440,7 +440,7 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
   vertical-align: -2px; margin-right: 5px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 416px; mask-size: 256px 416px;
+  -webkit-mask-size: 256px 672px; mask-size: 256px 672px;
   -webkit-mask-position: 999px 999px; mask-position: 999px 999px;
   opacity: .8;
 }
@@ -608,7 +608,7 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
   vertical-align: -1px; margin-right: 4px; background: currentColor;
   -webkit-mask-image: var(--uic); mask-image: var(--uic);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: 256px 416px; mask-size: 256px 416px;
+  -webkit-mask-size: 256px 672px; mask-size: 256px 672px;
   opacity: .55;
 }
 .sk::before       { -webkit-mask-position: -32px -400px; mask-position: -32px -400px; }  /* 402 module */
@@ -837,5 +837,45 @@ input[type="text"], input[type="number"], input:not([type]), textarea {
     repeating-linear-gradient(180deg, rgba(126,240,255,.03) 0 1px, transparent 1px 2px);
   opacity: .8;
 }
+
+/* ---- 30. THE SET GROWS TO 663 ---------------------------------------
+   187 arrows, reticles and cyber icons off two boxed packs, then 60 more from
+   the weapon and pictogram sheets. The sheet is 42 rows now, so every
+   mask-size in this file moved from 256x416 to 256x672 -- the POSITIONS did
+   not, because the packer appends rather than repacks and the scale per cell
+   is unchanged.
+
+   Five marks are replaced rather than added, which is the point of having a
+   bigger set: the generic stand-in gets swapped for the specific glyph now
+   that one exists. */
+.dsp-state[data-role="cyberpsychosis"]::before { /* 522 was 157: a masked skull
+   rather than a skull in a diamond -- at 12px the diamond was most of the ink */
+  -webkit-mask-position: -160px -512px; mask-position: -160px -512px; }
+.u-expand-tog::before {                          /* 439 filled double chevron */
+  -webkit-mask-position: -112px -432px; mask-position: -112px -432px; }
+.g::before {                                     /* 583 alert diamond, was a bang */
+  -webkit-mask-position: -112px -576px; mask-position: -112px -576px; }
+.rn::before {                                    /* 452 reticle: a retaliation is
+   a thing aimed at you, which a shield did not say */
+  -webkit-mask-position: -64px -448px; mask-position: -64px -448px; }
+.sk::before {                                    /* 595 toolbox, was a chip */
+  -webkit-mask-position: -48px -592px; mask-position: -48px -592px; }
+
+/* ---- 31. THE REAL HAZARD BAR: TRIED AND REVERTED --------------------
+   The four destructive controls carry hazard stripes drawn as a repeating
+   linear-gradient at 22% alpha. The warning sheet has a real hazard bar with
+   the ends and the pitch an artist chose, so it was swapped in -- and it made
+   FORCE SYSTEM BREAK unreadable.
+
+   The reason is not fixable by tuning. The gradient is a wash the label sits
+   on top of; the bar is dense full-strength artwork with its own internal
+   detail, and behind 11px letterspaced text at 9px it competes rather than
+   backs. Dropping its opacity to where the text reads leaves a smear that no
+   longer says hazard.
+
+   So the gradient stays. It is the rare case where the CSS approximation beats
+   the asset, because what this needs is a texture that gets out of the way and
+   the asset is a graphic that does not. web/hud_hazard.png is kept for a place
+   with no text over it, if one turns up. */
 
 /* ================= END HUD SKIN ========================= */

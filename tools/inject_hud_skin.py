@@ -96,7 +96,9 @@ def main():
                         ("__DIAL6__", "web/hud_dial6.png"),
                         ("__DIAL7__", "web/hud_dial7.png"),
                         ("__DIAL8__", "web/hud_dial8.png"),
-                        ("__WAVE__", "web/hud_wave.webp")):
+                        ("__WAVE__", "web/hud_wave.webp"),
+                        ("__HAZARD__", "web/hud_hazard.png"),
+                        ("__ALERT__", "web/hud_alert.png")):
         if token not in skin:
             continue
         if not os.path.exists(path):
