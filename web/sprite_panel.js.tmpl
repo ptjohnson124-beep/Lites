@@ -313,7 +313,22 @@
   if (dirty) draw();
  }
 
- function setState(txt){ stateEl.textContent = txt; }
+ /* The label carries the role as DATA as well as text, so a stylesheet can
+    reach it. The text is display -- it gets upper-cased and letter-spaced --
+    and matching a status icon on display text would break the first time the
+    wording changed. data-role is the clip name, which is the same string the
+    atlas is keyed on.
+
+    The icon itself is not drawn here. It lives in the HUD skin, which owns the
+    icon sprite, and that separation is load-bearing: a mask-image pointing at
+    a variable that does not exist is not an element with no icon, it is an
+    element with no mask, which paints as a SOLID BLOCK. Keeping the rules
+    where the sprite is means a tracker with the panel and no skin simply has
+    no icons, rather than a row of blocks where the state should be. */
+ function setState(txt){
+  stateEl.textContent = txt;
+  stateEl.setAttribute("data-role", String(txt).toLowerCase().replace(/[^a-z]/g, ""));
+ }
 
  /* Switching who is on screen. A clip that is mid-play is not interrupted by a
     mere change of turn -- only by something actually happening to somebody

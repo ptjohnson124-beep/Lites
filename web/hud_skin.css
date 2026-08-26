@@ -226,4 +226,63 @@
   -webkit-mask-position: -160px -192px; mask-position: -160px -192px;
 }
 
+/* ---- 11. THE SPRITE PANEL'S STATE ------------------------------------
+   The panel writes its clip name to data-role on the state label and stops
+   there; the icon is attached here, where the sprite already is. That split is
+   the whole reason a tracker built with the panel and WITHOUT this skin shows
+   no icons instead of a row of solid blocks -- an undefined var(--uic) is not
+   "no icon", it is "no mask", and an unmasked element paints in full.
+
+   Only states that mean something get one. idle, taunt, dodge, grab and throw
+   are deliberately bare: an icon beside every label is an icon beside none,
+   and the point of the mark is that DOWN and DEATH catch the eye across a
+   table mid-turn. */
+.dsp-state[data-role]::before {
+  content: ""; display: inline-block; width: 12px; height: 12px;
+  vertical-align: -2px; margin-right: 5px; background: currentColor;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 272px; mask-size: 256px 272px;
+  -webkit-mask-position: 999px 999px; mask-position: 999px 999px;
+}
+/* The default position is off the sheet on purpose. Every state gets the box
+   and only the named ones get a glyph, so an unlisted or new clip name shows
+   nothing rather than whichever icon happens to sit at 0,0. */
+.dsp-state[data-role="death"]::before { /* 111 */
+  -webkit-mask-position: -240px -96px; mask-position: -240px -96px; }
+.dsp-state[data-role="dead"]::before { /* 111 */
+  -webkit-mask-position: -240px -96px; mask-position: -240px -96px; }
+.dsp-state[data-role="down"]::before { /* 218 */
+  -webkit-mask-position: -160px -208px; mask-position: -160px -208px; }
+.dsp-state[data-role="ragdoll"]::before { /* 200 */
+  -webkit-mask-position: -128px -192px; mask-position: -128px -192px; }
+.dsp-state[data-role="recover"]::before { /* 231 */
+  -webkit-mask-position: -112px -224px; mask-position: -112px -224px; }
+.dsp-state[data-role="staggered"]::before { /* 213 */
+  -webkit-mask-position: -80px -208px; mask-position: -80px -208px; }
+.dsp-state[data-role="ritualized"]::before { /* 141 */
+  -webkit-mask-position: -208px -128px; mask-position: -208px -128px; }
+.dsp-state[data-role="crowned"]::before { /* 141 */
+  -webkit-mask-position: -208px -128px; mask-position: -208px -128px; }
+.dsp-state[data-role="cyberpsychosis"]::before { /* 157 */
+  -webkit-mask-position: -208px -144px; mask-position: -208px -144px; }
+.dsp-state[data-role="fractured"]::before { /* 235 */
+  -webkit-mask-position: -176px -224px; mask-position: -176px -224px; }
+.dsp-state[data-role="slipping"]::before { /* 209 */
+  -webkit-mask-position: -16px -208px; mask-position: -16px -208px; }
+.dsp-state[data-role="spec"]::before { /* 205 */
+  -webkit-mask-position: -208px -192px; mask-position: -208px -192px; }
+.dsp-state[data-role="attack"]::before { /* 226 */
+  -webkit-mask-position: -32px -224px; mask-position: -32px -224px; }
+.dsp-state[data-role="soul"]::before { /* 226 */
+  -webkit-mask-position: -32px -224px; mask-position: -32px -224px; }
+.dsp-state[data-role="block"]::before { /* 140 */
+  -webkit-mask-position: -192px -128px; mask-position: -192px -128px; }
+.dsp-state[data-role="counter"]::before { /* 246 */
+  -webkit-mask-position: -96px -240px; mask-position: -96px -240px; }
+.dsp-state[data-role="hit"]::before { /* 200 */
+  -webkit-mask-position: -128px -192px; mask-position: -128px -192px; }
+.dsp-state[data-role="rev"]::before { /* 205 */
+  -webkit-mask-position: -208px -192px; mask-position: -208px -192px; }
+
 /* ================= END HUD SKIN ========================= */
