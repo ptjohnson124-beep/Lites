@@ -1696,3 +1696,22 @@ cp out/web/vergil_atlas.webp out/web/vergil_atlas.json web/
 # Order matters only in that the skin has to be appended AFTER the tracker's own
 # </style>, and the sprite panel adds a <script> rather than a style, so the two
 # do not interact. Either can be re-run alone.
+#
+# And then the third block, the hostile AI:
+#
+# python3 tools/inject_nemesis.py path/to/BLACKBOX_MERC_OS.html
+#
+# This one goes LAST. It wraps resolveGroup and enemyRetaliation to observe each
+# exchange, and so does the sprite feed; whichever is injected second wraps the
+# other and both still run, but injecting the nemesis last means the animation
+# plays and then the AI learns from the same exchange, in that order.
+#
+# The injector also LIFTS four lists out of the tracker's source -- AVOID,
+# STRIKEBACK, AVOIDANCE_TYPES, STRIKEBACK_TYPES -- because they are declared
+# inside a function and are not globals, so no runtime lookup can reach them.
+# The other three tables it needs (RETAL_TYPES, MITIGATION_CFG, RETAL_DMG_MULT)
+# are top-level consts and ARE reachable, though not as window properties: a
+# top-level const is a lexical global, so the block reads them through a
+# function compiled in global scope. Reading them off window returns undefined
+# and every guarded lookup then falls back silently, which is how the first
+# build shipped an AI whose entire defensive half was inert.
