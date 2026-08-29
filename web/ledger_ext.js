@@ -122,6 +122,8 @@
   --ico-hex:url("__ICOHEX__");
   --ico-oct:url("__ICOOCT__");
   --ico-rogue:url("__ICOROGUE__");
+  --decals:url("__DECALS__");
+  --neon:url("__NEON__");
  }
  /* Three more stencil sheets, masked the same way as everything else so one
     file serves every colour. hex is the ability set (36), oct the survival set
@@ -236,7 +238,112 @@
   pointer-events:none;z-index:9999;transform:translate(-50%,-50%);
   box-shadow:0 0 12px rgba(184,63,255,.8);transition:left .12s linear, top .12s linear}
  .lx-ghost.click{animation:lx-tap .18s ease}
+ .lx-duel{border-color:var(--gold);color:var(--gold)}
+ /* The verdict card. Two columns and a number each, because the only thing
+    anyone wants off this screen is who won and by how much. */
+ .lx-verdict{text-align:center;padding:20px 10px}
+ .lx-v-title{font-family:var(--font-display);font-size:26px;letter-spacing:.08em;
+  color:var(--paper);text-shadow:3px 3px 0 rgba(255,47,146,.6),6px 6px 0 rgba(47,224,255,.25)}
+ .lx-v-row{display:flex;align-items:center;justify-content:center;gap:26px;margin:22px 0 10px}
+ .lx-v-side{min-width:150px;padding:12px 14px;border:1px solid var(--line);background:#0d0b13;
+  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+ .lx-v-side.won{border-color:var(--sage);box-shadow:0 0 22px rgba(198,255,61,.25)}
+ .lx-v-side .nm{font-family:var(--font-mono);font-size:10px;color:var(--faint);letter-spacing:.12em}
+ .lx-v-side .sc{font-family:var(--font-display);font-size:38px;color:var(--gold);margin-top:5px}
+ .lx-v-side.won .sc{color:var(--sage)}
+ .lx-v-vs{font-family:var(--font-display);font-size:14px;color:var(--ember);letter-spacing:.14em}
+ .lx-v-note{font-family:var(--font-mono);font-size:9px;color:var(--faint);margin-bottom:16px}
+ /* Warning decals on the apocalypse screen, and neon over the yard. Both are
+    kept in their own colour: a hazard sticker that is not red is not a hazard
+    sticker, and neon that takes the page's palette stops being neon. */
+ .lx-decal{background:var(--decals) no-repeat;background-size:600% 500%;
+  pointer-events:none;position:absolute;opacity:.85}
+ .lx-neon{background:var(--neon) no-repeat;background-size:600% 200%;
+  pointer-events:none;position:absolute;filter:drop-shadow(0 0 10px rgba(47,224,255,.4))}
  @keyframes lx-tap{50%{transform:translate(-50%,-50%) scale(.55);background:rgba(184,63,255,.5)}}
+
+ /* ---- THE TERMINAL ---------------------------------------------------
+    Instrument-panel grey rather than the graffiti palette, on purpose: this is
+    the one screen in the file that is a machine and not a person. The colour
+    arrives the moment you are through it. */
+ .lx-term{position:absolute;inset:0;background:#22262b;
+  background-image:repeating-linear-gradient(112deg,rgba(255,255,255,.022) 0 12px,transparent 12px 26px);
+  display:flex;flex-direction:column;font-family:var(--font-mono);color:#c9cfd6;z-index:5;
+  clip-path:polygon(0 0,calc(100% - 46px) 0,100% 46px,100% 100%,0 100%)}
+ .lx-term.bad{animation:lx-shake .42s ease}
+ @keyframes lx-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}
+  45%{transform:translateX(5px)}70%{transform:translateX(-3px)}}
+ .lx-t-top{display:flex;align-items:center;gap:9px;padding:7px 14px 7px 108px;background:#cdd3d9;color:#1b1f24;
+  font-size:9px;letter-spacing:.14em;flex:none}
+ .lx-t-top .dot{width:7px;height:7px;border-radius:50%;background:#1b1f24;flex:none}
+ .lx-t-top .seg{width:44px;height:4px;background:#9aa3ad;flex:none}
+ .lx-t-top .seg.s2{width:18px}.lx-t-top .seg.s3{width:30px}
+ .lx-t-top .right{margin-left:auto;display:flex;gap:5px}
+ .lx-t-top .b{width:22px;height:5px;background:#9aa3ad;display:block}
+ .lx-t-top .b.on{background:#19c37d}
+ .lx-t-fn{display:flex;align-items:center;gap:16px;padding:5px 16px;font-size:8px;
+  letter-spacing:.16em;color:#79828c;border-bottom:1px solid #2e343b;flex:none}
+ .lx-t-fn .fn.on{color:#19c37d}
+ .lx-t-fn .rule{flex:1;height:1px;background:linear-gradient(90deg,#39404a,transparent)}
+ .lx-t-body{flex:1;display:flex;min-height:0}
+ .lx-t-rail{width:74px;flex:none;display:flex;flex-direction:column;align-items:center;
+  gap:9px;padding:16px 0;border-right:1px solid #2e343b;position:relative}
+ .lx-t-rail.r{border-right:0;border-left:1px solid #2e343b}
+ .lx-t-rail .gauge{width:11px;height:130px;background:#191d22;border:1px solid #363d45;
+  display:flex;align-items:flex-end;flex:none}
+ .lx-t-rail .gauge.sm{height:74px}
+ .lx-t-rail .gauge i{display:block;width:100%;background:#19c37d}
+ .lx-t-rail .gauge.sm i{background:#7d8892}
+ .lx-t-rail .vlabel{writing-mode:vertical-rl;font-size:7px;letter-spacing:.22em;color:#69727c}
+ .lx-t-rail .ticks{width:26px;height:60px;flex:none;
+  background:repeating-linear-gradient(0deg,#39404a 0 1px,transparent 1px 7px)}
+ .lx-t-field{flex:1;position:relative;min-width:0}
+ .lx-t-code{position:absolute;left:40%;top:12%;font-size:11px;letter-spacing:.2em;color:#aeb6bf}
+ .lx-t-sn{position:absolute;right:16px;top:9%;font-family:var(--font-display);font-size:30px;
+  letter-spacing:.04em;color:#e4e9ee;display:flex;align-items:center;gap:10px}
+ .lx-t-sn .sac{font-family:var(--font-mono);font-size:8px;letter-spacing:.2em;background:#cdd3d9;
+  color:#1b1f24;padding:2px 6px;align-self:flex-start}
+ .lx-t-field .cross{position:absolute;color:#5b646e;font-size:13px}
+ .cross.c1{left:26%;top:33%}.cross.c2{left:46%;top:33%}.cross.c3{left:26%;top:62%}
+ .cross.c4{left:46%;top:62%}.cross.c5{left:66%;top:47%}
+ .lx-t-field .box{position:absolute;border:1px solid #39404a;
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%)}
+ .box.b1{left:10%;top:40%;width:46px;height:44px}
+ .box.b2{left:10%;top:70%;width:46px;height:44px}
+ .lx-t-prog{position:absolute;left:16%;bottom:14%;width:210px}
+ .lx-t-prog .n{font-family:var(--font-display);font-size:17px;color:#dfe5ea;margin-bottom:6px}
+ .lx-t-prog .bar{height:7px;background:#191d22;border:1px solid #363d45}
+ .lx-t-prog .bar i{display:block;height:100%;width:52%;background:#7d8892}
+ .lx-t-menu{width:320px;flex:none;display:flex;flex-direction:column;justify-content:center;
+  gap:13px;padding:0 18px 0 6px}
+ .lx-t-menu .row{position:relative;display:flex;align-items:center;gap:10px;height:42px;
+  padding:0 34px 0 14px;border:1px solid #39404a;background:#252a30;cursor:pointer;flex:none;
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%)}
+ .lx-t-menu .row:hover{background:#2c323a;border-color:#5d6570}
+ .lx-t-menu .row.active{background:#dfe5ea;border-color:#dfe5ea}
+ .lx-t-menu .row.dim{opacity:.5}
+ .lx-t-menu .lbl{margin-left:auto;font-family:var(--font-display);font-size:14px;
+  letter-spacing:.06em;color:#e4e9ee}
+ .lx-t-menu .row.active .lbl{color:#1b1f24}
+ .lx-t-menu .ar{color:#e4e9ee;font-size:11px}
+ .lx-t-menu .row.active .ar{color:#1b1f24}
+ /* The row index sits INSIDE the row. It was placed just below it at
+    bottom:-13px, and a clip-path clips real children exactly like it clips
+    pseudo-elements -- the same lesson the combat tracker's bar end-caps
+    taught -- so all five numbers were cut off and invisible. */
+ .lx-t-menu .num{position:absolute;left:12px;bottom:3px;font-size:7.5px;letter-spacing:.16em;color:#69727c}
+ .lx-t-menu .row.active .num{color:#7c858f}
+ .lx-t-menu input{flex:1;background:transparent;border:0;outline:0;color:#1b1f24;
+  font-family:var(--font-display);font-size:14px;letter-spacing:.14em;text-align:right;min-width:0}
+ .lx-t-menu input::placeholder{color:#6d757e}
+ .lx-t-err{min-height:16px;font-size:9px;letter-spacing:.08em;color:#ff5d66;margin-top:4px}
+ .lx-t-btm{display:flex;align-items:center;gap:14px;padding:6px 16px;border-top:1px solid #2e343b;
+  font-size:8px;letter-spacing:.16em;color:#69727c;flex:none}
+ .lx-t-btm .dashes{flex:1;height:1px;background:repeating-linear-gradient(90deg,#39404a 0 14px,transparent 14px 26px)}
+ .lx-t-btm .blocks{display:flex;gap:4px}
+ .lx-t-btm .blocks i{width:9px;height:9px;background:#39404a;display:block}
+ .lx-t-btm .blocks i.on{background:#c9cfd6}
+ @media(max-width:820px){.lx-t-rail{display:none}.lx-t-menu{width:auto;flex:1}}
 
  /* ---- 4. GUEST BOOK -------------------------------------------------
     A book rather than a list. Ruled lines, a red margin rule, a foxed paper
@@ -769,6 +876,7 @@
   if (typeof orig !== "function") return;
   window.logMinigameScore = function (gameId, score, label) {
    const e = orig.apply(this, arguments);
+   if (!cpuNow && duel && duel.stage === "human") { T(() => onHumanScored(e)); return e; }
    if (cpuNow && e && e.participants && e.participants[0]) {
     e.participants[0].player = cpuNow.key;
     e.loggedBy = "cpu";
@@ -822,7 +930,7 @@
   }
  }
 
- function cpuPlay(gameId, key) {
+ function cpuPlay(gameId, key, inDuel) {
   const roster = cpuRoster();
   const who = roster.find(r => r.key === key) || roster[0];
   if (!who) return;
@@ -914,6 +1022,7 @@
 
    // finished
    const sc = st.score;
+   if (inDuel && duel) { cpuStop(null, false); settleDuel(sc); return; }
    T(() => {
     const others = T(() => (G("GAME_LOG") || []).filter(e => e.gameId === gameId)
       .flatMap(e => e.participants || []).map(x => x.score).filter(v => typeof v === "number"), []);
@@ -979,6 +1088,134 @@
   });
  }
 
+ /* ================================================================
+    HEAD TO HEAD — a logged-in player never plays alone
+    ================================================================
+    Zazz's games are not solitaire. When a person who is signed in as a
+    character launches a playable game, a CPU hand is put opposite them: the
+    player goes first, their score is held, and then the CPU plays THE SAME
+    GAME on the same stage while they watch. Both scores land in one session
+    entry with two participants, and the verdict is the tracker's own
+    comparison rather than an opinion.
+
+    The opponent is drawn from the yard, never from the two player characters,
+    and never from the person playing -- Kevanna signed in does not get matched
+    against Kevanna. The GM is exempt from the whole thing: they are not a
+    contender, and a GM opening a game to look at it should not trigger a duel. */
+ let duel = null;   // {game, human, humanScore, opp} while a match is live
+
+ function duelOpponent(exclude) {
+  const r = cpuRoster().filter(x => x.key !== exclude);
+  if (!r.length) return null;
+  return r[Math.floor(Math.random() * r.length)];
+ }
+
+ /* The player's own launch is wrapped per game. Each of the ten launchers is
+    a global function the catalogue calls by name, so wrapping them all is one
+    loop rather than ten edits -- and it means a game added to PLAYABLE_GAMES
+    later is picked up without a change here. */
+ function armDuels() {
+  const PG = G("PLAYABLE_GAMES") || {};
+  Object.keys(PG).forEach(gid => {
+   const fname = PG[gid].launch;
+   const orig = G(fname);
+   if (typeof orig !== "function" || orig.__duelWrapped) return;
+   const wrapped = function (gameId) {
+    const r = orig.apply(this, arguments);
+    // a CPU run sets cpuNow before launching; only a HUMAN launch arms a duel
+    T(() => {
+     const me = G("currentUser");
+     if (cpuNow || !me || me === "gm") return;
+     if (duel && duel.stage === "cpu") return;
+     const opp = duelOpponent(me);
+     if (!opp) return;
+     duel = { game: gameId || gid, human: me, opp: opp, stage: "human", humanScore: null };
+     showDuelTag(opp.name);
+    });
+    return r;
+   };
+   wrapped.__duelWrapped = true;
+   T(() => { (new Function("f", "try{" + fname + "=f}catch(e){window['" + fname + "']=f}"))(wrapped); });
+  });
+ }
+
+ function showDuelTag(oppName) {
+  T(() => {
+   const old = $("lxDuelTag"); if (old && old.parentNode) old.parentNode.removeChild(old);
+   const t = document.createElement("div");
+   t.className = "lx-watch lx-duel"; t.id = "lxDuelTag";
+   t.textContent = "CHALLENGE · " + oppName.toUpperCase() + " PLAYS THIS AFTER YOU";
+   $("minigameOverlay").appendChild(t);
+  });
+ }
+
+ /* The player's score arrives through logMinigameScore, which is already
+    wrapped for CPU attribution. This is the second half of that wrapper: when
+    a human finishes the first leg of a duel, the entry is held rather than
+    left standing alone, and the CPU is sent in. */
+ function onHumanScored(entry) {
+  if (!duel || duel.stage !== "human") return;
+  duel.humanScore = T(() => entry.participants[0].score, null);
+  duel.entry = entry;
+  duel.stage = "cpu";
+  T(() => showToast(duel.opp.name + " steps up."));
+  setTimeout(() => {
+   if (!duel) return;
+   duel.stage = "cpu";
+   cpuPlay(duel.game, duel.opp.key, /*inDuel*/ true);
+  }, 1500);
+ }
+
+ function settleDuel(cpuScore) {
+  if (!duel) return;
+  const hs = duel.humanScore, cs = cpuScore;
+  const P = G("PLAYERS") || {};
+  const meName = (P[duel.human] || {}).name || duel.human;
+  const win = (typeof hs === "number" && typeof cs === "number")
+    ? (hs > cs ? "human" : hs < cs ? "cpu" : "draw") : "unknown";
+  /* One entry, two participants -- so the leaderboard reads it as a match
+     rather than as two unrelated solo runs that happen to share a game. */
+  T(() => {
+   const e = duel.entry;
+   if (e) {
+    e.participants = [{ player: duel.human, score: hs }, { player: duel.opp.key, score: cs }];
+    e.sessionLabel = meName + " vs " + duel.opp.name + " — challenge match";
+    e.note = "Head-to-head: the player played it, then the CPU played the same game on the same stage.";
+    e.winner = win === "human" ? duel.human : win === "cpu" ? duel.opp.key : null;
+    // the CPU's own solo entry from this leg is redundant now
+    const GL = G("GAME_LOG") || [];
+    const last = GL[GL.length - 1];
+    if (last && last !== e && last.loggedBy === "cpu") GL.pop();
+   }
+  });
+  showVerdict(meName, hs, duel.opp.name, cs, win);
+  T(() => autoSign(duel.opp.key, win === "cpu" ? "win" : "loss"));
+  duel = null;
+  T(() => { if (typeof renderGameLog === "function") renderGameLog(); });
+  T(() => { if (typeof renderLeaderboard === "function") renderLeaderboard(); });
+ }
+
+ function showVerdict(meName, hs, oppName, cs, win) {
+  T(() => {
+   const stage = $("minigameStage"); if (!stage) return;
+   const t = $("lxDuelTag"); if (t && t.parentNode) t.parentNode.removeChild(t);
+   stage.innerHTML =
+    '<div class="lx-verdict">' +
+     '<div class="lx-v-title">' + (win === "human" ? "YOU TOOK IT" : win === "cpu" ? "THEY TOOK IT" : "DEAD EVEN") + '</div>' +
+     '<div class="lx-v-row">' +
+      '<div class="lx-v-side' + (win === "human" ? " won" : "") + '">' +
+       '<div class="nm">' + esc(meName) + '</div><div class="sc">' + (hs == null ? "—" : hs) + '</div></div>' +
+      '<div class="lx-v-vs">VS</div>' +
+      '<div class="lx-v-side' + (win === "cpu" ? " won" : "") + '">' +
+       '<div class="nm">' + esc(oppName) + '</div><div class="sc">' + (cs == null ? "—" : cs) + '</div></div>' +
+     '</div>' +
+     '<div class="lx-v-note">Logged as one match. Both scores stand.</div>' +
+     '<button class="btn" id="lxVDone">Done</button>' +
+    '</div>';
+   T(() => { $("lxVDone").onclick = () => T(() => exitMinigame()); });
+  });
+ }
+
  /* A full round: every CPU hand plays the same game back to back, so the
     leaderboard fills with a real field rather than one entry. */
  function cpuRound(gameId) {
@@ -993,6 +1230,106 @@
    }, 200);
   };
   next();
+ }
+
+ /* ================================================================
+    THE TERMINAL LOGIN
+    ================================================================
+    Rebuilt in the reference sheet's language: a dark instrument panel with
+    rails down both edges, a bank of numbered entries on the right, corner
+    chamfers, registration crosses across the field and a status strip along
+    the bottom. The Ledger's own login is kept underneath and still does the
+    work -- this replaces the LOOK of the screen, not the mechanism, so the
+    passphrase check, the error text and the failure counter are all still the
+    file's own.
+
+    The right-hand bank is where the sheet has PLAY / OPTIONS / NETWORK; here
+    the top entry is the passphrase field and the rest are the things a person
+    at a locked terminal can actually do, which is not much. That is the joke
+    and it is also true. */
+ function mountTerminal() {
+  const scr = $("screen-login");
+  if (!scr || $("lxTerm")) return;
+  const pass = $("loginPass"), btn = $("loginBtn"), err = $("loginErr");
+  if (!pass || !btn) return;
+
+  const wrap = document.createElement("div");
+  wrap.className = "lx-term"; wrap.id = "lxTerm";
+  const stamp = new Date();
+  const hhmm = String(stamp.getHours()).padStart(2, "0") + ":" + String(stamp.getMinutes()).padStart(2, "0");
+  const fn = (n) => '<span class="fn">FN_' + String(n).padStart(2, "0") + '</span>';
+
+  wrap.innerHTML =
+   '<div class="lx-t-top">' +
+     '<span class="dot"></span><span class="ttl">ST-R PRO TOOL 0.5</span>' +
+     '<span class="seg"></span><span class="seg s2"></span><span class="seg s3"></span>' +
+     '<span class="right"><i class="b"></i><i class="b"></i><i class="b on"></i></span>' +
+   '</div>' +
+   '<div class="lx-t-fn">' + fn(3) + fn(7) + fn(8) + '<span class="fn on">FN_09</span>' +
+     '<span class="rule"></span></div>' +
+   '<div class="lx-t-body">' +
+     '<div class="lx-t-rail l">' +
+       '<div class="gauge"><i style="height:62%"></i></div>' +
+       '<div class="vlabel">HP</div>' +
+       '<div class="ticks"></div>' +
+       '<div class="gauge sm"><i style="height:34%"></i></div>' +
+       '<div class="vlabel">FRQ BLEED</div>' +
+     '</div>' +
+     '<div class="lx-t-field">' +
+       '<div class="lx-t-code">[ 0-2 ]</div>' +
+       '<div class="lx-t-sn"><span class="sac">SAC</span>SN-02 <b>&#9727;</b></div>' +
+       '<div class="cross c1">+</div><div class="cross c2">+</div><div class="cross c3">+</div>' +
+       '<div class="cross c4">+</div><div class="cross c5">+</div>' +
+       '<div class="box b1"></div><div class="box b2"></div>' +
+       '<div class="lx-t-prog"><div class="n">03/06</div><div class="bar"><i></i></div></div>' +
+     '</div>' +
+     '<div class="lx-t-menu">' +
+       '<div class="row active" id="lxRowPass">' +
+         '<input id="lxPass" type="password" placeholder="PASSPHRASE" autocomplete="off">' +
+         '<span class="ar">&#9654;</span><span class="num">001</span></div>' +
+       '<div class="row" id="lxRowEnter"><span class="lbl">ENTER</span><span class="ar">&#9654;</span><span class="num">002</span></div>' +
+       '<div class="row dim"><span class="lbl">NETWORK</span><span class="ar">&#9654;</span><span class="num">003</span></div>' +
+       '<div class="row dim"><span class="lbl">CREDITS</span><span class="ar">&#9654;</span><span class="num">004</span></div>' +
+       '<div class="row dim" id="lxRowWipe"><span class="lbl">WIPE LOCAL</span><span class="ar">&#9654;</span><span class="num">005</span></div>' +
+       '<div class="lx-t-err" id="lxErr"></div>' +
+     '</div>' +
+     '<div class="lx-t-rail r">' +
+       '<div class="gauge"><i style="height:78%"></i></div>' +
+       '<div class="vlabel">PWR / MODE</div>' +
+       '<div class="ticks"></div>' +
+       '<div class="gauge sm"><i style="height:52%"></i></div>' +
+       '<div class="vlabel">BUFF</div>' +
+     '</div>' +
+   '</div>' +
+   '<div class="lx-t-btm">' +
+     '<span class="fn">FN_24</span><span class="fn">FN_26</span>' +
+     '<span class="dashes"></span>' +
+     '<span class="blocks"><i></i><i class="on"></i><i></i><i></i><i class="on"></i><i></i></span>' +
+     '<span class="stamp">' + hhmm + ' · OPUS_&#8709; TERMINAL</span>' +
+   '</div>';
+
+  scr.appendChild(wrap);
+  /* The Ledger's own controls are hidden rather than removed, because they are
+     what actually validates. Everything below drives them. */
+  T(() => { pass.style.display = "none"; btn.style.display = "none"; if (err) err.style.display = "none"; });
+
+  const go = () => {
+   pass.value = $("lxPass").value;
+   btn.click();
+   setTimeout(() => T(() => {
+    const e = $("lxErr"), m = (err && err.textContent) || "";
+    if (m) { e.textContent = m; wrap.classList.add("bad"); setTimeout(() => wrap.classList.remove("bad"), 420); }
+    else e.textContent = "";
+   }), 60);
+  };
+  T(() => { $("lxRowEnter").onclick = go; });
+  T(() => { $("lxPass").onkeydown = (ev) => { if (ev.key === "Enter") go(); }; });
+  T(() => { $("lxRowWipe").onclick = () => {
+    if (!confirm("Wipe this browser's local Ledger data — guest book, ticks, wave readings and nemesis memory?")) return;
+    ["opus_guestbook_v2","opus_rung_tasks_v1","opus_wave_types_v1"].forEach(k => T(() => localStorage.removeItem(k)));
+    T(() => showToast("Local data wiped."));
+  }; });
+  T(() => $("lxPass").focus());
  }
 
  /* ================================================================
@@ -1489,6 +1826,54 @@
   };
  });
 
+ /* DECALS ON THE DEPOT, NEON OVER THE YARD.
+    Both sheets keep their own colour, and both are placed as furniture rather
+    than as data -- a warning sticker on the supply wall and a sign over the
+    games. They are absolutely positioned and pointer-events:none, so nothing
+    they sit near can be blocked by them.
+
+    Chosen by index rather than at random: FREE OF BIOHAZARD and DO NOT TAMPER
+    belong on a supply cache, HIGH PRESSURE does not belong on a leaderboard. */
+ function decal(n, css) {
+  const cols = 6, rows = 5;
+  const c = n % cols, r = Math.floor(n / cols) % rows;
+  return '<i class="lx-decal" style="background-position:' +
+    (c * 100 / (cols - 1)) + '% ' + (r * 100 / (rows - 1)) + '%;' + css + '"></i>';
+ }
+ function neon(n, css) {
+  const cols = 6, rows = 2;
+  const c = n % cols, r = Math.floor(n / cols) % rows;
+  return '<i class="lx-neon" style="background-position:' +
+    (c * 100 / (cols - 1)) + '% ' + (r * 100 / (rows - 1)) + '%;' + css + '"></i>';
+ }
+ function dressApoc() {
+  T(() => {
+   const scr = $("screen-apoc"); if (!scr || scr.querySelector(".lx-decal")) return;
+   scr.style.position = scr.style.position || "relative";
+   const host = document.createElement("div");
+   host.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0";
+   host.innerHTML =
+     decal(7,  "width:96px;height:96px;left:14px;top:120px;transform:rotate(-4deg);opacity:.5") +
+     decal(10, "width:78px;height:78px;right:20px;top:210px;transform:rotate(3deg);opacity:.42") +
+     decal(19, "width:120px;height:56px;left:26px;bottom:70px;transform:rotate(-2deg);opacity:.38") +
+     decal(2,  "width:74px;height:74px;right:34px;bottom:120px;transform:rotate(5deg);opacity:.34");
+   scr.insertBefore(host, scr.firstChild);
+  });
+ }
+ function dressYard() {
+  T(() => {
+   const scr = $("screen-games"); if (!scr || scr.querySelector(".lx-neon")) return;
+   scr.style.position = scr.style.position || "relative";
+   const host = document.createElement("div");
+   host.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0";
+   host.innerHTML =
+     neon(1,  "width:150px;height:150px;right:26px;top:96px;opacity:.30") +
+     neon(6,  "width:118px;height:118px;left:18px;bottom:110px;opacity:.24") +
+     neon(9,  "width:132px;height:132px;right:120px;bottom:64px;opacity:.20");
+   scr.insertBefore(host, scr.firstChild);
+  });
+ }
+
  /* ---- wiring the new screens into the menu ------------------------- */
  T(() => {
   const menu = $("screen-menu");
@@ -1516,7 +1901,7 @@
   const orig = window.openGames;
   if (typeof orig === "function") {
    window.openGames = function () { const r = orig.apply(this, arguments);
-     T(mountCpuBar); T(decorateCatalog); return r; };
+     T(mountCpuBar); T(decorateCatalog); T(armDuels); return r; };
   }
  });
 
@@ -1553,7 +1938,13 @@
   };
  });
 
+ /* The terminal skin over the login screen, and the yard's furniture. Mounted
+    at the end so every function they call already exists. */
+ T(mountTerminal);
+ T(dressApoc);
+ T(dressYard);
+
  window.ledgerExt = { cpuPlay: cpuPlay, cpuRound: cpuRound, roster: cpuRoster, guestBook: () => GB,
-                      redrawTree: drawTree };
+                      redrawTree: drawTree, terminal: mountTerminal };
 })();
 /* ================= END LEDGER EXTENSION ========================= */
