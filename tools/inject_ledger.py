@@ -77,6 +77,23 @@ def main():
         print(f"  icons  {os.path.getsize(args.icons) / 1e3:.0f} KB "
               f"({len(b) / 2 ** 21:.0%} of the custom-property ceiling)")
 
+    # The Ledger's own art, keyed out of the reference sheets at build time.
+    # Small enough to inline as ordinary data URIs rather than one sprite, and
+    # they are used at wildly different sizes -- a 26px node badge and a 190px
+    # banner emblem off the same file would need two mask-sizes and a sheet.
+    for token, path in (("__SIGILS__", "web/led_sigils.webp"),
+                        ("__EYESOLID__", "web/led_eye_solid.webp"),
+                        ("__EYELINE__", "web/led_eye_line.webp"),
+                        ("__EYEROW__", "web/led_eye_row.webp"),
+                        ("__RULES__", "web/led_rules.webp")):
+        if token not in js:
+            continue
+        if not os.path.exists(path):
+            raise SystemExit(f"{path} not found, and the block asks for it via {token}.")
+        b = base64.b64encode(open(path, "rb").read()).decode()
+        js = js.replace(token, f"data:image/webp;base64,{b}")
+        print(f"  art    {os.path.basename(path)} {os.path.getsize(path) / 1e3:.1f} KB")
+
     for tok in re.findall(r"__[A-Z_]+__", js):
         raise SystemExit(f"unresolved token {tok} left in the block")
 

@@ -108,7 +108,55 @@
   -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
   -webkit-mask-size:256px 912px;mask-size:256px 912px}
 
+ /* The Ledger's own iconography, keyed out of the reference sheets. The hand
+    sigils are the important one: eighteen of them, and they escalate from a
+    single open hand to a full five-fold mandala, which maps onto tree depth
+    exactly. A tier-1 node gets one hand; a tier-5 node gets the mandala. The
+    art does the explaining that a tier number only labels. */
+ :root{
+  --sigils:url("__SIGILS__");
+  --eye-solid:url("__EYESOLID__");
+  --eye-line:url("__EYELINE__");
+  --eye-row:url("__EYEROW__");
+  --rules:url("__RULES__");
+ }
+ .lx-sig{display:block;background:currentColor;
+  -webkit-mask-image:var(--sigils);mask-image:var(--sigils);
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
+
  /* ---- 2. THE SKILL TREE -------------------------------------------- */
+ /* The class banner, taken from the reference sheet's own idea: a hanging
+    cloth with a torn hem and the order's sigil burned into the middle of it.
+    The tear is a clip-path polygon rather than an image, so it recolours with
+    the character and never tiles. */
+ .lx-banner{position:relative;width:190px;min-height:230px;margin:0 auto 6px;
+  background:linear-gradient(180deg,#191627,#12101c 62%,#0d0b14);
+  border:1px solid rgba(233,230,242,.10);border-bottom:0;
+  clip-path:polygon(0 0,100% 0,100% 88%,92% 96%,84% 88%,76% 97%,68% 87%,60% 95%,
+   52% 86%,44% 96%,36% 88%,28% 97%,20% 87%,12% 95%,4% 87%,0 94%);
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  padding:14px 10px 0}
+ .lx-banner::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;
+  background:linear-gradient(90deg,transparent,rgba(233,230,242,.25),transparent)}
+ .lx-banner .emb{width:104px;height:74px;margin:10px 0 8px;background:currentColor;
+  -webkit-mask:var(--eye-solid) no-repeat center/contain;mask:var(--eye-solid) no-repeat center/contain}
+ .lx-banner .nm{font-family:var(--font-display);font-size:15px;letter-spacing:.06em;
+  text-align:center;line-height:1.2}
+ .lx-banner .sb{font-family:var(--font-mono);font-size:8px;color:var(--faint);
+  letter-spacing:.16em;margin-top:5px;text-align:center}
+ .lx-banner .ct{font-family:var(--font-mono);font-size:8.5px;color:var(--faint);
+  margin-top:auto;padding-bottom:26px;letter-spacing:.08em}
+
+ /* The eye border. One strip, repeated on the x axis, used as the rule under
+    the banner and above the tree -- the reference sheet's own device for
+    saying "this is the order's page". */
+ .lx-eyerow{height:20px;background:var(--eye-row) repeat-x center/auto 100%;
+  opacity:.30;margin:2px 0 10px}
+
+ .lx-identity{display:flex;gap:18px;align-items:stretch;margin-bottom:6px}
+ .lx-identity .col{flex:1;min-width:0}
+
+ /* ---- (skill tree nodes) ------------------------------------------- */
  .lx-tree-wrap{position:relative;border:1px solid var(--line);background:
    repeating-linear-gradient(90deg,rgba(255,255,255,.020) 0 1px,transparent 1px 46px),
    repeating-linear-gradient(0deg,rgba(255,255,255,.020) 0 1px,transparent 1px 46px),
@@ -137,6 +185,13 @@
  .lx-node.mystery .n{color:var(--rust);letter-spacing:.22em}
  .lx-node .tier{position:absolute;top:-1px;right:-1px;font-family:var(--font-mono);font-size:7.5px;
   padding:1px 5px;background:var(--line);color:var(--faint)}
+ /* The sigil badge. Sits in the node's cut corner, sized off the tier, and it
+    is the reason a glance across the tree reads as depth: the marks get
+    denser the further down you are. */
+ .lx-node{padding-left:44px}
+ .lx-node .sg{position:absolute;left:8px;top:9px;width:28px;height:28px;opacity:.85}
+ .lx-node.locked .sg{opacity:.4}
+ .lx-node .n{min-height:26px}
  .lx-branch-head{position:absolute;font-family:var(--font-display);font-size:13px;
   letter-spacing:.04em;white-space:nowrap;
   text-shadow:2px 2px 0 rgba(255,47,146,.5),4px 4px 0 rgba(47,224,255,.2)}
@@ -159,19 +214,43 @@
  .lx-ghost.click{animation:lx-tap .18s ease}
  @keyframes lx-tap{50%{transform:translate(-50%,-50%) scale(.55);background:rgba(184,63,255,.5)}}
 
- /* ---- 4. GUEST BOOK -------------------------------------------------- */
- .gb-page{background:
-   repeating-linear-gradient(0deg,transparent 0 25px,rgba(233,230,242,.045) 25px 26px),
-   linear-gradient(180deg,#131019,#0c0a12);
-   border:1px solid var(--line);padding:16px 18px;position:relative;min-height:320px}
- .gb-page::before{content:"";position:absolute;left:42px;top:0;bottom:0;width:1px;background:rgba(255,47,146,.22)}
- .gb-entry{position:relative;margin:0 0 18px 54px;padding:2px 0 10px;border-bottom:1px dashed rgba(233,230,242,.10)}
+ /* ---- 4. GUEST BOOK -------------------------------------------------
+    A book rather than a list. Ruled lines, a red margin rule, a foxed paper
+    tone, an eye border top and bottom, every entry pressed with the signer's
+    own seal and rocked a fraction off true. The wobble is SEEDED so the page
+    is hand-made rather than restless -- entries that re-rotate on each render
+    read as a bug. */
+ .gb-book{position:relative;background:
+   radial-gradient(120% 60% at 20% -10%,rgba(255,47,146,.05),transparent 60%),
+   linear-gradient(180deg,#15121d,#0d0b13);
+   border:1px solid var(--line);padding:10px 12px}
+ .gb-eyerow{height:15px;background:var(--eye-row) repeat-x center/auto 100%;opacity:.22}
+ .gb-page{position:relative;padding:20px 18px 18px 62px;background:
+   repeating-linear-gradient(0deg,transparent 0 27px,rgba(233,230,242,.05) 27px 28px);
+   min-height:300px}
+ .gb-page::before{content:"";position:absolute;left:44px;top:0;bottom:0;width:1px;
+   background:rgba(255,47,146,.30)}
+ .gb-page::after{content:"";position:absolute;left:47px;top:0;bottom:0;width:1px;
+   background:rgba(255,47,146,.12)}
+ .gb-entry{position:relative;margin:0 0 22px;padding:4px 0 12px 56px;
+   border-bottom:1px dashed rgba(233,230,242,.09);transform-origin:0 50%}
+ .gb-seal{position:absolute;left:0;top:4px;width:46px;height:46px;opacity:.55}
  .gb-sig{font-size:25px;line-height:1.05;margin-bottom:3px;display:inline-block}
- .gb-msg{font-size:12px;line-height:1.55;color:var(--paper);opacity:.9;max-width:62ch}
- .gb-when{font-family:var(--font-mono);font-size:8.5px;color:var(--faint);margin-top:5px;letter-spacing:.06em}
- .gb-form{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;margin-top:12px;
-  padding:10px;border:1px dashed var(--line);background:rgba(255,255,255,.02)}
- .gb-form textarea{flex:1;min-width:240px;min-height:56px;background:#0d0b13;color:var(--paper);
+ .gb-msg{font-size:12.5px;line-height:1.6;color:var(--paper);opacity:.92;max-width:66ch}
+ .gb-when{font-family:var(--font-mono);font-size:8.5px;color:var(--faint);margin-top:6px;letter-spacing:.07em}
+ /* Margin notes: what makes the book a conversation instead of a queue. Anyone
+    can write in the margin of anyone else's entry, in their own ink. */
+ .gb-notes{margin:9px 0 0 14px;border-left:2px solid rgba(233,230,242,.12);padding-left:10px}
+ .gb-note{font-family:var(--font-body);font-size:11px;line-height:1.5;opacity:.85;
+   margin:3px 0;transform-origin:0 50%}
+ .gb-note-who{font-family:var(--font-mono);font-size:8px;letter-spacing:.1em;
+   opacity:.7;display:block}
+ .gb-addnote{margin-top:7px;background:none;border:1px dashed var(--line);color:var(--faint);
+   font-family:var(--font-mono);font-size:8.5px;padding:3px 8px;cursor:pointer;letter-spacing:.06em}
+ .gb-addnote:hover{border-color:var(--spray);color:var(--spray)}
+ .gb-form{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;margin-top:14px;
+  padding:11px;border:1px dashed var(--line);background:rgba(255,255,255,.02)}
+ .gb-form textarea{flex:1;min-width:240px;min-height:58px;background:#0d0b13;color:var(--paper);
   border:1px solid var(--line);font-family:var(--font-body);font-size:12px;padding:7px 8px;resize:vertical}
  .gb-form select{background:#0d0b13;color:var(--paper);border:1px solid var(--line);
   font-family:var(--font-mono);font-size:10px;padding:5px 6px}
@@ -184,6 +263,18 @@
  .lx-hook.c{border-left-color:var(--spray2)}
  .lx-hook .who{font-family:var(--font-mono);font-size:8.5px;color:var(--faint);
   letter-spacing:.08em;display:block;margin-bottom:2px}
+ /* The earn-this-rung row. A label wrapping a real checkbox, so the whole
+    strip is the hit target and the state is a form control the browser keeps
+    for us rather than a div pretending to be one. */
+ .lx-task{display:block;position:relative;padding:6px 8px 7px 30px;margin-bottom:6px;
+  border-left:2px solid var(--spray4);background:rgba(184,63,255,.06);cursor:pointer}
+ .lx-task input{position:absolute;left:9px;top:9px;accent-color:var(--spray2);cursor:pointer}
+ /* The caption is display:block only under .lx-hook, so inside a task it ran
+    inline and read as "TO EARN THIS RUNGSay their name out loud". */
+ .lx-task .who{display:block;margin-bottom:3px}
+ .lx-task .tx{font-family:var(--font-body);font-size:11.5px;line-height:1.5;color:var(--paper);opacity:.9;display:block}
+ .lx-task.done{border-left-color:var(--spray2);background:rgba(198,255,61,.07)}
+ .lx-task.done .tx{opacity:.55;text-decoration:line-through}
  .lx-strain{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
  .lx-chip{font-family:var(--font-mono);font-size:8.5px;letter-spacing:.06em;
   border:1px solid var(--line);padding:2px 6px;color:var(--faint)}
@@ -295,9 +386,23 @@
            h: PAD_Y + (maxR + 1) * (NODE_H + ROW_GAP) + 20 };
  }
 
+ /* Which of the eighteen sigils a node wears. Depth picks the ROW -- the sheet
+    runs simple to elaborate down its three rows -- and the branch picks the
+    column, so a node's mark says both how deep it sits and which discipline it
+    belongs to, without a legend. */
+ const SIG_COLS = 6, SIG_ROWS = 3, SIG_CELL = 128;
+ function sigilStyle(depth, bi, px) {
+  const row = Math.min(SIG_ROWS - 1, depth);
+  const col = bi % SIG_COLS;
+  const w = px * SIG_COLS, h = px * SIG_ROWS;
+  return "-webkit-mask-size:" + w + "px " + h + "px;mask-size:" + w + "px " + h + "px;" +
+         "-webkit-mask-position:" + (-col * px) + "px " + (-row * px) + "px;" +
+         "mask-position:" + (-col * px) + "px " + (-row * px) + "px;";
+ }
+
  const BRANCH_COLOR = ["#ff2f92", "#2fe0ff", "#c6ff3d", "#b83fff", "#ff9b1f", "#ff3b3b"];
 
- function drawTree(tree) {
+ function drawTree(tree, treeName) {
   const canvas = $("treeCanvas");
   if (!canvas) return;
   canvas.innerHTML = "";
@@ -365,6 +470,7 @@
    el.style.boxShadow = "inset 3px 0 0 " + (n.status === "locked" ? "rgba(233,230,242,.16)" : bc);
    el.innerHTML =
     '<div class="tier">T' + (x.__d + 1) + '</div>' +
+    '<i class="lx-sig sg" style="' + sigilStyle(x.__d, x.bi, 28) + '"></i>' +
     '<div class="n">' + (n.desc === null ? "???" : esc(n.n)) + '</div>' +
     '<div class="meta"><span>' + esc(n.type || "") + '</span>' +
     '<span class="cost">' + n.cost + ' pt' + (n.cost === 1 ? "" : "s") + '</span></div>';
@@ -397,10 +503,29 @@
    '<span style="font-family:var(--font-mono);font-size:9px;color:var(--faint)">' +
    L.placed.length + ' nodes · ' + L.placed.reduce((a, b) => a + b.parents.length, 0) + ' links read from the requirement text</span>';
 
-  canvas.appendChild(tools);
-  canvas.appendChild(legend);
-  canvas.appendChild(key);
-  canvas.appendChild(wrap);
+  /* The class-identity column, straight from the reference sheet: a hanging
+     banner with the order's sigil, the character's line under it, and the eye
+     border ruling it off from the tree itself. */
+  const done = L.placed.filter(x => x.node.status === "unlocked").length;
+  const ident = document.createElement("div");
+  ident.className = "lx-identity";
+  const bannerCol = document.createElement("div");
+  bannerCol.style.cssText = "flex:none;width:190px;color:" + BRANCH_COLOR[0];
+  bannerCol.innerHTML =
+   '<div class="lx-banner">' +
+    '<div class="nm">' + esc(treeName || "") + '</div>' +
+    '<i class="emb"></i>' +
+    '<div class="sb">' + esc((tree.branches || []).length) + ' DISCIPLINES</div>' +
+    '<div class="ct">' + done + ' / ' + L.placed.length + ' EARNED</div>' +
+   '</div>';
+  const rest = document.createElement("div");
+  rest.className = "col";
+  rest.appendChild(tools); rest.appendChild(legend); rest.appendChild(key);
+  const eyerow = document.createElement("div"); eyerow.className = "lx-eyerow";
+  rest.appendChild(eyerow);
+  rest.appendChild(wrap);
+  ident.appendChild(bannerCol); ident.appendChild(rest);
+  canvas.appendChild(ident);
 
   /* Zoom, and the one line of it that has to be defensive.
      The fit-to-width divides by the container's measured width, and drawTree
@@ -423,7 +548,20 @@
  }
 
  // take over the Ledger's renderer
- T(() => { window.renderTree = drawTree; });
+ /* renderTree is called with the tree object only, so the name is recovered
+    from whichever key in SKILL_TREES holds this object -- identity comparison,
+    not a copy of the selection state. */
+ T(() => {
+  window.renderTree = function (tree) {
+   let nm = "";
+   T(() => {
+    const ST = G("SKILL_TREES") || {}, P = G("PLAYERS") || {};
+    const k = Object.keys(ST).find(k2 => ST[k2] === tree);
+    if (k) nm = (P[k] || {}).name || k;
+   });
+   return drawTree(tree, nm);
+  };
+ });
 
  /* ================================================================
     3. THE CPU THAT PLAYS THE GAMES
@@ -690,42 +828,69 @@
   burham:  { font: "'Chakra Petch',sans-serif", size: 20, slant: -3, ink: "#6b6478", weight: 600, sp: ".05em" },
   gm:      { font: "'Space Mono',monospace", size: 17, slant: 0,  ink: "#6b6478", weight: 700, sp: ".30em" }
  };
- const GBKEY = "opus_guestbook_v1";
+ /* Each character also gets a SEAL -- one of the eighteen hand sigils, stamped
+    beside their signature in their own ink. It is what turns a list of names
+    into a book people have physically been at: the seal is the mark they press
+    into the page, and no two are the same mark or the same colour. */
+ const SEAL = { cole: 0, vergil: 5, kevanna: 11, felana: 2, yaviel: 16, zalir: 6,
+                dahlia: 9, angi: 3, burham: 13, merov: 8, xaim: 14, gm: 17 };
+
+ const GBKEY = "opus_guestbook_v2";
  let GB = T(() => JSON.parse(localStorage.getItem(GBKEY)) || null, null) || [
-  { who: "zalir",   msg: "Signed because Zazz said the book has to have names in it. It has a name in it now.", at: "Day 1" },
-  { who: "kevanna", msg: "FIRST. someone tell yaviel i was first. i dont care that the page says day one for everybody", at: "Day 1" },
-  { who: "yaviel",  msg: "Kevanna was not first. The book was open before either of us walked in.", at: "Day 2" },
-  { who: "dahlia",  msg: "I wrote something here already. It isn't on this page any more. Ask the page.", at: "Day 2" }
+  { who: "zalir",   msg: "Signed because Zazz said the book has to have names in it. It has a name in it now.", at: "Day 1", notes: [] },
+  { who: "kevanna", msg: "FIRST. someone tell yaviel i was first. i dont care that the page says day one for everybody", at: "Day 1",
+    notes: [{ who: "yaviel", t: "You were not." }] },
+  { who: "yaviel",  msg: "Kevanna was not first. The book was open before either of us walked in.", at: "Day 2", notes: [] },
+  { who: "dahlia",  msg: "I wrote something here already. It isn't on this page any more. Ask the page.", at: "Day 2",
+    notes: [{ who: "burham", t: "I checked. She's right and I wish she wasn't." }] }
  ];
  const gbSave = () => T(() => localStorage.setItem(GBKEY, JSON.stringify(GB)));
+
+ /* A stable per-entry wobble. Seeded off the index and the signer so a page
+    looks hand-made but does not reshuffle itself every time it is drawn --
+    an entry that jumps a degree on every render reads as a bug, not as ink. */
+ function wob(seed, spread) {
+  let h = 0; const str = String(seed);
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
+  return ((Math.abs(h) % 1000) / 1000 - .5) * spread;
+ }
 
  function guestBookHtml() {
   const P = G("PLAYERS") || {};
   const rows = GB.map((e, i) => {
    const h = HANDS[e.who] || HANDS.gm;
    const nm = (P[e.who] || {}).name || e.who;
-   return '<div class="gb-entry">' +
+   const sig = SEAL[e.who] === undefined ? 17 : SEAL[e.who];
+   const notes = (e.notes || []).map(n => {
+    const nh = HANDS[n.who] || HANDS.gm;
+    return '<div class="gb-note" style="color:' + nh.ink + ';transform:rotate(' + wob(n.who + n.t, 3).toFixed(2) + 'deg)">' +
+     '<span class="gb-note-who">' + esc((P[n.who] || {}).name || n.who) + '</span>' + esc(n.t) + '</div>';
+   }).join("");
+   return '<div class="gb-entry" style="transform:rotate(' + wob(e.who + i, 1.1).toFixed(2) + 'deg)">' +
+    '<i class="lx-sig gb-seal" style="color:' + h.ink + ';' +
+      sigilStyle(Math.floor(sig / 6), sig % 6, 46) + '"></i>' +
     '<span class="gb-sig" style="font-family:' + h.font + ';font-size:' + h.size + 'px;color:' + h.ink +
       ';font-weight:' + h.weight + ';letter-spacing:' + h.sp + ';transform:rotate(' + h.slant + 'deg)">' + esc(nm) + '</span>' +
     '<div class="gb-msg">' + esc(e.msg) + '</div>' +
-    '<div class="gb-when">' + esc(e.at || "") + (e.byCpu ? " · signed unprompted" : "") + '</div>' +
+    '<div class="gb-when">' + esc(e.at || "") + ' · entry ' + (i + 1) + '</div>' +
+    (notes ? '<div class="gb-notes">' + notes + '</div>' : "") +
+    '<button class="gb-addnote" data-note="' + i + '">+ add a margin note</button>' +
    '</div>';
   }).join("");
   const opts = Object.keys(HANDS).filter(k => P[k]).map(k =>
     '<option value="' + esc(k) + '">' + esc((P[k] || {}).name || k) + '</option>').join("");
-  return '<div class="gb-page lx-taped">' + (rows || '<div style="color:var(--faint)">Nobody has signed yet.</div>') + '</div>' +
+  return '<div class="gb-book lx-taped">' +
+    '<div class="gb-eyerow"></div>' +
+    '<div class="gb-page">' + (rows || '<div style="color:var(--faint)">Nobody has signed yet.</div>') + '</div>' +
+    '<div class="gb-eyerow"></div>' +
+   '</div>' +
    '<div class="gb-form">' +
     '<select id="gbWho">' + opts + '</select>' +
     '<textarea id="gbMsg" placeholder="Sign it. Say something. Nobody is checking spelling."></textarea>' +
-    '<button class="btn" id="gbSign">Sign the book</button>' +
+    '<button class="btn" id="gbSign">Press your seal</button>' +
    '</div>';
  }
 
- /* showScreen() takes the id WITHOUT the screen- prefix and adds it itself,
-    and it switches an .active class rather than a display style -- .screen is
-    display:none and .screen.active is display:flex. A new screen therefore has
-    to carry the class and no inline display, or it stays invisible while every
-    check says it mounted fine. */
  function mountGuestBook() {
   if ($("screen-guestbook")) return;
   const app = $("app") || document.body;
@@ -754,6 +919,17 @@
  }
  function bindSign() {
   T(() => {
+   $("gbBody").querySelectorAll("[data-note]").forEach(b => {
+    b.onclick = () => {
+     const i = +b.dataset.note;
+     const who = $("gbWho").value;
+     const t = prompt("Margin note, as " + ((G("PLAYERS") || {})[who] || {}).name + ":");
+     if (!t) return;
+     GB[i].notes = GB[i].notes || [];
+     GB[i].notes.push({ who: who, t: t });
+     gbSave(); $("gbBody").innerHTML = guestBookHtml(); bindSign();
+    };
+   });
    $("gbSign").onclick = () => {
     const who = $("gbWho").value, msg = ($("gbMsg").value || "").trim();
     if (!msg) { T(() => showToast("Write something first.")); return; }
@@ -778,46 +954,82 @@
 
     STRAIN is the new idea. A connection that has not moved in a long time is
     not neutral, it is drifting, and the tracker should say so. */
- const RUNG_PROMPTS = [
-  { back: "They don't answer. They just look at you for a second longer than is comfortable.",
+ /* WHAT A RUNG COSTS, rather than what the other person says.
+    The first pass gave each rung a line of dialogue back. It read well and it
+    did nothing -- there was no reason to look at it twice, because nothing was
+    being asked of anybody. Replaced with the thing that actually warrants
+    interaction: a CONDITION the table has to satisfy before the rung can be
+    raised, written as something to do rather than something to feel, and a
+    box to tick when it has been done.
+
+    The ticks persist in their own key and the raise button stays disabled
+    until the rung's condition is met, so the ladder stops being a number the
+    GM nudges and becomes a thing the players earn on purpose. */
+ const RUNG_TASKS = [
+  { need: "Say their name out loud in a scene. Not to them — about them, to someone else.",
     opens: "You can ask them one factual thing about themselves and they'll answer it straight." },
-  { back: "\"Why do you want to know?\" — not hostile. Actually asking.",
-    opens: "They'll stand next to you in a fight without being told to." },
-  { back: "\"...huh.\" A pause. \"Nobody's asked me that in a while.\"",
-    opens: "They'll tell you one thing they're bad at." },
-  { back: "They tell you the short version. The one with the edges filed off.",
-    opens: "They'll cover your back specifically, not just the group's." },
-  { back: "They tell you the long version. It takes a while and they don't look at you for most of it.",
+  { need: "Stand next to them in a fight without being asked to, and let it cost you something.",
+    opens: "They'll hold a position with you rather than near you." },
+  { need: "Tell them one thing you're bad at. Out loud, in front of them, unprompted.",
+    opens: "They'll tell you one thing they're bad at, and it will be true." },
+  { need: "Spend a real resource on them — an action, a ration, a dose — when you had a better use for it.",
+    opens: "They cover your back specifically, not just the group's." },
+  { need: "Ask them the question they've been avoiding, and sit through the whole answer.",
     opens: "You can ask them for something costly and they'll consider it seriously." },
-  { back: "\"You already know the answer to that.\" And you do.",
-    opens: "They'll break a rule for you. A small one." },
-  { back: "They finish your sentence and neither of you remarks on it.",
-    opens: "They'll take a hit meant for you without deciding to first." },
-  { back: "No answer needed. They're already doing the thing you were about to ask for.",
-    opens: "They'll tell you when you're wrong, in front of people." },
-  { back: "\"Don't.\" — meaning don't thank them, don't make it a moment.",
-    opens: "They'll break a rule for you. A big one." },
-  { back: "Nothing. They don't need to say anything and you don't need them to.",
-    opens: "There is nothing left to unlock. That's the whole point of the top of the ladder." }
+  { need: "Break a small rule for them, on purpose, where someone can see you do it.",
+    opens: "They break a small one back, and don't mention it." },
+  { need: "Finish a job they started without telling them you did it.",
+    opens: "They take a hit meant for you without deciding to first." },
+  { need: "Disagree with them in front of the group and hold the line.",
+    opens: "They tell you when you're wrong, in front of people, and you listen." },
+  { need: "Put yourself between them and the thing that was going to land.",
+    opens: "They break a big rule for you. Once. Without being asked." },
+  { need: "Nothing. There is nothing left to prove and asking for proof would be the insult.",
+    opens: "The top of the ladder. It doesn't open anything — it IS the thing." }
  ];
+ const TKEY = "opus_rung_tasks_v1";
+ let TASKS = T(() => JSON.parse(localStorage.getItem(TKEY)) || {}, {}) || {};
+ const tSave = () => T(() => localStorage.setItem(TKEY, JSON.stringify(TASKS)));
+ const tKey = (cid, i) => cid + "#" + i;
 
  T(() => {
   const orig = window.renderWLDetailContent;
   if (typeof orig !== "function") return;
-  window.renderWLDetailContent = function () {
+  window.renderWLDetailContent = function (conn) {
    const r = orig.apply(this, arguments);
+   /* The connection's id comes from the argument the Ledger already passes in,
+      not from a global. activeWLPerson would also work, but the argument is
+      the thing being rendered right now and cannot be stale. Keying on it is
+      what stops rung 1 of every connection sharing one tick -- which is what
+      the first version did, because it fell back to "" and every key came out
+      as "#0". */
+   const cid = (conn && conn.id) || "";
    T(() => {
     const ladder = $("wlLadder");
     if (!ladder) return;
     const rows = ladder.querySelectorAll(".wl-rung, .rung, li");
     rows.forEach((row, i) => {
      if (row.querySelector(".lx-hooks")) return;
-     const pr = RUNG_PROMPTS[i]; if (!pr) return;
+     const pr = RUNG_TASKS[i]; if (!pr) return;
+     const k = tKey(cid, i);
+     const done = !!TASKS[k];
      const box = document.createElement("div");
      box.className = "lx-hooks";
      box.innerHTML =
-      '<div class="lx-hook b"><span class="who">THEY SAY BACK</span>' + esc(pr.back) + '</div>' +
-      '<div class="lx-hook c"><span class="who">THIS RUNG OPENS</span>' + esc(pr.opens) + '</div>';
+      '<label class="lx-task' + (done ? " done" : "") + '">' +
+       '<input type="checkbox" ' + (done ? "checked" : "") + ' data-task="' + esc(k) + '">' +
+       '<span class="who">TO EARN THIS RUNG</span>' +
+       '<span class="tx">' + esc(pr.need) + '</span>' +
+      '</label>' +
+      '<div class="lx-hook c"><span class="who">AND THEN THIS IS TRUE</span>' + esc(pr.opens) + '</div>';
+     T(() => {
+      const cb = box.querySelector("input");
+      cb.onchange = () => {
+       TASKS[cb.dataset.task] = cb.checked; tSave();
+       box.querySelector(".lx-task").classList.toggle("done", cb.checked);
+       T(() => showToast(cb.checked ? "Marked earned." : "Un-marked."));
+      };
+     });
      row.appendChild(box);
     });
    });
