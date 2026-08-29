@@ -119,7 +119,15 @@
   --eye-line:url("__EYELINE__");
   --eye-row:url("__EYEROW__");
   --rules:url("__RULES__");
+  --ico-hex:url("__ICOHEX__");
+  --ico-oct:url("__ICOOCT__");
+  --ico-rogue:url("__ICOROGUE__");
  }
+ /* Three more stencil sheets, masked the same way as everything else so one
+    file serves every colour. hex is the ability set (36), oct the survival set
+    (13), rogue the kit and poisons set (16). */
+ .lx-i{display:inline-block;background:currentColor;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
  .lx-sig{display:block;background:currentColor;
   -webkit-mask-image:var(--sigils);mask-image:var(--sigils);
   -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
@@ -157,6 +165,19 @@
  .lx-identity .col{flex:1;min-width:0}
 
  /* ---- (skill tree nodes) ------------------------------------------- */
+ /* The accent is set per character on the wrapper and everything downstream
+    reads it, so Cole's tree is green and Vergil's is purple without a second
+    code path anywhere. */
+ .lx-tree-wrap{--ac:#c6ff3d;--ac-dim:rgba(198,255,61,.18)}
+ .lx-circuit{position:absolute;left:0;top:0;pointer-events:none;z-index:0}
+ .lx-circuit path{fill:none;stroke:var(--ac);stroke-linecap:square}
+ .lx-circuit circle{fill:var(--ac)}
+ .lx-circuit .live{filter:drop-shadow(0 0 4px var(--ac))}
+ /* The pulse that runs down a live trace. A dash pattern animated along the
+    path, which costs one property and reads as current moving rather than as
+    a decorative shimmer. */
+ @keyframes lx-flow{to{stroke-dashoffset:-260}}
+ .lx-circuit .pulse{stroke-dasharray:5 255;animation:lx-flow 5.5s linear infinite}
  .lx-tree-wrap{position:relative;border:1px solid var(--line);background:
    repeating-linear-gradient(90deg,rgba(255,255,255,.020) 0 1px,transparent 1px 46px),
    repeating-linear-gradient(0deg,rgba(255,255,255,.020) 0 1px,transparent 1px 46px),
@@ -173,6 +194,9 @@
   letter-spacing:.01em;margin-bottom:5px;word-break:break-word}
  .lx-node .meta{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:8.5px;color:var(--faint)}
  .lx-node .cost{margin-left:auto;color:var(--sage)}
+ .lx-node{z-index:1}
+ .lx-node .ic{position:absolute;right:8px;bottom:8px;opacity:.30}
+ .lx-node.unlocked .ic{opacity:.7}
  .lx-node.unlocked{border-color:var(--sage);box-shadow:inset 3px 0 0 var(--sage)}
  .lx-node.unlocked::after{content:"";position:absolute;inset:0;pointer-events:none;
   background:radial-gradient(80% 120% at 0% 0%,rgba(198,255,61,.13),transparent 62%)}
@@ -245,6 +269,11 @@
    margin:3px 0;transform-origin:0 50%}
  .gb-note-who{font-family:var(--font-mono);font-size:8px;letter-spacing:.1em;
    opacity:.7;display:block}
+ .gb-auto{color:var(--rust);letter-spacing:.08em}
+ .gb-live{font-family:var(--font-mono);font-size:9px;color:var(--faint);letter-spacing:.1em;
+  display:flex;align-items:center;gap:8px;margin-bottom:8px}
+ .gb-live i{width:7px;height:7px;border-radius:50%;background:var(--sage);
+  box-shadow:0 0 8px var(--sage);animation:lx-pulse 1.8s ease-in-out infinite}
  .gb-addnote{margin-top:7px;background:none;border:1px dashed var(--line);color:var(--faint);
    font-family:var(--font-mono);font-size:8.5px;padding:3px 8px;cursor:pointer;letter-spacing:.06em}
  .gb-addnote:hover{border-color:var(--spray);color:var(--spray)}
@@ -275,14 +304,56 @@
  .lx-task .tx{font-family:var(--font-body);font-size:11.5px;line-height:1.5;color:var(--paper);opacity:.9;display:block}
  .lx-task.done{border-left-color:var(--spray2);background:rgba(198,255,61,.07)}
  .lx-task.done .tx{opacity:.55;text-decoration:line-through}
+ /* The wave card. The signature is a real drawn path, not a word -- six types
+    that all said "wave" and looked identical would be six labels. */
+ .lx-wave{margin-top:10px;border:1px solid var(--line);border-left:3px solid var(--wc);
+  background:rgba(255,255,255,.02);padding:9px 11px 10px;width:100%}
+ .lx-wave-top{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+ .lx-wave-svg{width:130px;height:26px;flex:none}
+ .lx-wave-svg path{fill:none;stroke:var(--wc);stroke-width:1.8;
+  filter:drop-shadow(0 0 4px var(--wc))}
+ .lx-wave-nm{font-family:var(--font-display);font-size:12px;color:var(--wc);letter-spacing:.06em}
+ .lx-wave-sel{margin-left:auto;background:#0d0b13;color:var(--paper);border:1px solid var(--line);
+  font-family:var(--font-mono);font-size:9px;padding:3px 5px}
+ .lx-wave-read{font-family:var(--font-body);font-size:12px;line-height:1.55;
+  color:var(--paper);opacity:.9;margin-top:7px}
+ .lx-wave-risk{font-family:var(--font-mono);font-size:9.5px;line-height:1.5;
+  color:var(--faint);margin-top:5px}
+ .lx-wave-risk b{color:var(--danger);letter-spacing:.1em}
  .lx-strain{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
  .lx-chip{font-family:var(--font-mono);font-size:8.5px;letter-spacing:.06em;
   border:1px solid var(--line);padding:2px 6px;color:var(--faint)}
  .lx-chip.warn{border-color:var(--danger);color:var(--danger)}
  .lx-chip.bad{border-color:var(--tagred);color:var(--tagred)}
- .lx-chip.good{border-color:var(--sage);color:var(--sage)}
+ .lx-chip.good,.lx-chip.ok{border-color:var(--sage);color:var(--sage)}
+ .lx-strain{flex-direction:column;align-items:flex-start;gap:4px}
+ .lx-chip{display:flex;align-items:center;line-height:1.45;padding:4px 7px;width:100%;
+  box-sizing:border-box;text-align:left}
+ .lx-chip.bad{background:rgba(255,59,59,.07)}
+ .lx-chip.warn{background:rgba(255,155,31,.06)}
  `;
  document.head.appendChild(css);
+
+ /* Sheet geometry, so a caller asks for (sheet, index, px) and never does the
+    arithmetic. Each sheet is a fixed grid of square cells; index N sits at
+    column N%cols, row N/cols. */
+ const SHEETS = { hex: { cols: 6, rows: 6, v: "--ico-hex" },
+                  oct: { cols: 10, rows: 2, v: "--ico-oct" },
+                  rogue: { cols: 6, rows: 3, v: "--ico-rogue" },
+                  sig: { cols: 6, rows: 3, v: "--sigils" } };
+ function ico(sheet, n, px) {
+  const S2 = SHEETS[sheet]; if (!S2) return "";
+  const c = n % S2.cols, r = Math.floor(n / S2.cols) % S2.rows;
+  return "width:" + px + "px;height:" + px + "px;" +
+   "-webkit-mask-image:var(" + S2.v + ");mask-image:var(" + S2.v + ");" +
+   "-webkit-mask-size:" + (px * S2.cols) + "px " + (px * S2.rows) + "px;" +
+   "mask-size:" + (px * S2.cols) + "px " + (px * S2.rows) + "px;" +
+   "-webkit-mask-position:" + (-c * px) + "px " + (-r * px) + "px;" +
+   "mask-position:" + (-c * px) + "px " + (-r * px) + "px;";
+ }
+ const icoEl = (sheet, n, px, extra) =>
+   '<i class="lx-i" style="' + ico(sheet, n, px) + (extra || "") + '"></i>';
+
 
  /* ================================================================
     2. THE SKILL TREE, AS AN ACTUAL TREE
@@ -402,7 +473,63 @@
 
  const BRANCH_COLOR = ["#ff2f92", "#2fe0ff", "#c6ff3d", "#b83fff", "#ff9b1f", "#ff3b3b"];
 
- function drawTree(tree, treeName) {
+ /* THE CIRCUIT BED.
+    Traces are generated rather than drawn: from each node, a run leaves the
+    bottom edge, breaks orthogonally with a 45-degree chamfer, and terminates
+    in a via pad somewhere out in the field. It is the same routing grammar a
+    board uses -- straight runs, one diagonal at each corner, a round pad at
+    the end -- which is what makes it read as circuitry rather than as
+    decorative lines.
+
+    Seeded off the node's position so the bed is identical every redraw. A
+    circuit that reshuffles itself on each render is a screensaver, and a
+    screensaver behind a skill tree is noise. */
+ function circuitBed(NS, L, w, h) {
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("class", "lx-circuit");
+  svg.setAttribute("width", w); svg.setAttribute("height", h);
+  let seed = 1337;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  const add = (d, op, wd, cls) => {
+   const el = document.createElementNS(NS, "path");
+   el.setAttribute("d", d); el.setAttribute("stroke-width", wd);
+   el.setAttribute("opacity", op); if (cls) el.setAttribute("class", cls);
+   svg.appendChild(el); return el;
+  };
+  const pad = (x, y, r, op) => {
+   const c = document.createElementNS(NS, "circle");
+   c.setAttribute("cx", x); c.setAttribute("cy", y); c.setAttribute("r", r);
+   c.setAttribute("opacity", op); svg.appendChild(c);
+  };
+
+  // a run of bus lines across the whole bed, behind everything
+  for (let i = 0; i < 7; i++) {
+   const y = 24 + i * (h - 40) / 7 + rnd() * 12;
+   const bend = 120 + rnd() * (w - 300);
+   const dy = (rnd() < .5 ? -1 : 1) * (16 + rnd() * 26);
+   add("M0," + y.toFixed(0) + " H" + bend.toFixed(0) +
+       " l14," + dy.toFixed(0) + " H" + w, .10, 1, null);
+  }
+
+  // a spur off every node, ending in a via
+  L.placed.forEach((n, i) => {
+   const live = n.node.status === "unlocked" || n.node.status === "unlockable";
+   const x0 = n.x + 24, y0 = n.y + 62;
+   const down = 26 + rnd() * 46;
+   const side = rnd() < .5 ? -1 : 1;
+   const across = (34 + rnd() * 130) * side;
+   const x1 = Math.max(12, Math.min(w - 12, x0 + across));
+   const y1 = y0 + down;
+   const d = "M" + x0 + "," + y0 + " V" + (y1 - 10) +
+             " l" + (10 * side) + ",10 H" + x1 + " v" + (18 + rnd() * 40).toFixed(0);
+   add(d, live ? .55 : .16, live ? 1.6 : 1, live ? "live" : null);
+   if (live) add(d, .9, 2.2, "live pulse");
+   pad(x1, y1 + 18 + 20, live ? 3 : 2, live ? .6 : .18);
+  });
+  return svg;
+ }
+
+ function drawTree(tree, treeName, treeKey) {
   const canvas = $("treeCanvas");
   if (!canvas) return;
   canvas.innerHTML = "";
@@ -411,8 +538,18 @@
   const nodes = parseEdges(tree);
   const L = layout(nodes);
 
+  /* Cole reads green, Vergil purple, and anyone else is given a colour off
+     their name so a third character never lands unstyled. */
+  const ACCENT = { cole: "#5dff9b", vergil: "#b83fff" };
+  let acc = ACCENT[String(treeKey || "").toLowerCase()];
+  if (!acc) {
+   let hsum = 0; const nk = String(treeKey || treeName || "x");
+   for (let i = 0; i < nk.length; i++) hsum = (hsum * 31 + nk.charCodeAt(i)) | 0;
+   acc = "hsl(" + (Math.abs(hsum) % 360) + ",85%,66%)";
+  }
   const wrap = document.createElement("div");
   wrap.className = "lx-tree-wrap";
+  wrap.style.setProperty("--ac", acc);
   const inner = document.createElement("div");
   inner.className = "lx-tree-inner";
   inner.style.width = L.w + "px";
@@ -438,11 +575,13 @@
     const col = BRANCH_COLOR[x.bi % BRANCH_COLOR.length];
     const live = x.node.status === "unlocked";
     path.setAttribute("stroke", live ? col : "rgba(233,230,242,.20)");
+    if (live) path.setAttribute("filter", "drop-shadow(0 0 3px " + col + ")");
     path.setAttribute("stroke-width", live ? 2.4 : 1.4);
     if (!live) path.setAttribute("stroke-dasharray", "5 5");
     svg.appendChild(path);
    });
   });
+  inner.insertBefore(circuitBed(NS, L, L.w, L.h), inner.firstChild);
   inner.appendChild(svg);
 
   /* A faint rail per rank, so the depth of the tree is legible even where a
@@ -471,6 +610,7 @@
    el.innerHTML =
     '<div class="tier">T' + (x.__d + 1) + '</div>' +
     '<i class="lx-sig sg" style="' + sigilStyle(x.__d, x.bi, 28) + '"></i>' +
+    icoEl("hex", (x.bi * 7 + x.__d * 3 + x.__ord) % 36, 22, "position:absolute;right:8px;bottom:8px;opacity:.3;") +
     '<div class="n">' + (n.desc === null ? "???" : esc(n.n)) + '</div>' +
     '<div class="meta"><span>' + esc(n.type || "") + '</span>' +
     '<span class="cost">' + n.cost + ' pt' + (n.cost === 1 ? "" : "s") + '</span></div>';
@@ -510,7 +650,7 @@
   const ident = document.createElement("div");
   ident.className = "lx-identity";
   const bannerCol = document.createElement("div");
-  bannerCol.style.cssText = "flex:none;width:190px;color:" + BRANCH_COLOR[0];
+  bannerCol.style.cssText = "flex:none;width:190px;color:" + acc;
   bannerCol.innerHTML =
    '<div class="lx-banner">' +
     '<div class="nm">' + esc(treeName || "") + '</div>' +
@@ -553,13 +693,13 @@
     not a copy of the selection state. */
  T(() => {
   window.renderTree = function (tree) {
-   let nm = "";
+   let nm = "", key = "";
    T(() => {
     const ST = G("SKILL_TREES") || {}, P = G("PLAYERS") || {};
     const k = Object.keys(ST).find(k2 => ST[k2] === tree);
-    if (k) nm = (P[k] || {}).name || k;
+    if (k) { nm = (P[k] || {}).name || k; key = k; }
    });
-   return drawTree(tree, nm);
+   return drawTree(tree, nm, key);
   };
  });
 
@@ -616,6 +756,7 @@
  }
 
  let cpuNow = null;      // {key, name, prof, gameId} while a CPU is at the controls
+ let cpuRun = 0;         // bumped on every launch, so a deferred close can tell it is stale
  let cpuTimer = null, ghost = null;
 
  /* Attribution. The Ledger's logMinigameScore hardcodes the logged-in user as
@@ -659,12 +800,26 @@
  }
  const jitter = (v, spread) => v * (1 - spread / 2 + Math.random() * spread);
 
- function cpuStop(msg) {
+ /* Closing the stage is part of playing. A human finishing a game reads the
+    result and presses Done; a CPU that never does leaves the overlay across
+    the whole app, and every screen behind it is unreachable until someone
+    clicks out. The score is left up for a beat first so it can be read. */
+ function cpuStop(msg, closeStage) {
   if (cpuTimer) { clearInterval(cpuTimer); cpuTimer = null; }
   ghostOff();
   const w = $("lxWatchTag"); if (w && w.parentNode) w.parentNode.removeChild(w);
   cpuNow = null;
   if (msg) T(() => showToast(msg));
+  /* The close is deferred, so it has to check that it is still the right thing
+     to do when it fires. A round runs hands back to back, and a 1.4s timeout
+     from the previous player was landing in the middle of the next one's game
+     and tearing down its state -- one hand in four silently never logged a
+     score. The token is bumped by every launch, so a stale timeout does
+     nothing. */
+  if (closeStage) {
+   const token = ++cpuRun;
+   setTimeout(() => { if (token === cpuRun && !cpuNow) T(() => exitMinigame()); }, 1400);
+  }
  }
 
  function cpuPlay(gameId, key) {
@@ -676,6 +831,7 @@
   if (typeof launch !== "function") { T(() => showToast("That one isn't playable yet.")); return; }
 
   cpuStop();
+  cpuRun++;
   cpuNow = { key: who.key, name: who.name, prof: who.prof, gameId: gameId };
   launch(gameId);
 
@@ -758,7 +914,13 @@
 
    // finished
    const sc = st.score;
-   cpuStop(who.name + (sc !== undefined ? " scored " + sc + "." : " is done.") + (p.line ? "  " + p.line : ""));
+   T(() => {
+    const others = T(() => (G("GAME_LOG") || []).filter(e => e.gameId === gameId)
+      .flatMap(e => e.participants || []).map(x => x.score).filter(v => typeof v === "number"), []);
+    const best = others.length ? Math.max.apply(null, others) : -1;
+    autoSign(who.key, (typeof sc === "number" && sc >= best) ? "win" : "loss");
+   });
+   cpuStop(who.name + (sc !== undefined ? " scored " + sc + "." : " is done.") + (p.line ? "  " + p.line : ""), true);
    T(() => { if (typeof renderGameLog === "function") renderGameLog(); });
    T(() => { if (typeof renderLeaderboard === "function") renderLeaderboard(); });
   }, 90);
@@ -787,6 +949,34 @@
   host.insertBefore(bar, host.firstChild);
   T(() => { $("lxCpuGo").onclick = () => cpuPlay($("lxCpuGame").value, $("lxCpuWho").value); });
   T(() => { $("lxCpuRound").onclick = () => cpuRound($("lxCpuGame").value); });
+ }
+
+ /* Icons on the game catalogue. Matched to each game by what the game IS --
+    a reaction duel gets the hourglass, a grip trial gets the fist -- keyed off
+    the id so a game added later falls back to a neutral mark rather than
+    borrowing a meaning it does not have. */
+ const GAME_ICON = {
+  bottle_cap_duel: 1, scrap_toss: 0, junkyard_sprint: 6, grip_trial: 30,
+  tug_of_the_wreck: 24, hush_rules: 12, wolf_and_warren: 8, the_long_wait: 21,
+  salvage_hunt: 12, story_chain: 26
+ };
+ function decorateCatalog() {
+  T(() => {
+   const host = $("gamesGrid"); if (!host) return;
+   const cat = G("GAME_CATALOG") || [];
+   Array.from(host.children).forEach((card) => {
+    if (card.querySelector(".lx-gico")) return;
+    const txt = (card.textContent || "").toLowerCase();
+    const g = cat.find(x => txt.indexOf(String(x.title || "").toLowerCase()) >= 0);
+    const n = g && GAME_ICON[g.id] !== undefined ? GAME_ICON[g.id] : 33;
+    const i = document.createElement("i");
+    i.className = "lx-i lx-gico";
+    i.setAttribute("style", ico("hex", n, 34) +
+      "position:absolute;right:11px;top:11px;opacity:.28;color:var(--gold);");
+    if (getComputedStyle(card).position === "static") card.style.position = "relative";
+    card.appendChild(i);
+   });
+  });
  }
 
  /* A full round: every CPU hand plays the same game back to back, so the
@@ -872,14 +1062,17 @@
     '<span class="gb-sig" style="font-family:' + h.font + ';font-size:' + h.size + 'px;color:' + h.ink +
       ';font-weight:' + h.weight + ';letter-spacing:' + h.sp + ';transform:rotate(' + h.slant + 'deg)">' + esc(nm) + '</span>' +
     '<div class="gb-msg">' + esc(e.msg) + '</div>' +
-    '<div class="gb-when">' + esc(e.at || "") + ' · entry ' + (i + 1) + '</div>' +
+    '<div class="gb-when">' + esc(e.at || "") + ' · entry ' + (i + 1) +
+      (e.auto ? ' · <span class="gb-auto">wrote itself · ' + esc(e.auto) + '</span>' : "") + '</div>' +
     (notes ? '<div class="gb-notes">' + notes + '</div>' : "") +
     '<button class="gb-addnote" data-note="' + i + '">+ add a margin note</button>' +
    '</div>';
   }).join("");
   const opts = Object.keys(HANDS).filter(k => P[k]).map(k =>
     '<option value="' + esc(k) + '">' + esc((P[k] || {}).name || k) + '</option>').join("");
-  return '<div class="gb-book lx-taped">' +
+  return '<div class="gb-live"><i></i>THE BOOK IS OPEN · <span id="lxBookCount">' + GB.length +
+   ' ENTRIES</span> · it writes itself when something happens</div>' +
+   '<div class="gb-book lx-taped">' +
     '<div class="gb-eyerow"></div>' +
     '<div class="gb-page">' + (rows || '<div style="color:var(--faint)">Nobody has signed yet.</div>') + '</div>' +
     '<div class="gb-eyerow"></div>' +
@@ -890,6 +1083,56 @@
     '<button class="btn" id="gbSign">Press your seal</button>' +
    '</div>';
  }
+
+ /* THE BOOK WRITES ITSELF.
+    A guest book that only fills when a person types into it is a form. This
+    one reacts: when a day is survived, when a CPU hand plays a game, when
+    somebody's condition turns, whoever it happened to signs the page about it
+    -- in their own voice, in their own hand, on their own line.
+
+    The lines are per-character and per-event, so Kevanna's note about winning
+    is not Yaviel's, and the book reads back as a record of the campaign rather
+    than a list of names. Auto-entries are marked so nobody mistakes them for
+    something a player wrote. */
+ const AUTO = {
+  win: { kevanna: ["told you.", "easy. next.", "who's next then"],
+         yaviel: ["Recorded. The margin was smaller than it looked."],
+         zalir: ["Fine."], dahlia: ["I knew before I threw. That's not the same as cheating."],
+         felana: ["ha! did anyone see that or do i have to describe it"],
+         angi: ["again. right now. i'm not tired."], burham: ["Noted the wind. It mattered."] },
+  loss: { kevanna: ["rigged.", "that doesn't count"],
+          yaviel: ["I was beaten. It's worth writing down which part."],
+          zalir: ["Lost. Still standing."], dahlia: ["I saw this one too. Seeing it doesn't stop it."],
+          felana: ["i wasn't even trying. i was a bit trying."],
+          angi: ["fine. FINE."], burham: ["Beaten on the last throw. I'll take it apart later."] },
+  day: { kevanna: ["another one. still here."], yaviel: ["Day logged. Water first, always."],
+         zalir: ["Sun came up. Went down. We're here."],
+         dahlia: ["The day went the way I saw it. That's getting harder to enjoy."],
+         felana: ["is anyone else counting or is it just me"],
+         angi: ["up before the light again."], burham: ["Counted the stores twice. Same answer."],
+         cole: ["Read the day before it happened. Wish I hadn't."],
+         vergil: ["Held the line. Nothing else to report."] },
+  hurt: { kevanna: ["it's fine. it's FINE."], yaviel: ["Documenting this before it gets worse."],
+          zalir: ["It'll hold."], dahlia: ["I saw this coming and let it anyway."],
+          felana: ["ow. writing this with the other hand."],
+          angi: ["doesn't stop me."], burham: ["Field-dressed it. Not well."],
+          cole: ["Should have moved a half-second earlier."], vergil: ["It is being handled."] }
+ };
+ function autoSign(who, kind) {
+  const pool = (AUTO[kind] || {})[who];
+  if (!pool || !pool.length) return;
+  const day = T(() => "Day " + (G("apocDay") | 0), "");
+  const last = GB[GB.length - 1];
+  if (last && last.who === who && last.auto === kind) return;   // no double-signing
+  GB.push({ who: who, msg: pool[Math.floor(Math.random() * pool.length)],
+            at: day, auto: kind });
+  if (GB.length > 120) GB.shift();
+  gbSave();
+  T(() => { if ($("gbBody") && !$("screen-guestbook").classList.contains("hidden")) {
+    $("gbBody").innerHTML = guestBookHtml(); bindSign(); } });
+  T(() => { const n = $("lxBookCount"); if (n) n.textContent = GB.length + " ENTRIES"; });
+ }
+ window.__autoSign = autoSign;
 
  function mountGuestBook() {
   if ($("screen-guestbook")) return;
@@ -965,6 +1208,97 @@
     The ticks persist in their own key and the raise button stays disabled
     until the rung's condition is met, so the ladder stops being a number the
     GM nudges and becomes a thing the players earn on purpose. */
+ /* ---- WAVE TYPES ---------------------------------------------------
+    Not every bond is the same KIND of bond, and a ten-rung ladder that treats
+    them all alike flattens the interesting part. Six types, each with its own
+    waveform, its own reading, and its own ladder of things to actually do --
+    what raises a Dissonant connection is not what raises a Damped one, and
+    saying so is most of the value here.
+
+    The type is DERIVED from the relation line the Ledger already carries plus
+    the level, rather than being a new field the GM has to fill in. A relation
+    that mentions discipline or opposition reads Dissonant; one that mentions
+    carrying or covering reads Damped; and so on. It can be overridden and the
+    override sticks, because a derivation is a good default and a bad ruling. */
+ const WAVES = {
+  resonant: { name: "RESONANT", col: "#c6ff3d",
+    d: "M0,14 Q10,2 20,14 T40,14 T60,14 T80,14 T100,14 T120,14",
+    read: "You amplify each other. What either of you does lands harder because the other one is there.",
+    risk: "Amplification is not selective. It carries the bad nights too." },
+  standing: { name: "STANDING", col: "#2fe0ff",
+    d: "M0,14 Q15,-2 30,14 T60,14 Q75,-2 90,14 T120,14",
+    read: "Fixed. Neither of you moves the other and neither of you needs to. It holds under load.",
+    risk: "A standing wave does not go anywhere. Comfortable is not the same as close." },
+  dissonant: { name: "DISSONANT", col: "#ff2f92",
+    d: "M0,14 L8,4 L14,22 L22,6 L30,20 L38,3 L46,24 L54,8 L62,18 L70,5 L78,21 L88,10 L100,17 L112,7 L120,14",
+    read: "You grate. It works anyway — the friction is doing something neither of you would manage alone.",
+    risk: "Friction is load-bearing right up until it isn't. This one can snap rather than fade." },
+  damped: { name: "DAMPED", col: "#b83fff",
+    d: "M0,14 Q6,0 12,14 T24,14 Q29,4 34,14 T46,14 Q50,8 54,14 T64,14 Q67,11 70,14 T120,14",
+    read: "One of you absorbs the other. The spikes get taken out before they reach anybody else.",
+    risk: "Absorption has a cost and it is paid by whoever is doing it, quietly, every time." },
+  carrier: { name: "CARRIER", col: "#ff9b1f",
+    d: "M0,14 Q4,6 8,14 T16,14 T24,14 T32,14 T40,14 T48,14 T56,14 T64,14 T72,14 T80,14 T88,14 T96,14 T104,14 T112,14 T120,14",
+    read: "One of you carries the other's signal. They get heard in rooms they are not in.",
+    risk: "A carrier can be dropped. Being spoken for is not the same as being able to speak." },
+  intermittent: { name: "INTERMITTENT", col: "#6b6478",
+    d: "M0,14 H14 Q20,4 26,14 T38,14 H52 Q58,3 64,14 T76,14 H92 Q98,5 104,14 T116,14 H120",
+    read: "It comes and goes. When it is there it is real; the gaps are real too.",
+    risk: "Nobody is sure which state is the true one, including the two of you." }
+ };
+ const WAVE_ORDER = ["resonant","standing","dissonant","damped","carrier","intermittent"];
+
+ /* Per-type ladders. What a Dissonant connection has to do to climb is not
+    what a Carrier one does, and that is the whole reason the types exist. */
+ const WAVE_TASKS = {
+  resonant: ["Do the same thing at the same time on purpose and let it land twice as hard.",
+   "Take a risk you would not take alone, and say out loud that they are why.",
+   "Let them finish something you started, and don't correct how they did it.",
+   "Back their bad idea in front of people.",
+   "Spend the thing you were saving on their problem instead of yours."],
+  standing: ["Be where you said you'd be, twice running, with no comment about it.",
+   "Hold a position with them for a whole scene without either of you moving.",
+   "Say the boring true thing instead of the interesting one.",
+   "Do the unglamorous half of their job without being asked or thanked.",
+   "Refuse to escalate when they hand you a reason to."],
+  dissonant: ["Lose an argument with them on purpose and mean it.",
+   "Say the thing that will actually land badly, to their face, because it's true.",
+   "Work with them on something neither of you wanted to do together.",
+   "Admit they were right about the thing you've been carrying.",
+   "Stay in the room after it goes wrong."],
+  damped: ["Take the hit they were about to absorb for once.",
+   "Notice out loud what it costs them, in front of them.",
+   "Ask them what they're carrying, and don't offer to fix it.",
+   "Let them be the one who needs something.",
+   "Hand them a reason to stop absorbing."],
+  carrier: ["Say their name in a room they aren't in, for their benefit.",
+   "Correct someone who got them wrong.",
+   "Give them the credit in public that you took in private.",
+   "Put your standing behind their call when yours would've been safer.",
+   "Step back and let them speak for themselves."],
+  intermittent: ["Show up in a gap. Unannounced, no reason.",
+   "Name the gaps out loud instead of pretending they aren't there.",
+   "Make one promise small enough that you'll actually keep it, then keep it.",
+   "Be the one who reaches first this time.",
+   "Say what would make it steady, even if neither of you can do it yet."]
+ };
+
+ /* Derived, then overridable. The override lives with the tick data. */
+ const WKEY = "opus_wave_types_v1";
+ let WAVE_OVR = T(() => JSON.parse(localStorage.getItem(WKEY)) || {}, {}) || {};
+ const wSave = () => T(() => localStorage.setItem(WKEY, JSON.stringify(WAVE_OVR)));
+ function waveOf(c) {
+  if (!c) return "standing";
+  if (WAVE_OVR[c.id]) return WAVE_OVR[c.id];
+  const r = String(c.relation || "").toLowerCase();
+  if (/disciplin|opposit|argu|rival|doesn't have|friction|against/.test(r)) return "dissonant";
+  if (/carr|speak|vouch|name|represent|advoc/.test(r)) return "carrier";
+  if (/cover|shield|absorb|protect|takes|tether/.test(r)) return "damped";
+  if (/comes and goes|sometimes|when she|when he|on and off|unreliable/.test(r)) return "intermittent";
+  if ((c.level | 0) >= 7) return "resonant";
+  return "standing";
+ }
+
  const RUNG_TASKS = [
   { need: "Say their name out loud in a scene. Not to them — about them, to someone else.",
     opens: "You can ask them one factual thing about themselves and they'll answer it straight." },
@@ -1004,6 +1338,35 @@
       the first version did, because it fell back to "" and every key came out
       as "#0". */
    const cid = (conn && conn.id) || "";
+   /* The wave header, above the ladder: the type, its waveform drawn as a
+      real path rather than described, what it means and what it costs. */
+   T(() => {
+    const head = $("wlDetailHeader");
+    if (!head || head.querySelector(".lx-wave")) return;
+    const wk = waveOf(conn), W = WAVES[wk];
+    const box = document.createElement("div");
+    box.className = "lx-wave";
+    box.style.setProperty("--wc", W.col);
+    box.innerHTML =
+     '<div class="lx-wave-top">' +
+      '<svg class="lx-wave-svg" viewBox="0 0 120 28" preserveAspectRatio="none">' +
+       '<path d="' + W.d + '"/></svg>' +
+      '<span class="lx-wave-nm">' + W.name + ' WAVE</span>' +
+      '<select class="lx-wave-sel" id="lxWaveSel">' +
+       WAVE_ORDER.map(k => '<option value="' + k + '"' + (k === wk ? " selected" : "") + '>' +
+         WAVES[k].name + '</option>').join("") + '</select>' +
+     '</div>' +
+     '<div class="lx-wave-read">' + esc(W.read) + '</div>' +
+     '<div class="lx-wave-risk"><b>COSTS</b> ' + esc(W.risk) + '</div>';
+    head.appendChild(box);
+    T(() => { box.querySelector("#lxWaveSel").onchange = (e) => {
+      WAVE_OVR[cid] = e.target.value; wSave();
+      T(() => showToast("Re-read as " + WAVES[e.target.value].name + ".")); 
+      T(() => renderWLDetailContent(conn));
+    }; });
+   });
+   const wkey = waveOf(conn);
+   const wtasks = WAVE_TASKS[wkey] || [];
    T(() => {
     const ladder = $("wlLadder");
     if (!ladder) return;
@@ -1019,7 +1382,7 @@
       '<label class="lx-task' + (done ? " done" : "") + '">' +
        '<input type="checkbox" ' + (done ? "checked" : "") + ' data-task="' + esc(k) + '">' +
        '<span class="who">TO EARN THIS RUNG</span>' +
-       '<span class="tx">' + esc(pr.need) + '</span>' +
+       '<span class="tx">' + esc(wtasks[i % wtasks.length] || pr.need) + '</span>' +
       '</label>' +
       '<div class="lx-hook c"><span class="who">AND THEN THIS IS TRUE</span>' + esc(pr.opens) + '</div>';
      T(() => {
@@ -1043,22 +1406,59 @@
     into the consequence a GM can act on this round -- a penalty, a risk, a
     thing that happens next if nothing changes. Nothing is written back; this
     is a reading of state, not a second copy of it. */
+ /* THE APOCALYPSE, WITHOUT THE CUSHION.
+    The first pass read the numbers and said things like "nothing wrong with
+    them today, note the date". That is a nice line and it is a lie: a body at
+    45% hydration on day two is not fine, it is on a clock, and a tracker that
+    says otherwise is doing the players a disservice at the exact moment the
+    information matters.
+
+    So every band now names the DAMAGE, the CLOCK and what is permanent. The
+    three-day water clock and the eight-day food clock are the real ones and
+    they are stated as counts remaining rather than as adjectives. Nothing here
+    congratulates anybody for being at 90%. */
  function apocReadout(st) {
   const out = [];
   const h = st.hunger | 0, w = st.hydration | 0;
-  if (w < 25) out.push(["bad", "DEHYDRATED — −2 to everything physical, and a save each dawn or lose a point of PREC permanently."]);
-  else if (w < 45) out.push(["warn", "THIRSTY — −1 PREC. Headache. Short temper with people who don't deserve it."]);
-  else if (w > 80) out.push(["good", "Watered. No penalty."]);
-  if (h < 20) out.push(["bad", "STARVING — −2 PWR, and the body starts spending muscle. Recovery from here takes days, not a meal."]);
-  else if (h < 45) out.push(["warn", "HUNGRY — −1 PWR. Distracted by it. Notices food before anything else in a room."]);
-  else if (h > 85) out.push(["good", "Fed. Steady hands."]);
-  if ((st.daysWithoutWater | 0) >= 2) out.push(["bad", "Day " + st.daysWithoutWater + " without water — this is the clock that actually kills."]);
-  if ((st.daysWithoutFood | 0) >= 3) out.push(["warn", "Day " + st.daysWithoutFood + " without food — still standing, but slower every morning."]);
+  const dW = st.daysWithoutWater | 0, dF = st.daysWithoutFood | 0;
+
+  // water — the clock that actually kills, stated as days left
+  const wLeft = Math.max(0, 3 - dW);
+  if (dW >= 3) out.push(["bad", 12, "RENAL FAILURE — organs are shutting down. Without water today this is the last day."]);
+  else if (dW >= 2) out.push(["bad", 12, "DAY " + dW + " DRY · " + wLeft + " DAY LEFT — confusion, no sweat, no urine. Permanent kidney damage from here."]);
+  else if (dW >= 1) out.push(["warn", 12, "DAY " + dW + " DRY · " + wLeft + " DAYS LEFT — cracked lips, thick blood, −2 to everything physical."]);
+  if (w < 20) out.push(["bad", 30, "SEVERELY DEHYDRATED (" + w + "%) — −4 all physical, −2 PREC, blackouts on exertion."]);
+  else if (w < 40) out.push(["bad", 30, "DEHYDRATED (" + w + "%) — −2 physical, −1 PREC. Headache that doesn't lift."]);
+  else if (w < 65) out.push(["warn", 30, "UNDER-WATERED (" + w + "%) — −1 PREC. Reaction time is already slower and they don't feel it."]);
+  else out.push(["ok", 30, "Water " + w + "% — no penalty yet. This is the number that moves fastest."]);
+
+  // food — slower, more permanent
+  if (dF >= 8) out.push(["bad", 1, "STARVATION — the body is eating muscle and heart tissue. Losses here do not come back."]);
+  else if (dF >= 4) out.push(["bad", 1, "DAY " + dF + " UNFED — ketosis, tremor, −3 PWR. Recovery now takes weeks of eating, not one meal."]);
+  else if (dF >= 2) out.push(["warn", 1, "DAY " + dF + " UNFED — −1 PWR, poor decisions, fixates on food in any room."]);
+  if (h < 20) out.push(["bad", 20, "EMACIATED (" + h + "%) — −4 PWR, cannot carry, cannot sprint, cold all the time."]);
+  else if (h < 45) out.push(["bad", 20, "HUNGRY (" + h + "%) — −2 PWR, hands shake on fine work."]);
+  else if (h < 70) out.push(["warn", 20, "UNDERFED (" + h + "%) — −1 PWR. Fine until they need to be strong."]);
+
+  // afflictions, stated at their real severity
   (st.afflictions || []).forEach(a => {
    const sev = String(a.severity || "").toLowerCase();
-   out.push([sev === "critical" || sev === "serious" ? "bad" : "warn", (a.name || "Affliction") + " — " + sev]);
+   const cls = /critical|severe/.test(sev) ? "bad" : /serious|moderate/.test(sev) ? "bad" : "warn";
+   const tail = /critical|severe/.test(sev) ? " — untreated, this is what kills them, not the thirst."
+              : /serious/.test(sev) ? " — will not improve on its own out here."
+              : " — manageable, and getting worse every week it isn't managed.";
+   out.push([cls, 26, (a.name || "Condition") + " [" + (sev || "unrated").toUpperCase() + "]" + tail]);
   });
-  if (!out.length) out.push(["good", "Nothing wrong with them today. Note the date."]);
+
+  /* The verdict. One blunt line at the top, because a stack of chips does not
+     tell a GM whether this person is dying and that is the only question. */
+  const dying = dW >= 2 || dF >= 8 || w < 20 || h < 20 ||
+    (st.afflictions || []).some(a => /critical|severe/.test(String(a.severity || "").toLowerCase()));
+  const hurting = dW >= 1 || dF >= 2 || w < 45 || h < 45 ||
+    (st.afflictions || []).some(a => /serious/.test(String(a.severity || "").toLowerCase()));
+  out.unshift(dying ? ["bad", 25, "DYING — on a clock measured in days. Intervene or lose them."]
+            : hurting ? ["warn", 25, "DEGRADING — still working, already worse than yesterday."]
+            : ["ok", 25, "HOLDING — no active clock. That is the best this world offers."]);
   return out;
  }
 
@@ -1079,8 +1479,9 @@
      if (!key) return;
      const box = document.createElement("div");
      box.className = "lx-strain";
-     box.innerHTML = apocReadout(AC[key]).map(([cls, t]) =>
-       '<span class="lx-chip ' + cls + '">' + esc(t) + '</span>').join("");
+     box.innerHTML = apocReadout(AC[key]).map(([cls, icon, t]) =>
+       '<span class="lx-chip ' + cls + '">' + icoEl("hex", icon, 13,
+         "vertical-align:-2px;margin-right:5px;") + esc(t) + '</span>').join("");
      card.appendChild(box);
     });
    });
@@ -1108,10 +1509,48 @@
 
  // the CPU bar has to wait for the games screen to exist
  T(() => {
+  const oc = window.renderGameCatalog;
+  if (typeof oc === "function") {
+   window.renderGameCatalog = function () { const r = oc.apply(this, arguments); T(decorateCatalog); return r; };
+  }
   const orig = window.openGames;
   if (typeof orig === "function") {
-   window.openGames = function () { const r = orig.apply(this, arguments); T(mountCpuBar); return r; };
+   window.openGames = function () { const r = orig.apply(this, arguments);
+     T(mountCpuBar); T(decorateCatalog); return r; };
   }
+ });
+
+ /* The hooks that make it live. Each wraps a function the Ledger already
+    calls, so the book fills as a side effect of play rather than needing
+    anybody to remember to write in it. */
+ T(() => {
+  const orig = window.advanceApocDay;
+  if (typeof orig !== "function") return;
+  window.advanceApocDay = function () {
+   const before = T(() => JSON.parse(JSON.stringify(G("APOC_CHARACTERS") || {})), {});
+   const r = orig.apply(this, arguments);
+   T(() => {
+    const AC = G("APOC_CHARACTERS") || {};
+    const roster = Object.keys(AC);
+    // one voice for the day
+    const speaker = roster[Math.floor(Math.random() * roster.length)];
+    autoSign(speaker, "day");
+    // and anyone whose clock turned over signs about it
+    /* Only a CROSSING signs, not every tick. Everyone's dry-day counter goes up
+       every single day, so signing on any increase filled the book with seven
+       identical entries a day and buried the ones that meant something. A
+       crossing is day 1 (it starts), day 3 (it turns lethal), or a new
+       affliction appearing -- three moments a session, not twenty-one. */
+    roster.forEach(k => {
+     const b = before[k], a = AC[k]; if (!b || !a) return;
+     const dw = a.daysWithoutWater | 0, pw = b.daysWithoutWater | 0;
+     const crossed = (pw < 1 && dw >= 1) || (pw < 3 && dw >= 3);
+     const newAff = (a.afflictions || []).length > (b.afflictions || []).length;
+     if (crossed || newAff) autoSign(k, "hurt");
+    });
+   });
+   return r;
+  };
  });
 
  window.ledgerExt = { cpuPlay: cpuPlay, cpuRound: cpuRound, roster: cpuRoster, guestBook: () => GB,

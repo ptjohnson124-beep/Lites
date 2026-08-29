@@ -85,7 +85,10 @@ def main():
                         ("__EYESOLID__", "web/led_eye_solid.webp"),
                         ("__EYELINE__", "web/led_eye_line.webp"),
                         ("__EYEROW__", "web/led_eye_row.webp"),
-                        ("__RULES__", "web/led_rules.webp")):
+                        ("__RULES__", "web/led_rules.webp"),
+                        ("__ICOHEX__", "web/led_ico_hex.webp"),
+                        ("__ICOOCT__", "web/led_ico_oct.webp"),
+                        ("__ICOROGUE__", "web/led_ico_rogue.webp")):
         if token not in js:
             continue
         if not os.path.exists(path):
