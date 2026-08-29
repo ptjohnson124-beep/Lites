@@ -1,0 +1,3247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>OPUS_∅ — THE LEDGER [UNAUTHORIZED ACCESS]</title>
+<style>
+/* ============================================================
+   OPUS_∅ — THE LEDGER — REV.2, TAGGED
+   Design plan (per frontend-design guidance):
+
+   Subject reframe: this isn't a warm record book anymore — it's
+   a stolen terminal the party's actually spray-painted their own
+   interface onto. Somebody cracked a corpo screen, and instead of
+   cleaning it up, tagged it. Every section reads like a different
+   piece of the same wall: real digital glitch (scanlines, chromatic
+   split, cursor-blink) UNDER a real physical spray-paint layer
+   (drips, stencil lettering, torn stickers) on top. Neither one
+   alone is the idea — it's specifically both at once.
+
+   Palette (deliberately multi-color, clashing-on-purpose, since
+   graffiti is never a single-accent discipline the way most
+   "cyberpunk" defaults settle for):
+     --dusk     #08070d  (base — cracked-screen black)
+     --wood     #17151f  (panel — tagged concrete)
+     --wood2    #100e17  (recessed panel)
+     --paper    #e9e6f2  (body text — spray-chrome)
+     --ember    #ff2f92  (hot pink — primary tag color)
+     --sage     #c6ff3d  (acid green — secondary tag color)
+     --gold     #2fe0ff  (electric cyan — Wavelength signal color)
+     --rust     #b83fff  (violet — border/drip accent)
+     --danger   #ff9b1f  (warning-tape orange)
+     --faint    #6b6478  (muted — under-spray shadow)
+     --tagred   #ff3b3b  (cheater/error red, distinct from danger-orange)
+
+   Type: bold condensed system faces standing in for hand-stencilled
+   spray lettering (no external font load in this environment — the
+   stencil feel comes from letter-spacing, skew, and a real drip
+   pseudo-element under headers, not from a specific typeface file),
+   monospace for terminal/data readouts.
+
+   Signature: a torn-sticker card language (clipped corners instead
+   of rounded ones), a spray-drip underline on every display heading,
+   corner "tags" that read like actual signatures, and a persistent
+   low-opacity scanline sweep across the whole shell — the glitch is
+   the constant, the graffiti is what's been layered onto it.
+   ============================================================ */
+:root{
+ --dusk:#08070d;--wood:#17151f;--wood2:#100e17;--paper:#e9e6f2;
+ --ember:#ff2f92;--sage:#c6ff3d;--gold:#2fe0ff;--rust:#b83fff;--faint:#6b6478;
+ --danger:#ff9b1f;--tagred:#ff3b3b;--line:#2c2838;
+ --font-display:'Arial Black','Impact','Helvetica Neue',sans-serif;
+ --font-body:'Segoe UI',Helvetica,Arial,sans-serif;
+ --font-mono:'Consolas','Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+ background:
+   repeating-linear-gradient(180deg,rgba(255,255,255,.012) 0px,rgba(255,255,255,.012) 1px,transparent 1px,transparent 3px),
+   radial-gradient(ellipse at 12% -10%, rgba(255,47,146,.14), transparent 45%),
+   radial-gradient(ellipse at 92% 8%, rgba(47,224,255,.10), transparent 42%),
+   radial-gradient(ellipse at 30% 105%, rgba(198,255,61,.08), transparent 45%),
+   radial-gradient(ellipse at 100% 100%, rgba(184,63,255,.10), transparent 50%),
+   var(--dusk);
+ color:var(--paper);
+ font-family:var(--font-body);
+ min-height:100vh;
+ -webkit-font-smoothing:antialiased;
+ position:relative;
+}
+/* persistent scanline sweep — the "cyberspace" half of the signature */
+body::before{
+ content:"";position:fixed;inset:0;pointer-events:none;z-index:999;
+ background:linear-gradient(180deg,transparent 0%,rgba(47,224,255,.03) 50%,transparent 100%);
+ background-size:100% 6px;
+ animation:scansweep 7s linear infinite;
+ mix-blend-mode:overlay;
+}
+@keyframes scansweep{0%{background-position:0 0;}100%{background-position:0 240px;}}
+::selection{background:var(--ember);color:var(--dusk);}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:var(--wood2);}
+::-webkit-scrollbar-thumb{background:var(--rust);border-radius:0;}
+
+/* ---------- graffiti display type: stencil-skew + spray drip ---------- */
+.chalk{
+ font-family:var(--font-display);
+ letter-spacing:.02em;
+ text-transform:uppercase;
+ font-weight:900;
+ position:relative;
+ display:inline-block;
+}
+h1.chalk,.login-title.chalk,.modal-title.chalk,.section-title.chalk,.menu-card-title.chalk,
+.tree-branch-label.chalk,.game-card-name.chalk,.wl-card-name.chalk,.wl-detail-name.chalk,
+.log-entry-game.chalk{
+ background:linear-gradient(90deg,var(--ember),var(--rust) 55%,var(--gold));
+ -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+ filter:drop-shadow(0 1px 0 rgba(0,0,0,.6));
+}
+
+/* ---------- Chalk display font, hand-cut via clip-path texture illusion ---------- */
+@font-face{
+ font-family:'Chalk';
+ src:local('Marker Felt'),local('Segoe Print'),local('Comic Sans MS');
+}
+.chalk{
+ font-family:var(--font-display);
+ letter-spacing:.04em;
+ text-transform:uppercase;
+}
+
+/* ---------- App shell ---------- */
+#app{min-height:100vh;display:flex;flex-direction:column;}
+.screen{display:none;flex:1;flex-direction:column;animation:fadein .35s ease;}
+.screen.active{display:flex;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* corner tabs — read like actual spray stencil tags slapped on the glass */
+.corner-tab{
+ position:fixed;top:0;font-size:10px;letter-spacing:.15em;font-family:var(--font-mono);
+ color:var(--sage);padding:6px 14px;border-bottom:2px solid var(--ember);
+ background:var(--wood2);z-index:50;text-shadow:0 0 8px rgba(198,255,61,.5);
+ clip-path:polygon(0 0,100% 0,100% 100%,10px 100%,0 calc(100% - 10px));
+}
+.corner-tab.left{left:0;border-right:1px solid var(--line);}
+.corner-tab.right{right:0;border-left:1px solid var(--line);
+ clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%);}
+
+/* ============================================================
+   LOGIN SCREEN
+   ============================================================ */
+#screen-login{
+ align-items:center;justify-content:center;text-align:center;
+ padding:40px 20px;position:relative;overflow:hidden;
+}
+/* spray splatter shapes — pure CSS, no image assets, reads as paint
+   cans shaken off in the corners before the real tagging started */
+#screen-login::before,#screen-login::after{
+ content:"";position:absolute;width:340px;height:340px;border-radius:50%;
+ pointer-events:none;filter:blur(2px);opacity:.35;
+}
+#screen-login::before{
+ top:-140px;left:-120px;
+ background:radial-gradient(circle,var(--ember) 0%,transparent 60%);
+}
+#screen-login::after{
+ bottom:-160px;right:-130px;
+ background:radial-gradient(circle,var(--gold) 0%,transparent 60%);
+}
+.login-mark{
+ font-size:12px;color:var(--sage);letter-spacing:.3em;margin-bottom:10px;
+ font-family:var(--font-mono);position:relative;z-index:2;
+}
+.login-title{
+ font-family:var(--font-display);font-size:clamp(34px,9vw,56px);
+ letter-spacing:.03em;margin-bottom:14px;position:relative;z-index:2;
+ font-weight:900;text-transform:uppercase;
+ background:linear-gradient(90deg,var(--ember),var(--rust) 50%,var(--gold));
+ -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+ filter:drop-shadow(0 2px 0 rgba(0,0,0,.7));
+}
+.login-title::after{
+ content:"";display:block;height:5px;width:76%;margin:6px auto 0;
+ background:linear-gradient(90deg,var(--ember),var(--gold));
+ clip-path:polygon(0 0,100% 0,97% 100%,4% 100%);
+ filter:drop-shadow(0 3px 2px rgba(0,0,0,.5));
+}
+.login-sub{
+ font-size:12.5px;color:var(--faint);margin-bottom:36px;max-width:340px;
+ font-style:italic;position:relative;z-index:2;
+}
+.login-box{
+ background:var(--wood);border:1px solid var(--line);
+ padding:26px 22px;width:100%;max-width:320px;position:relative;z-index:2;
+ box-shadow:0 16px 44px rgba(0,0,0,.55),0 0 0 1px rgba(255,47,146,.08);
+ clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px));
+}
+.login-box label{
+ display:block;font-size:11px;letter-spacing:.15em;color:var(--sage);
+ text-align:left;margin-bottom:8px;font-family:var(--font-mono);
+}
+#loginPass{
+ width:100%;background:var(--wood2);border:1px solid var(--rust);
+ padding:12px 14px;color:var(--gold);
+ font-family:var(--font-mono);font-size:16px;letter-spacing:.15em;
+ outline:none;transition:border-color .2s,box-shadow .2s;
+}
+#loginPass:focus{border-color:var(--ember);box-shadow:0 0 0 3px rgba(255,47,146,.15);}
+.login-btn{
+ margin-top:14px;width:100%;background:var(--ember);color:var(--dusk);
+ border:none;padding:13px;font-family:var(--font-display);font-weight:900;
+ font-size:14px;letter-spacing:.08em;cursor:pointer;transition:transform .15s,background .15s;
+ clip-path:polygon(0 0,100% 0,100% 70%,97% 100%,0 100%);
+}
+.login-btn:active{transform:scale(.97);}
+.login-btn:hover{background:var(--gold);}
+.login-err{
+ color:var(--tagred);font-size:12px;margin-top:10px;min-height:16px;
+ font-family:var(--font-mono);
+}
+.login-hint{
+ margin-top:22px;font-size:11px;color:var(--faint);max-width:300px;
+ line-height:1.6;position:relative;z-index:2;
+}
+
+/* ============================================================
+   MAIN MENU
+   ============================================================ */
+#screen-menu{padding:20px 16px 40px;}
+.menu-header{
+ display:flex;align-items:center;justify-content:space-between;
+ padding:10px 4px 24px;border-bottom:1px solid var(--line);margin-bottom:26px;
+}
+.menu-who{display:flex;align-items:center;gap:12px;}
+.menu-avatar{
+ width:44px;height:44px;border-radius:50%;background:var(--wood2);
+ border:2px solid var(--ember);display:flex;align-items:center;justify-content:center;
+ font-family:var(--font-display);color:var(--ember);font-size:16px;overflow:hidden;
+}
+.menu-avatar img{width:100%;height:100%;object-fit:cover;}
+.menu-name{font-family:var(--font-display);font-size:16px;color:var(--paper);letter-spacing:.05em;}
+.menu-role{font-size:11px;color:var(--faint);}
+.menu-logout{
+ background:none;border:1px solid var(--line);color:var(--faint);
+ padding:8px 14px;border-radius:6px;font-size:11px;cursor:pointer;
+ letter-spacing:.08em;transition:border-color .2s,color .2s;
+}
+.menu-logout:hover{border-color:var(--ember);color:var(--ember);}
+
+.menu-cards{
+ display:grid;grid-template-columns:1fr;gap:16px;max-width:600px;margin:0 auto;width:100%;
+}
+@media(min-width:560px){.menu-cards{grid-template-columns:1fr 1fr;}}
+.menu-card{
+ background:var(--wood);border:1px solid var(--line);
+ clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px));
+ padding:22px 20px;cursor:pointer;transition:transform .18s,border-color .18s,box-shadow .18s;
+ position:relative;overflow:hidden;text-align:left;
+}
+.menu-card:hover{transform:translateY(-3px);border-color:var(--ember);box-shadow:0 10px 30px rgba(0,0,0,.5),0 0 20px rgba(255,47,146,.15);}
+.menu-card:active{transform:translateY(0);}
+.menu-card-icon{font-size:30px;margin-bottom:12px;display:block;filter:drop-shadow(0 0 6px rgba(255,255,255,.15));}
+.menu-card-title{font-family:var(--font-display);font-size:17px;letter-spacing:.04em;margin-bottom:6px;font-weight:900;text-transform:uppercase;}
+.menu-card-desc{font-size:12.5px;color:var(--faint);line-height:1.5;}
+.menu-card.skilltree{border-left:3px solid var(--sage);}
+.menu-card.wavelength{border-left:3px solid var(--gold);}
+.menu-card.games{border-left:3px solid var(--ember);}
+.menu-card.apoc{border-left:3px solid var(--tagred);}
+.menu-card-tag{
+ position:absolute;top:14px;right:14px;font-size:9px;letter-spacing:.1em;
+ color:var(--sage);border:1px solid var(--sage);padding:3px 9px;font-family:var(--font-mono);
+}
+
+.menu-footer-note{
+ max-width:520px;margin:30px auto 0;text-align:center;font-size:11px;
+ color:var(--faint);font-style:italic;line-height:1.6;
+}
+
+/* ============================================================
+   SHARED: section header w/ back button (used by all 3 sub-screens)
+   ============================================================ */
+.section-bar{
+ display:flex;align-items:center;gap:14px;padding:14px 16px;
+ border-bottom:2px solid var(--ember);background:var(--wood2);
+ position:sticky;top:0;z-index:20;
+ box-shadow:0 2px 12px rgba(0,0,0,.4);
+}
+.back-btn{
+ background:var(--wood);border:1px solid var(--line);color:var(--paper);
+ width:34px;height:34px;font-size:16px;cursor:pointer;
+ display:flex;align-items:center;justify-content:center;flex-shrink:0;
+ transition:border-color .2s,color .2s;
+ clip-path:polygon(0 0,100% 0,100% 100%,8px 100%,0 calc(100% - 8px));
+}
+.back-btn:hover{border-color:var(--ember);color:var(--ember);}
+.section-title{font-family:var(--font-display);font-size:16px;letter-spacing:.05em;font-weight:900;text-transform:uppercase;color:var(--sage);}
+.section-title small{display:block;font-family:var(--font-body);font-size:11px;color:var(--faint);font-style:italic;letter-spacing:0;margin-top:2px;text-transform:none;font-weight:400;}
+
+/* ============================================================
+   SKILL TREE
+   ============================================================ */
+#screen-skilltree{padding-bottom:40px;}
+.char-select-row{
+ display:flex;gap:8px;overflow-x:auto;padding:14px 16px;
+ border-bottom:1px solid var(--line);background:var(--wood2);
+}
+.char-chip{
+ flex-shrink:0;background:var(--wood);border:1px solid var(--line);
+ border-radius:20px;padding:8px 16px;font-size:12.5px;cursor:pointer;
+ white-space:nowrap;transition:border-color .2s,color .2s;color:var(--faint);
+}
+.char-chip.active{border-color:var(--sage);color:var(--sage);background:rgba(111,174,143,.08);}
+
+.tree-meta-bar{
+ display:flex;justify-content:space-between;align-items:center;
+ padding:12px 16px;font-size:12px;color:var(--faint);flex-wrap:wrap;gap:8px;
+}
+.tree-points{
+ background:var(--wood);border:1px solid var(--sage);color:var(--sage);
+ border-radius:20px;padding:6px 14px;font-family:var(--font-mono);font-size:13px;
+}
+
+.tree-canvas-wrap{
+ overflow:auto;padding:20px 10px 60px;
+ background:
+   repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,255,255,.02) 40px),
+   repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(255,255,255,.02) 40px);
+}
+.tree-branch{
+ margin-bottom:34px;
+}
+.tree-branch-label{
+ font-family:var(--font-display);font-size:13px;letter-spacing:.1em;
+ color:var(--faint);margin:0 4px 14px;display:flex;align-items:center;gap:10px;
+}
+.tree-branch-label::after{content:"";flex:1;height:1px;background:var(--line);}
+.tree-row{
+ display:flex;gap:14px;overflow-x:auto;padding:4px 4px 14px;
+ scroll-snap-type:x proximity;
+}
+.node{
+ flex-shrink:0;width:118px;scroll-snap-align:start;
+ background:var(--wood);border:2px solid var(--line);border-radius:12px;
+ padding:12px 10px;cursor:pointer;transition:border-color .2s,transform .15s,box-shadow .2s;
+ text-align:center;position:relative;
+}
+.node:hover{transform:translateY(-2px);}
+.node-icon{font-size:24px;margin-bottom:6px;display:block;}
+.node-name{font-size:11.5px;line-height:1.3;color:var(--paper);min-height:28px;display:flex;align-items:center;justify-content:center;}
+.node-cost{font-size:9.5px;color:var(--faint);margin-top:6px;font-family:var(--font-mono);}
+
+.node.locked{opacity:.45;filter:grayscale(.6);}
+.node.locked .node-name{color:var(--faint);}
+.node.unlockable{border-color:var(--gold);box-shadow:0 0 0 1px rgba(212,175,106,.15),0 0 18px rgba(212,175,106,.12);}
+.node.unlocked{border-color:var(--sage);background:rgba(111,174,143,.07);}
+.node.unlocked::before{
+ content:"✓";position:absolute;top:-8px;right:-8px;width:20px;height:20px;
+ background:var(--sage);color:var(--dusk);border-radius:50%;font-size:11px;
+ display:flex;align-items:center;justify-content:center;font-weight:bold;
+}
+.node.mystery{border-style:dashed;border-color:var(--rust);}
+.node.mystery .node-name{color:var(--faint);font-style:italic;}
+
+/* connector lines between rows, drawn as simple pseudo-elements on wrapping container */
+.tree-row-connect{position:relative;}
+
+/* node detail modal */
+.modal-overlay{
+ position:fixed;inset:0;background:rgba(10,7,5,.75);z-index:100;
+ display:none;align-items:flex-end;justify-content:center;
+ backdrop-filter:blur(2px);
+}
+.modal-overlay.active{display:flex;}
+@media(min-width:640px){.modal-overlay{align-items:center;}}
+.modal-box{
+ background:var(--wood);border:1px solid var(--line);border-top:3px solid var(--ember);
+ border-radius:16px 16px 0 0;
+ width:100%;max-width:480px;max-height:82vh;overflow-y:auto;
+ padding:24px 22px 30px;animation:slideup .25s ease;
+ box-shadow:0 -8px 40px rgba(0,0,0,.5);
+}
+@media(min-width:640px){.modal-box{border-radius:16px;}}
+@keyframes slideup{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.modal-close{
+ float:right;background:none;border:1px solid var(--line);color:var(--faint);
+ width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px;
+}
+.modal-icon{font-size:38px;margin-bottom:10px;}
+.modal-title{font-family:var(--font-display);font-size:19px;letter-spacing:.03em;margin-bottom:4px;}
+.modal-branch{font-size:11px;color:var(--faint);letter-spacing:.1em;margin-bottom:16px;text-transform:uppercase;}
+.modal-desc{font-size:14px;line-height:1.65;color:var(--paper);margin-bottom:18px;}
+.modal-desc.mystery-text{color:var(--faint);font-style:italic;}
+.modal-reqs{
+ background:var(--wood2);border:1px solid var(--line);border-radius:10px;
+ padding:12px 14px;font-size:12px;color:var(--faint);margin-bottom:16px;line-height:1.6;
+}
+.modal-reqs b{color:var(--paper);}
+.modal-status-badge{
+ display:inline-block;font-size:11px;padding:5px 12px;border-radius:20px;
+ letter-spacing:.06em;margin-bottom:16px;
+}
+.modal-status-badge.unlocked{background:rgba(111,174,143,.15);color:var(--sage);border:1px solid var(--sage);}
+.modal-status-badge.locked{background:rgba(122,107,88,.15);color:var(--faint);border:1px solid var(--line);}
+.modal-status-badge.unlockable{background:rgba(212,175,106,.15);color:var(--gold);border:1px solid var(--gold);}
+.modal-unlock-btn{
+ width:100%;background:var(--sage);color:var(--dusk);border:none;border-radius:8px;
+ padding:13px;font-family:var(--font-display);font-size:13px;letter-spacing:.08em;cursor:pointer;
+}
+.modal-unlock-btn:disabled{background:var(--wood2);color:var(--faint);cursor:not-allowed;}
+.modal-gm-note{
+ margin-top:14px;font-size:11px;color:var(--faint);font-style:italic;
+ border-top:1px dashed var(--line);padding-top:12px;
+}
+
+/* ============================================================
+   WAVELENGTHS
+   ============================================================ */
+.wl-list-view{padding:18px 16px 50px;flex:1;}
+.wl-list-view.hidden{display:none;}
+.wl-list-grid{
+ display:grid;grid-template-columns:1fr;gap:14px;max-width:560px;margin:0 auto;
+}
+@media(min-width:560px){.wl-list-grid{grid-template-columns:1fr 1fr;}}
+
+.wl-card{
+ --wl-c:#6fae8f;
+ background:var(--wood);border:1px solid var(--line);
+ clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));
+ padding:16px;cursor:pointer;display:flex;gap:14px;align-items:center;
+ transition:transform .18s,border-color .18s,box-shadow .18s;
+ border-left:4px solid var(--wl-c);position:relative;overflow:hidden;
+}
+.wl-card::after{
+ content:"";position:absolute;top:-30%;right:-20%;width:120px;height:120px;
+ background:radial-gradient(circle,var(--wl-c),transparent 70%);opacity:.10;
+ pointer-events:none;
+}
+.wl-card:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(0,0,0,.35);}
+.wl-chibi-slot{
+ width:56px;height:56px;border-radius:12px;flex-shrink:0;
+ background:var(--wood2);border:1.5px dashed var(--line);
+ display:flex;align-items:center;justify-content:center;
+ font-size:8.5px;letter-spacing:.05em;color:var(--faint);overflow:hidden;font-family:var(--font-mono);text-align:center;
+}
+.wl-chibi-slot img{width:100%;height:100%;object-fit:cover;}
+.wl-card-body{flex:1;min-width:0;}
+.wl-card-name{font-family:var(--font-display);font-size:14.5px;letter-spacing:.03em;margin-bottom:2px;}
+.wl-card-relation{font-size:11px;color:var(--faint);margin-bottom:8px;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wl-dots{display:flex;gap:3px;}
+.wl-dot{width:9px;height:9px;border-radius:50%;background:var(--wood2);border:1px solid var(--line);}
+.wl-dot.filled{background:var(--wl-c);border-color:var(--wl-c);}
+.wl-card-level-label{font-size:10px;color:var(--faint);margin-top:4px;font-family:var(--font-mono);}
+
+.wl-add-btn{
+ display:block;margin:22px auto 0;max-width:560px;width:100%;
+ background:none;border:1.5px dashed var(--line);color:var(--faint);
+ border-radius:12px;padding:16px;font-family:var(--font-display);
+ font-size:13px;letter-spacing:.06em;cursor:pointer;transition:border-color .2s,color .2s;
+}
+.wl-add-btn:hover{border-color:var(--ember);color:var(--ember);}
+
+/* ---- detail view ---- */
+.wl-detail-view{display:none;flex:1;flex-direction:column;padding:0 0 50px;}
+.wl-detail-view.active{display:flex;}
+.wl-detail-back{margin:14px 0 0 16px;}
+.wl-detail-header{
+ --wl-c:#6fae8f;
+ margin:16px 16px 22px;padding:22px 20px;border-radius:16px;
+ background:linear-gradient(160deg,var(--wood),var(--wood2));
+ border:1px solid var(--line);border-top:3px solid var(--wl-c);
+ display:flex;gap:16px;align-items:center;position:relative;overflow:hidden;
+}
+.wl-detail-header::after{
+ content:"";position:absolute;top:-40%;right:-15%;width:200px;height:200px;
+ background:radial-gradient(circle,var(--wl-c),transparent 70%);opacity:.12;pointer-events:none;
+}
+.wl-detail-chibi{
+ width:76px;height:76px;border-radius:16px;flex-shrink:0;
+ background:var(--wood2);border:2px dashed var(--wl-c);
+ display:flex;align-items:center;justify-content:center;font-size:10px;letter-spacing:.05em;color:var(--faint);font-family:var(--font-mono);
+ overflow:hidden;
+}
+.wl-detail-chibi img{width:100%;height:100%;object-fit:cover;}
+.wl-detail-name{font-family:var(--font-display);font-size:20px;letter-spacing:.03em;}
+.wl-detail-relation{font-size:12px;color:var(--faint);margin-top:3px;}
+.wl-detail-level-tag{
+ display:inline-block;margin-top:8px;font-size:11px;padding:4px 12px;border-radius:20px;
+ background:var(--wl-c);color:var(--dusk);font-family:var(--font-mono);
+}
+.wl-edit-toggle-btn{
+ background:none;border:1px solid var(--wl-c);color:var(--wl-c);
+ padding:8px 14px;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;
+ cursor:pointer;flex-shrink:0;align-self:flex-start;transition:background .2s,color .2s;
+}
+.wl-edit-toggle-btn:hover{background:var(--wl-c);color:var(--dusk);}
+.wl-edit-name{font-size:15px;}
+textarea.wl-form-input{resize:vertical;font-family:var(--font-body);line-height:1.4;}
+
+.wl-ladder{padding:0 16px;max-width:560px;margin:0 auto;width:100%;}
+.wl-rung{
+ --wl-c:#6fae8f;
+ border-left:2px solid var(--line);padding:0 0 26px 22px;position:relative;
+}
+.wl-rung::before{
+ content:"";position:absolute;left:-7px;top:2px;width:12px;height:12px;border-radius:50%;
+ background:var(--wood2);border:2px solid var(--line);
+}
+.wl-rung.reached::before{background:var(--wl-c);border-color:var(--wl-c);}
+.wl-rung.reached{border-left-color:var(--wl-c);}
+.wl-rung-num{font-family:var(--font-mono);font-size:10px;color:var(--faint);letter-spacing:.1em;}
+.wl-rung-title{font-family:var(--font-display);font-size:14.5px;letter-spacing:.03em;margin:2px 0 8px;}
+.wl-rung.locked .wl-rung-title{color:var(--faint);}
+.wl-rung-box{
+ background:var(--wood);border:1px solid var(--line);border-radius:10px;padding:12px 14px;
+}
+.wl-rung.locked .wl-rung-box{opacity:.4;}
+.wl-rung-buff{font-size:12.5px;color:var(--sage);margin-bottom:6px;line-height:1.5;}
+.wl-rung-buff b{color:var(--sage);}
+.wl-rung-hook{font-size:12.5px;color:var(--paper);line-height:1.55;font-style:italic;}
+.wl-rung-hook b{color:var(--gold);font-style:normal;}
+.wl-rung.locked .wl-rung-buff,.wl-rung.locked .wl-rung-hook{color:var(--faint);}
+.wl-raise-btn{
+ margin-top:14px;background:var(--wl-c);color:var(--dusk);border:none;border-radius:8px;
+ padding:11px 18px;font-family:var(--font-display);font-size:12px;letter-spacing:.06em;cursor:pointer;
+}
+
+/* ---- add person form ---- */
+.wl-form-label{display:block;font-size:11px;letter-spacing:.1em;color:var(--faint);margin:14px 0 6px;text-align:left;}
+.wl-form-input{
+ width:100%;background:var(--wood2);border:1px solid var(--rust);border-radius:6px;
+ padding:11px 12px;color:var(--paper);font-family:var(--font-body);font-size:14px;outline:none;
+}
+.wl-form-input:focus{border-color:var(--ember);}
+.wl-color-row{display:flex;gap:8px;flex-wrap:wrap;}
+.wl-color-swatch{
+ width:32px;height:32px;border-radius:50%;cursor:pointer;border:2px solid transparent;
+ transition:transform .15s,border-color .15s;
+}
+.wl-color-swatch.selected{border-color:var(--paper);transform:scale(1.12);}
+
+/* ============================================================
+   ZAZZ'S GAMES
+   ============================================================ */
+.zazz-line-bar{
+ margin:14px 16px 0;padding:12px 16px;background:var(--wood);
+ border:1px solid var(--ember);border-radius:10px;font-size:12.5px;
+ font-style:italic;color:var(--paper);position:relative;
+ border-left:4px solid var(--ember);
+}
+.zazz-line-bar::before{content:"// ";font-style:normal;color:var(--ember);}
+
+.games-tabs{
+ display:flex;gap:6px;padding:16px 16px 0;border-bottom:1px solid var(--line);
+ margin-bottom:2px;
+}
+.games-tab{
+ background:none;border:none;color:var(--faint);padding:10px 6px 12px;
+ font-family:var(--font-display);font-size:12.5px;letter-spacing:.05em;
+ cursor:pointer;border-bottom:2px solid transparent;transition:color .2s,border-color .2s;
+}
+.games-tab.active{color:var(--ember);border-bottom-color:var(--ember);}
+.games-tabpane{display:none;flex:1;flex-direction:column;}
+.games-tabpane.active{display:flex;}
+
+.games-grid{
+ display:grid;grid-template-columns:1fr;gap:14px;padding:18px 16px 50px;
+ max-width:560px;margin:0 auto;width:100%;
+}
+@media(min-width:560px){.games-grid{grid-template-columns:1fr 1fr;}}
+.game-card{
+ --gm-c:#cc6b3f;
+ background:var(--wood);border:1px solid var(--line);border-left:4px solid var(--gm-c);
+ clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));
+ padding:16px;cursor:pointer;transition:transform .18s,box-shadow .18s;
+}
+.game-card:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(0,0,0,.5),0 0 16px rgba(255,155,31,.12);}
+.game-card-icon{font-size:26px;margin-bottom:8px;display:block;}
+.game-card-name{font-family:var(--font-display);font-size:14.5px;letter-spacing:.03em;margin-bottom:6px;font-weight:900;text-transform:uppercase;}
+.game-card-rule{font-size:12px;color:var(--faint);line-height:1.5;margin-bottom:10px;font-style:italic;}
+.game-card-stat{
+ display:inline-block;font-size:10.5px;padding:4px 10px;border-radius:20px;
+ background:rgba(204,107,63,.15);color:var(--gm-c);border:1px solid var(--gm-c);
+ font-family:var(--font-mono);
+}
+.game-card-sessions{font-size:10.5px;color:var(--faint);margin-top:8px;}
+
+.game-log-list{padding:0 16px 50px;max-width:560px;margin:0 auto;width:100%;}
+.log-entry{
+ background:var(--wood);border:1px solid var(--line);border-radius:10px;
+ padding:14px 16px;margin-bottom:12px;
+}
+.log-entry-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;flex-wrap:wrap;gap:6px;}
+.log-entry-game{font-family:var(--font-display);font-size:13px;letter-spacing:.03em;}
+.log-entry-date{font-size:11px;color:var(--faint);font-family:var(--font-mono);}
+.log-entry-rows{font-size:12.5px;color:var(--paper);line-height:1.7;}
+.log-row{display:flex;justify-content:space-between;border-bottom:1px dotted var(--line);padding:3px 0;}
+.log-row.median-row{color:var(--gold);font-weight:bold;border-bottom:none;padding-top:6px;}
+.log-row.cheater-row{color:var(--danger);font-style:italic;}
+.log-entry-gain{
+ margin-top:8px;font-size:11.5px;color:var(--sage);
+ border-top:1px solid var(--line);padding-top:8px;
+}
+
+.board-select-row{display:flex;gap:8px;overflow-x:auto;padding:14px 16px;border-bottom:1px solid var(--line);}
+.board-list{padding:14px 16px 50px;max-width:400px;margin:0 auto;width:100%;}
+.board-rank-row{
+ display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--line);
+}
+.board-rank-num{
+ width:26px;height:26px;border-radius:50%;background:var(--wood2);border:1px solid var(--line);
+ display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:12px;
+ flex-shrink:0;color:var(--faint);
+}
+.board-rank-row.rank-1 .board-rank-num{background:var(--gold);color:var(--dusk);border-color:var(--gold);}
+.board-rank-name{flex:1;font-size:13.5px;}
+.board-rank-score{font-family:var(--font-mono);font-size:13px;color:var(--sage);}
+
+.ls-participant-row{
+ display:flex;gap:8px;align-items:center;margin-bottom:8px;
+}
+.ls-participant-row select{flex:2;}
+.ls-participant-row input{flex:1;}
+.ls-participant-row .ls-remove{
+ background:none;border:1px solid var(--line);color:var(--faint);width:30px;height:38px;
+ border-radius:6px;cursor:pointer;flex-shrink:0;
+}
+.ls-add-participant{
+ background:none;border:1px dashed var(--line);color:var(--faint);width:100%;
+ border-radius:8px;padding:9px;font-size:12px;cursor:pointer;margin-top:4px;
+}
+
+/* ============================================================
+   WASTELAND LEDGER (APOCALYPTIC SURVIVAL)
+   ============================================================ */
+.apoc-day-bar{
+ display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
+ padding:16px;background:var(--wood2);border-bottom:2px solid var(--tagred);
+}
+.apoc-day-label{font-family:var(--font-mono);font-size:12px;color:var(--danger);letter-spacing:.08em;}
+.apoc-advance-btn{
+ background:var(--tagred);color:var(--dusk);border:none;padding:10px 18px;
+ font-family:var(--font-display);font-weight:900;font-size:12px;letter-spacing:.06em;
+ cursor:pointer;clip-path:polygon(0 0,100% 0,100% 70%,96% 100%,0 100%);
+}
+.apoc-advance-btn:hover{background:var(--danger);}
+
+.apoc-resources{
+ display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px;max-width:520px;margin:0 auto;width:100%;
+}
+.apoc-res-card{
+ background:var(--wood);border:1px solid var(--line);padding:14px;
+ clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));
+}
+.apoc-res-card.res-danger{border-color:var(--tagred);}
+.apoc-res-card.res-warn{border-color:var(--danger);}
+.apoc-res-label{font-size:11px;color:var(--faint);letter-spacing:.1em;margin-bottom:4px;font-family:var(--font-mono);}
+.apoc-res-value{font-family:var(--font-display);font-size:22px;font-weight:900;color:var(--sage);}
+.apoc-res-card.res-warn .apoc-res-value{color:var(--danger);}
+.apoc-res-card.res-danger .apoc-res-value{color:var(--tagred);}
+.apoc-res-sub{font-size:10.5px;color:var(--faint);margin-top:4px;}
+
+.apoc-char-grid{
+ display:grid;grid-template-columns:1fr;gap:14px;padding:16px 16px 50px;
+ max-width:560px;margin:0 auto;width:100%;
+}
+@media(min-width:560px){.apoc-char-grid{grid-template-columns:1fr 1fr;}}
+.apoc-char-card{
+ background:var(--wood);border:1px solid var(--line);padding:16px;
+ clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));
+}
+.apoc-char-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.apoc-char-name{font-family:var(--font-display);font-size:14px;font-weight:900;letter-spacing:.03em;text-transform:uppercase;}
+.apoc-condition-badge{
+ font-size:10px;padding:3px 10px;font-family:var(--font-mono);letter-spacing:.06em;
+}
+.apoc-condition-badge.stable{background:rgba(198,255,61,.15);color:var(--sage);border:1px solid var(--sage);}
+.apoc-condition-badge.weakened{background:rgba(255,155,31,.15);color:var(--danger);border:1px solid var(--danger);}
+.apoc-condition-badge.critical{background:rgba(255,47,146,.15);color:var(--ember);border:1px solid var(--ember);}
+.apoc-condition-badge.failing{background:rgba(255,59,59,.2);color:var(--tagred);border:1px solid var(--tagred);animation:pulse-danger 1.4s infinite;}
+@keyframes pulse-danger{0%,100%{opacity:1;}50%{opacity:.55;}}
+
+.apoc-stat-row{margin-bottom:8px;}
+.apoc-stat-label{display:flex;justify-content:space-between;font-size:10.5px;color:var(--faint);margin-bottom:3px;font-family:var(--font-mono);}
+.apoc-bar-track{height:7px;background:var(--wood2);position:relative;overflow:hidden;}
+.apoc-bar-fill{height:100%;transition:width .3s;}
+.apoc-bar-fill.hunger{background:linear-gradient(90deg,var(--danger),var(--sage));}
+.apoc-bar-fill.hydration{background:linear-gradient(90deg,var(--danger),var(--gold));}
+
+.apoc-afflictions{margin-top:10px;}
+.apoc-affliction-tag{
+ display:inline-block;font-size:10px;padding:3px 9px;margin:3px 4px 0 0;
+ border:1px solid var(--line);color:var(--faint);
+}
+.apoc-affliction-tag.mild{border-color:var(--sage);color:var(--sage);}
+.apoc-affliction-tag.serious{border-color:var(--danger);color:var(--danger);}
+.apoc-affliction-tag.critical{border-color:var(--tagred);color:var(--tagred);}
+.apoc-add-affliction{
+ margin-top:10px;background:none;border:1px dashed var(--line);color:var(--faint);
+ width:100%;padding:7px;font-size:11px;cursor:pointer;
+}
+
+/* ============================================================
+   MINI-GAME PLAY OVERLAY
+   ============================================================ */
+.minigame-overlay{
+ position:fixed;inset:0;background:var(--dusk);z-index:300;
+ display:none;flex-direction:column;align-items:center;justify-content:center;
+ padding:20px;
+}
+.minigame-overlay.active{display:flex;}
+.minigame-exit{
+ position:absolute;top:16px;right:16px;background:none;border:1px solid var(--line);
+ color:var(--faint);padding:8px 14px;font-size:11px;font-family:var(--font-mono);
+ cursor:pointer;letter-spacing:.06em;
+}
+.minigame-exit:hover{border-color:var(--tagred);color:var(--tagred);}
+.minigame-stage{
+ width:100%;max-width:420px;text-align:center;
+}
+.mg-title{font-family:var(--font-display);font-size:20px;letter-spacing:.04em;margin-bottom:8px;font-weight:900;text-transform:uppercase;color:var(--sage);}
+.mg-instructions{font-size:12.5px;color:var(--faint);margin-bottom:30px;line-height:1.6;}
+.mg-zone{
+ width:100%;height:220px;background:var(--wood);border:2px solid var(--line);
+ display:flex;align-items:center;justify-content:center;cursor:pointer;
+ user-select:none;transition:background .15s,border-color .15s;
+ clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px));
+}
+.mg-zone.wait{background:var(--wood);border-color:var(--line);}
+.mg-zone.go{background:var(--sage);border-color:var(--sage);}
+.mg-zone.early{background:var(--tagred);border-color:var(--tagred);}
+.mg-zone-label{font-family:var(--font-display);font-size:22px;font-weight:900;letter-spacing:.05em;color:var(--paper);}
+.mg-zone.go .mg-zone-label{color:var(--dusk);}
+.mg-zone.early .mg-zone-label{color:var(--dusk);}
+.mg-result{margin-top:24px;}
+.mg-result-score{font-family:var(--font-display);font-size:44px;font-weight:900;color:var(--gold);margin-bottom:6px;}
+.mg-result-label{font-size:12px;color:var(--faint);margin-bottom:20px;}
+.mg-btn-row{display:flex;gap:10px;justify-content:center;}
+.mg-btn{
+ background:var(--ember);color:var(--dusk);border:none;padding:12px 22px;
+ font-family:var(--font-display);font-weight:900;font-size:12px;letter-spacing:.06em;cursor:pointer;
+}
+.mg-btn.secondary{background:none;border:1px solid var(--line);color:var(--faint);}
+
+.mg-scraptoss-track{
+ position:relative;width:100%;height:56px;background:var(--wood);
+ border:1px solid var(--line);overflow:visible;
+}
+.mg-scraptoss-center{
+ position:absolute;left:50%;top:0;bottom:0;width:14px;transform:translateX(-50%);
+ background:rgba(255,59,59,.18);border-left:1px dashed var(--tagred);border-right:1px dashed var(--tagred);
+}
+.mg-scraptoss-marker{
+ position:absolute;top:50%;width:14px;height:14px;background:var(--gold);
+ transform:translate(-50%,-50%);border-radius:50%;box-shadow:0 0 10px rgba(47,224,255,.6);
+ transition:left .05s linear;
+}
+
+.mg-sprint-field{
+ position:relative;width:100%;height:280px;background:var(--wood);
+ border:1px solid var(--line);cursor:crosshair;overflow:hidden;
+}
+.mg-sprint-flag{
+ position:absolute;width:34px;height:34px;background:var(--ember);
+ transform:translate(-50%,-50%);cursor:pointer;
+ clip-path:polygon(50% 0,100% 38%,82% 100%,18% 100%,0 38%);
+ box-shadow:0 0 14px rgba(255,47,146,.6);
+}
+
+.mg-grip-track{
+ width:100%;height:34px;background:var(--wood);border:1px solid var(--line);overflow:hidden;
+}
+.mg-grip-fill{
+ height:100%;background:linear-gradient(90deg,var(--tagred),var(--danger) 50%,var(--sage));
+ transition:width .15s ease;
+}
+
+.mg-tug-track{
+ position:relative;width:100%;height:44px;background:var(--wood);
+ border:1px solid var(--line);overflow:visible;
+}
+.mg-tug-center{
+ position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--faint);transform:translateX(-50%);
+}
+.mg-tug-marker{
+ position:absolute;top:50%;width:20px;height:20px;background:var(--sage);
+ transform:translate(-50%,-50%);border-radius:50%;box-shadow:0 0 12px rgba(198,255,61,.6);
+ transition:left .15s ease;
+}
+
+.mg-hush-label{font-size:10px;color:var(--faint);letter-spacing:.1em;margin-bottom:5px;font-family:var(--font-mono);text-align:left;}
+.mg-bar-fill-sage{height:100%;background:var(--sage);transition:width .2s ease;}
+.mg-bar-fill-danger{height:100%;background:var(--tagred);transition:width .2s ease;}
+
+.mg-ww-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.mg-ww-zone{
+ height:90px;background:var(--wood);border:2px solid var(--line);cursor:pointer;
+ transition:border-color .15s,background .15s;
+}
+.mg-ww-zone.safe{border-color:var(--sage);background:rgba(198,255,61,.15);box-shadow:0 0 16px rgba(198,255,61,.35);}
+
+.mg-longwait-zone{
+ width:120px;height:120px;margin:20px auto 0;background:var(--wood);
+ border:2px solid var(--danger);border-radius:50%;cursor:pointer;
+ animation:mgLongWaitPulse 2.2s ease-in-out infinite;
+}
+@keyframes mgLongWaitPulse{0%,100%{box-shadow:0 0 10px rgba(255,155,31,.25);}50%{box-shadow:0 0 26px rgba(255,155,31,.55);}}
+
+.mg-salvage-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.mg-salvage-cell{
+ height:70px;background:var(--wood);border:2px solid var(--line);cursor:pointer;
+ transition:border-color .15s,background .15s;
+}
+.mg-salvage-cell.found{border-color:var(--sage);background:rgba(198,255,61,.2);}
+.mg-salvage-cell.empty{border-color:var(--line);background:var(--wood2);cursor:default;opacity:.5;}
+
+.mg-story-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.mg-story-frag{
+ padding:16px 10px;background:var(--wood);border:2px solid var(--line);
+ cursor:pointer;font-size:11.5px;color:var(--faint);text-align:center;
+ transition:border-color .15s,background .15s,color .15s;
+}
+.mg-story-frag.lit{border-color:var(--gold);background:rgba(47,224,255,.18);color:var(--paper);box-shadow:0 0 14px rgba(47,224,255,.4);}
+
+/* placeholder screens for the not-yet-built sections */
+.coming-soon{
+ flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+ text-align:center;padding:60px 24px;color:var(--faint);
+}
+.coming-soon-icon{font-size:48px;margin-bottom:16px;opacity:.6;}
+.coming-soon h2{font-family:var(--font-display);color:var(--paper);font-size:20px;margin-bottom:10px;letter-spacing:.05em;}
+.coming-soon p{font-size:13px;max-width:340px;line-height:1.7;}
+
+.toast{
+ position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+ background:var(--wood);border:1px solid var(--ember);color:var(--paper);
+ padding:12px 20px;border-radius:10px;font-size:13px;z-index:200;
+ opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;
+ max-width:90vw;text-align:center;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="corner-tab left">OPUS_∅</div>
+<div class="corner-tab right" id="buildTag">THE LEDGER — v0.1</div>
+
+<div id="app">
+
+<!-- ============================================================
+     LOGIN SCREEN
+============================================================ -->
+<div class="screen active" id="screen-login">
+ <div class="login-mark">// UNAUTHORIZED TERMINAL — HAVEN WORSHIP &amp; MOTEL, TAGGED //</div>
+ <div class="login-title chalk">THE LEDGER</div>
+ <div class="login-sub">Somebody cracked this screen and never bothered fixing it. Zazz checks hers more than anybody checks theirs.</div>
+ <div class="login-box">
+  <label for="loginPass">ENTER ACCESS CODE</label>
+  <input type="password" id="loginPass" placeholder="••••••••" autocomplete="off">
+  <button class="login-btn chalk" id="loginBtn">Breach My File</button>
+  <div class="login-err" id="loginErr"></div>
+ </div>
+ <div class="login-hint">Everyone's file opens on their own code. Don't know yours? Ask whoever's running the table — this isn't the kind of thing that gets guessed.</div>
+</div>
+
+<!-- ============================================================
+     MAIN MENU
+============================================================ -->
+<div class="screen" id="screen-menu">
+ <div class="menu-header">
+  <div class="menu-who">
+   <div class="menu-avatar" id="menuAvatar"></div>
+   <div>
+    <div class="menu-name chalk" id="menuName">—</div>
+    <div class="menu-role" id="menuRole">—</div>
+   </div>
+  </div>
+  <button class="menu-logout" id="logoutBtn">CLOSE FILE</button>
+ </div>
+
+ <div class="menu-cards">
+  <div class="menu-card skilltree" data-goto="skilltree">
+   <span class="menu-card-tag">GROWTH</span>
+   <div class="menu-card-title chalk">Skill Tree</div>
+   <div class="menu-card-desc">Everything you've actually earned — passives, bespokes, blessing advancements, affinities, MF specs, Soul Engine work, and whatever your gear's picked up along the way. Some nodes don't tell you what they are until you're standing in front of them.</div>
+  </div>
+  <div class="menu-card wavelength" data-goto="wavelength">
+   <span class="menu-card-tag">BONDS</span>
+   <div class="menu-card-title chalk">Wavelengths</div>
+   <div class="menu-card-desc">Who you actually trust, and how much. Ten real levels, real buffs, and the kind of things people only tell you once you've earned the right to hear them.</div>
+  </div>
+  <div class="menu-card games" data-goto="games">
+   <span class="menu-card-tag">ZAZZ RUNS THIS</span>
+   <div class="menu-card-title chalk">Zazz's Games</div>
+   <div class="menu-card-desc">Every game anyone's ever played, every score, every cheater she's caught. She makes the rules. She really wants to win. She is, above all else, serious about everyone going home in one piece.</div>
+  </div>
+  <div class="menu-card apoc" data-goto="apoc">
+   <span class="menu-card-tag">SURVIVAL</span>
+   <div class="menu-card-title chalk">Wasteland Ledger</div>
+   <div class="menu-card-desc">Food, water, tools, real rations counted down to the day. Who's holding up and who isn't. The desert doesn't wait for anyone to level up first.</div>
+  </div>
+ </div>
+
+ <div class="menu-footer-note">"If it's not in the Ledger, it didn't happen. I don't care what you remember it as." — Zazz, probably about to prove a point</div>
+</div>
+
+<!-- ============================================================
+     SKILL TREE SCREEN
+============================================================ -->
+<div class="screen" id="screen-skilltree">
+ <div class="section-bar">
+  <button class="back-btn" data-goto="menu">←</button>
+  <div class="section-title chalk">Skill Tree<small>What's actually been earned, node by node</small></div>
+ </div>
+ <div class="char-select-row" id="charSelectRow"></div>
+ <div class="tree-meta-bar">
+  <span id="treeCharSub">—</span>
+  <span class="tree-points" id="treePointsDisplay">0 points banked</span>
+ </div>
+ <div class="tree-canvas-wrap" id="treeCanvas"></div>
+</div>
+
+<!-- ============================================================
+     WAVELENGTHS SCREEN (placeholder — built in a later pass)
+============================================================ -->
+<div class="screen" id="screen-wavelength">
+ <div class="section-bar">
+  <button class="back-btn" data-goto="menu">←</button>
+  <div class="section-title chalk">Wavelengths<small>Who you actually trust, and how much</small></div>
+ </div>
+ <div class="wl-list-view" id="wl-list-view">
+  <div class="wl-list-grid" id="wlListGrid"></div>
+  <button class="wl-add-btn" id="wlAddBtn">+ Add Someone New</button>
+ </div>
+ <div class="wl-detail-view" id="wl-detail-view">
+  <button class="back-btn wl-detail-back" id="wlDetailBack">←</button>
+  <div class="wl-detail-header" id="wlDetailHeader"></div>
+  <div class="wl-ladder" id="wlLadder"></div>
+ </div>
+</div>
+
+<!-- Add Person modal -->
+<div class="modal-overlay" id="addPersonModal">
+ <div class="modal-box">
+  <button class="modal-close" onclick="closeAddPerson()">X</button>
+  <div class="modal-title chalk">New Connection</div>
+  <div class="modal-branch">Zazz says everyone gets a page eventually. Might as well start it now.</div>
+  <label class="wl-form-label">Name</label>
+  <input type="text" id="apName" class="wl-form-input" placeholder="Who is this?">
+  <label class="wl-form-label">How they know each other</label>
+  <input type="text" id="apRelation" class="wl-form-input" placeholder="e.g. Fellow Procession member, motel regular, rival...">
+  <label class="wl-form-label">Accent color for their page</label>
+  <div class="wl-color-row" id="wlColorRow"></div>
+  <button class="modal-unlock-btn ap-submit-btn" onclick="submitAddPerson()">Add To The Ledger</button>
+ </div>
+</div>
+
+<!-- ============================================================
+     ZAZZ'S GAMES SCREEN (placeholder — built in a later pass)
+============================================================ -->
+<div class="screen" id="screen-games">
+ <div class="section-bar">
+  <button class="back-btn" data-goto="menu">←</button>
+  <div class="section-title chalk">Zazz's Games<small>She makes the rules. She checks for cheaters.</small></div>
+ </div>
+ <div class="zazz-line-bar" id="zazzLineBar"></div>
+ <div class="games-tabs">
+  <button class="games-tab active" data-tab="catalog">Catalog</button>
+  <button class="games-tab" data-tab="log">Game Log</button>
+  <button class="games-tab" data-tab="board">Leaderboard</button>
+ </div>
+
+ <div class="games-tabpane active" id="tab-catalog">
+  <div class="games-grid" id="gamesGrid"></div>
+ </div>
+
+ <div class="games-tabpane" id="tab-log">
+  <button class="wl-add-btn" id="logGameBtn" style="margin:16px;">+ Log A Game Session</button>
+  <div class="game-log-list" id="gameLogList"></div>
+ </div>
+
+ <div class="games-tabpane" id="tab-board">
+  <div class="board-select-row" id="boardSelectRow"></div>
+  <div class="board-list" id="boardList"></div>
+ </div>
+</div>
+
+<!-- Log Session modal -->
+<div class="modal-overlay" id="logSessionModal">
+ <div class="modal-box">
+  <button class="modal-close" onclick="closeLogSession()">X</button>
+  <div class="modal-title chalk" id="lsGameTitle">Log A Session</div>
+  <div class="modal-branch" id="lsGameRule"></div>
+  <label class="wl-form-label">Which game</label>
+  <select id="lsGameSelect" class="wl-form-input"></select>
+  <label class="wl-form-label">Session / date label</label>
+  <input type="text" id="lsSessionLabel" class="wl-form-input" placeholder="e.g. Session 14, or a real date">
+  <label class="wl-form-label">Who played, and their score</label>
+  <div id="lsParticipantRows"></div>
+  <button class="ls-add-participant" id="lsAddParticipant" type="button">+ Add Player</button>
+  <button class="modal-unlock-btn ap-submit-btn" onclick="submitGameSession()" style="margin-top:18px;">Log It — Zazz Is Watching</button>
+ </div>
+</div>
+
+<!-- ============================================================
+     WASTELAND LEDGER (Apocalyptic Survival) SCREEN
+============================================================ -->
+<div class="screen" id="screen-apoc">
+ <div class="section-bar">
+  <button class="back-btn" data-goto="menu">←</button>
+  <div class="section-title chalk">Wasteland Ledger<small>Real days counted. The desert doesn't round in your favor.</small></div>
+ </div>
+
+ <div class="apoc-day-bar">
+  <div class="apoc-day-label">DAY <span id="apocDayNum">0</span> SINCE LAST FULL RESUPPLY</div>
+  <button class="apoc-advance-btn" id="apocAdvanceBtn">Advance One Day</button>
+ </div>
+
+ <div class="apoc-resources" id="apocResources"></div>
+ <button class="wl-add-btn" id="apocRestockBtn">+ Restock / Adjust Supplies</button>
+
+ <div class="apoc-char-grid" id="apocCharGrid"></div>
+</div>
+
+<!-- Restock modal -->
+<div class="modal-overlay" id="restockModal">
+ <div class="modal-box">
+  <button class="modal-close" onclick="closeRestock()">X</button>
+  <div class="modal-title chalk">Adjust Supplies</div>
+  <div class="modal-branch">Positive numbers add. Negative numbers spend. Real numbers only — Zazz would want it said even here.</div>
+  <label class="wl-form-label">Food (rations)</label>
+  <input type="number" id="rsFood" class="wl-form-input" placeholder="e.g. 10 or -3">
+  <label class="wl-form-label">Water (liters)</label>
+  <input type="number" id="rsWater" class="wl-form-input" placeholder="e.g. 10 or -3">
+  <button class="modal-unlock-btn ap-submit-btn" onclick="submitRestock()" style="margin-top:18px;">Apply To The Ledger</button>
+ </div>
+</div>
+
+<!-- Affliction modal -->
+<div class="modal-overlay" id="afflictionModal">
+ <div class="modal-box">
+  <button class="modal-close" onclick="closeAffliction()">X</button>
+  <div class="modal-title chalk">Log A Condition</div>
+  <div class="modal-branch" id="afflictionCharName"></div>
+  <label class="wl-form-label">Name it</label>
+  <input type="text" id="afName" class="wl-form-input" placeholder="e.g. Infected wound, dust cough, dehydration fever">
+  <label class="wl-form-label">Severity</label>
+  <select id="afSeverity" class="wl-form-input">
+   <option value="mild">Mild — real, but manageable</option>
+   <option value="serious">Serious — real, active penalty</option>
+   <option value="critical">Critical — real, dangerous</option>
+  </select>
+  <label class="wl-form-label">Real symptoms / notes</label>
+  <input type="text" id="afNotes" class="wl-form-input" placeholder="What it's actually doing to them">
+  <button class="modal-unlock-btn ap-submit-btn" onclick="submitAffliction()" style="margin-top:18px;">Log It</button>
+ </div>
+</div>
+
+</div><!-- /#app -->
+
+<!-- ============================================================
+     MINI-GAME PLAY OVERLAY — real, playable games render here
+============================================================ -->
+<div class="minigame-overlay" id="minigameOverlay">
+ <button class="minigame-exit" id="minigameExit">Exit Without Saving</button>
+ <div class="minigame-stage" id="minigameStage"></div>
+</div>
+
+<!-- Node detail modal for game/leaderboard entries reuses .modal-overlay pattern above -->
+<div class="modal-overlay" id="gameInfoModal">
+ <div class="modal-box" id="gameInfoModalBox"></div>
+</div>
+
+<!-- Node detail modal -->
+<div class="modal-overlay" id="nodeModal">
+ <div class="modal-box" id="nodeModalBox"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================================================================
+   DATA MODEL
+   Everything below is deliberately structured so it's cheap to add
+   a new character, a new branch, or a new node without touching any
+   rendering logic. Rendering reads this data; it never hardcodes it.
+================================================================ */
+
+/* Player login table. Real deployment: swap these placeholder
+   passwords for the real ones before handing this out — kept in
+   one place on purpose so that's a one-line change per player. */
+const PLAYERS = {
+ "cole":     {pass:"storysend",      name:"Cole",   role:"Player-controlled",  avatarInitial:"C"},
+ "vergil":   {pass:"throneofflesh",  name:"Vergil", role:"Player-controlled",  avatarInitial:"V"},
+ "kevanna":  {pass:"junkyarddemon",  name:"Kevanna",role:"AI-controlled in Zazz's Games", avatarInitial:"K"},
+ "felana":   {pass:"blessedcircuit", name:"Felana", role:"AI-controlled in Zazz's Games", avatarInitial:"F"},
+ "yaviel":   {pass:"modelamber",     name:"Yaviel", role:"AI-controlled in Zazz's Games", avatarInitial:"Y"},
+ "zalir":    {pass:"zalir-salt",     name:"Zalir",  role:"AI-controlled in Zazz's Games", avatarInitial:"Z"},
+ "dahlia":   {pass:"dahliaprophecy", name:"Dahlia", role:"AI-controlled in Zazz's Games", avatarInitial:"D"},
+ "angi":     {pass:"angi-drift",     name:"Angi",   role:"AI-controlled in Zazz's Games", avatarInitial:"A"},
+ "burham":   {pass:"burham-lens",    name:"Burham", role:"AI-controlled in Zazz's Games", avatarInitial:"B"},
+ "merov":    {pass:"merov-tide",     name:"Merov",  role:"AI-controlled in Zazz's Games", avatarInitial:"M"},
+ "xaim":     {pass:"loomshield",     name:"Xaim",   role:"AI-controlled in Zazz's Games — runs the sparring log", avatarInitial:"X"},
+ "gm":       {pass:"burnedprocession",name:"GM",    role:"Full access — every file, every tree", avatarInitial:"⌾"}
+};
+
+/* Skill tree data, per character. Each node:
+   n: name (shown even when locked)
+   icon: emoji shown on the node face
+   branch: which row/category it lives in
+   type: passive | bespoke | blessing | affinity | mfspec | soulengine | gear
+   desc: shown once viewed — if null, the node is a genuine mystery
+         (name still shows, description reads as "???" in-voice)
+   reqs: plain-language requirement text shown in the modal
+   cost: points required to unlock
+   status: locked | unlockable | unlocked (mutable at runtime)
+   gmNote: optional aside only relevant to whoever's running nodes
+
+   Getting a node "point" is explicitly GM-whim / training-session /
+   battle-log-triggered per the brief — there's no XP formula here on
+   purpose. points banked on a character is a manually-set number
+   (see CHAR_POINTS below) that the GM adjusts after a session, a
+   training montage, or a battle-log review, then spends against
+   whichever nodes actually fit what just happened in play. */
+const SKILL_TREES = {
+ cole: {
+  sub:"Reads the story of a place before the place is done happening to him.",
+  branches:[
+   {label:"Passives", nodes:[
+    {n:"Steady Hands",type:"passive",desc:"A real, small accuracy bump that never goes away once it's his. Nothing dramatic — just reliably less likely to flinch.",reqs:"Available from the start.",cost:1,status:"unlocked"},
+    {n:"Reads The Room",type:"passive",desc:"A passive version of what Read The Story does on purpose — Cole picks up on tells without spending anything to look for them.",reqs:"Requires Steady Hands.",cost:2,status:"unlockable"},
+    {n:"???",type:"passive",desc:null,reqs:"Unclear. Something about this one only makes sense after it's already happened.",cost:2,status:"locked",gmNote:"Unlocks after Cole's player makes a specific narrative call the GM is watching for — do not pre-explain."}
+   ]},
+   {label:"Bespoke Mechanics", nodes:[
+    {n:"GRASP — Full Extension",type:"bespoke",desc:"A real, new use for the Grasp graft, beyond Crushing Hold and Stow — reaches further, holds tighter, at a real MF cost premium.",reqs:"Requires the Grasp graft equipped, and Reads The Room.",cost:3,status:"locked"},
+    {n:"Story's End — Second Read",type:"bespoke",desc:"Real, meaningful extension on how far ahead Story's End can actually see, and how reliable the read is.",reqs:"Requires a training session specifically logged as foresight practice.",cost:3,status:"locked"}
+   ]},
+   {label:"Blessing Advancement", nodes:[
+    {n:"Read The Story — Deepened",type:"blessing",desc:"Real, extended real-time reading — not just delayed foresight anymore, but close to live.",reqs:"Requires the blessing already active, plus GM sign-off after a session where it mattered.",cost:4,status:"locked"}
+   ]},
+   {label:"Affinities", nodes:[
+    {n:"Corruption — Resistant",type:"affinity",desc:"A real, growing resistance to corruption-type damage specifically, born out of exactly how much of it he's actually walked through.",reqs:"Logged from battle data — accumulates from real corruption dmg taken across sessions.",cost:2,status:"unlockable",gmNote:"Battle-log hook: sum corruption dmg taken across logged fights; suggested threshold 250 before this unlocks."}
+   ]},
+   {label:"MF Specs", nodes:[
+    {n:"MESH-RENDER — Twin Barrel",type:"mfspec",desc:"A real, new firing mode for the Mesh-Render — both barrels, both real damage instances, real MF cost to match.",reqs:"Requires the Mesh-Render equipped and Full Extension.",cost:4,status:"locked"}
+   ]},
+   {label:"Soul Engine", nodes:[
+    {n:"Engine — Refined Read",type:"soulengine",desc:"A real, permanent improvement to how cleanly his Soul Engine actually processes a foresight read — less static, more signal.",reqs:"Requires Read The Story — Deepened.",cost:5,status:"locked"}
+   ]},
+   {label:"Weapons & Attachments", nodes:[
+    {n:"Mesh-Render — Choke Adjustment",type:"gear",desc:"A real, physical modification to the Mesh-Render's spread pattern — trades range for a tighter, harder-hitting buckshot cone.",reqs:"Requires downtime access to a proper workbench.",cost:2,status:"unlockable"},
+    {n:"Pierce Study — Rebalanced Grip",type:"gear",desc:"Real, small but genuine handling improvement on the rapier — better follow-through on Spiral Guillotine specifically.",reqs:"Requires downtime and a session logged sparring with it.",cost:2,status:"locked"}
+   ]}
+  ]
+ },
+ vergil: {
+  sub:"The Throne remembers its seat. Vergil is still deciding how much of that he wants back.",
+  branches:[
+   {label:"Passives", nodes:[
+    {n:"Controlled Ground",type:"passive",desc:"Discipline is contagious — a real, small Will of Faith bonus for allies while he's actually deployed.",reqs:"Available from the start.",cost:1,status:"unlocked"},
+    {n:"Chronolite Familiarity",type:"passive",desc:"Real, small MF efficiency improvement specifically on Chronolite-tagged specs — he's spent enough time with this Lite that it costs him less to reach for.",reqs:"Requires Controlled Ground.",cost:2,status:"unlockable"}
+   ]},
+   {label:"Bespoke Mechanics", nodes:[
+    {n:"Fang Dagger Makina — Dual Unfurl",type:"bespoke",desc:"A real, second stage past simply unfurled — every wing-blade actually extends, real further dmg bonus, real further MF cost.",reqs:"Requires the Fang Dagger Makina graft and a training session logged specifically practicing the transform.",cost:3,status:"locked"},
+    {n:"Wraithe — Overcharged Slab",type:"bespoke",desc:"Real, new option to intentionally overcharge the Wraithe past its normal 5-charge cap for one real, much larger shot — at real, genuine risk to the graft itself.",reqs:"Requires Wraithe equipped and GM sign-off after a session where the risk actually mattered.",cost:4,status:"locked"}
+   ]},
+   {label:"Blessing Advancement", nodes:[
+    {n:"Change The Vector — Second Wind",type:"blessing",desc:"???",reqs:"Unclear what this actually requires. The rings don't explain themselves in advance.",cost:6,status:"locked",gmNote:"Mystery by design — this would let Change The Vector recharge faster than once/day under specific narrative conditions. Reveal only in play."}
+   ]},
+   {label:"Affinities", nodes:[
+    {n:"Frequency — Attuned",type:"affinity",desc:"Real, growing bonus specifically against frequency-type foes, tracked off how much of that damage type he's actually dealt across logged fights.",reqs:"Battle-log hook — accumulates from frequency dmg dealt.",cost:2,status:"unlockable",gmNote:"Suggested threshold: 300 frequency dmg dealt across logged fights."}
+   ]},
+   {label:"MF Specs", nodes:[
+    {n:"Lasa Laza — Twin Lock",type:"mfspec",desc:"Real, extended duration on the Pointer's accuracy bonus, and it now covers one real ally standing near him too.",reqs:"Requires Lasa Laza Pointer equipped.",cost:3,status:"locked"}
+   ]},
+   {label:"Soul Engine", nodes:[
+    {n:"Scientific Engine — Calibrated",type:"soulengine",desc:"Real, permanent refinement — his scientific-type Soul Engine runs measurably cleaner, a genuine small passive bonus that's his for good.",reqs:"Requires downtime and a training session logged as engine calibration specifically.",cost:4,status:"locked"}
+   ]},
+   {label:"Weapons & Attachments", nodes:[
+    {n:"Wraithe — Reinforced Housing",type:"gear",desc:"Real, permanent HP increase on the Wraithe graft itself — same charge behavior, genuinely sturdier.",reqs:"Requires downtime access to a proper workbench.",cost:2,status:"unlockable"}
+   ]}
+  ]
+ }
+};
+
+/* Per-character banked skill points — set by the GM after sessions,
+   training montages, or battle-log review. Spending against a node
+   is what actually flips it from unlockable to unlocked. */
+const CHAR_POINTS = {
+ cole: 5,
+ vergil: 4
+};
+
+/* ================================================================
+   WAVELENGTHS DATA MODEL
+   Each player has their own connections list — relationships aren't
+   symmetric by design (Cole's read on Vergil isn't necessarily the
+   same depth as Vergil's read on Cole), so this is stored per-owner,
+   not as one shared graph.
+
+   The ten rung TITLES are a shared naming ladder (it's genuinely the
+   in-world term — Hz/frequency language is already how this whole
+   setting talks about connection), but every rung's actual buff and
+   hook text is hand-written per relationship, not templated. Two
+   people at "Locked Signal" with two different connections should
+   never read like the same paragraph with names swapped.
+================================================================ */
+const WAVELENGTH_RUNGS = [
+ "Signal Found","Static Clearing","Tuned In","Steady Frequency","Locked Signal",
+ "Resonant","Harmonized","Synced","Same Wavelength","Unbroken Signal"
+];
+
+/* Accent colors offered in the add-person form — also what "each
+   wavelength has a different UI" actually means here: every card and
+   detail page recolors itself around whichever of these is chosen,
+   real CSS custom property, not a repeated template. */
+const WAVELENGTH_COLORS = ["#6fae8f","#cc6b3f","#d4af6a","#8a6fae","#c1503f","#5a8fbf","#a8875f","#6fae6f"];
+
+const WAVELENGTHS = {
+ cole: [
+  {
+   id:"cole_vergil", name:"Vergil", relation:"Fellow Procession member — the discipline Cole doesn't have",
+   color:"#8a6fae", level:4, chibi:null,
+   rungs:[
+    {buff:"None yet — you're names to each other, not much more.",hook:"\"You always fight like that, or is this a special occasion?\""},
+    {buff:"+2% hit when fighting within a few feet of him — you've started reading his openings instead of just his swings.",hook:"\"You're not actually going to tell me what that spiral thing does, are you.\""},
+    {buff:"+4% hit near him. He starts including you in the actual plan, not just the execution.",hook:"\"What was Helknit like, before you left it.\""},
+    {buff:"Real, small shared advantage: if you both target the same enemy in the same round, you each get +5% dmg against it.",hook:"\"Rowely's Nails. Who's Rowely.\""},
+    {buff:"The shared-target bonus above doubles to +10% each. He's stopped double-checking your positioning before he commits to something risky.",hook:"\"Your brothers. All of them, not just the ones you talk about.\""},
+    {buff:"He starts asking what you've actually seen — Story's End reads — before a fight, not after one goes wrong.",hook:"\"Do you already know how this is going to go. Tell me the truth.\""},
+    {buff:"Real combo unlock: once per fight, if you both hit the same target in the same round, the second hit is guaranteed to land.",hook:"\"What's actually in your family, Vergil. All of it.\""},
+    {buff:"He tells you about the flower. Not because he has to — because you'd have read it eventually anyway, and he'd rather you heard it from him.",hook:"\"Does Thessun still talk to you. Be honest.\""},
+    {buff:"You can tell when Change The Vector is coming before he commits to it — real, one-round advance warning, GM's call on exact framing.",hook:"\"If you ever have to use it on me. Would you.\""},
+    {buff:"Max rung. Once per fight, when you're both standing, either of you can call it: real, significant shared damage and accuracy bonus for one round, framed as the two of you finally moving like the same fight instead of two people in it.",hook:"There isn't a question left at this rung. You already know what he'd say."}
+   ]
+  },
+  {
+   id:"cole_zazz", name:"Zazz", relation:"The kid who runs the games — and checks on everyone harder than anyone checks on her",
+   color:"#d4af6a", level:6, chibi:null,
+   rungs:[
+    {buff:"None yet.",hook:"\"Are you actually good at this game or are you just old.\""},
+    {buff:"She stops explaining the rules to you twice. You're trusted to remember them.",hook:"\"What's the story of this place. Read it for me.\""},
+    {buff:"+3% dodge in fights where she's also present — you've picked up on how she reads a room before anything happens in it.",hook:"\"Do the wolves ever talk to you. The way the tail does to me.\""},
+    {buff:"Small, real HP regen tick when adjacent to her in a fight — she's decided you're one of hers to actually watch.",hook:"\"What happens if you catch someone cheating for real. Not in a game.\""},
+    {buff:"She tells you the House Rules before she sets them, not after — real, small tactical heads-up in any fight where she's using Faith Resonance-adjacent tech.",hook:"\"Who taught you to be this serious about keeping people safe.\""},
+    {buff:"Real: she'll use Stop Sign Block to cover you specifically, once per fight, without being asked.",hook:"\"Has anyone ever actually beaten you. At anything.\""},
+    {buff:"+6% dodge near her, up from 3. She's stopped performing 'fine' around you when she isn't.",hook:"\"What do you actually want, Zazz. Not what you're supposed to want.\""},
+    {buff:"You get a real vote in House Rules when she's setting them near you — not override, but she'll actually hear you out mid-round.",hook:"\"If something happened to me. What would you actually do.\""},
+    {buff:"The HP regen tick from rung 4 doubles. She's not subtle about checking on you anymore and has stopped pretending to be.",hook:"There's no version of this question she hasn't already answered by how she acts."},
+    {buff:"Max rung. Once per fight, she can spend her own turn to give you real, significant HP and a cleanse — framed as her flatly refusing to let this be the fight that goes wrong.",hook:"You don't need to ask anymore. That's the whole point of the rung."}
+   ]
+  },
+  {
+   id:"cole_neven", name:"Neven Ishmael", relation:"Motel keeper — father to half the people who live there, Cole included, whether either of them says it",
+   color:"#cc6b3f", level:8, chibi:null,
+   rungs:[
+    {buff:"None yet.",hook:"\"How long have you run this place.\""},
+    {buff:"Real place at the table, literally — he starts setting a plate for you without asking.",hook:"\"Why do you keep taking people in.\""},
+    {buff:"Small real HP tick after a night at the motel before a fight — actual rest, not just downtime.",hook:"\"Did you build the jet-pack for someone specific.\""},
+    {buff:"He tells you which Dustwalker sects tried to recruit him, and why he said no every time.",hook:"\"What would make you say yes.\""},
+    {buff:"Real: The Circle He's Already Chosen cleanses one extra status specifically on you, first, before the rest of the party.",hook:"\"Do you actually think of us as yours. All of us.\""},
+    {buff:"He starts asking what you've read about a place before you go somewhere dangerous — real, and he actually changes plans based on the answer.",hook:"\"What's the worst thing you've ever had to choose between, running this place.\""},
+    {buff:"Real, small PMF regen tick specifically after a conversation with him logged in a session — he is, genuinely, steadying.",hook:"\"If I ever needed to disappear. Would you help me do that, or talk me out of it.\""},
+    {buff:"He tells you the real reason he won't leave the motel, even when leaving would be safer.",hook:"\"Do you regret any of it.\""},
+    {buff:"Real: once per session, you can ask him for a real, meaningful favor — resources, a contact, a place to actually hide — and he delivers if it's remotely possible.",hook:"\"I don't have a question left. I just wanted you to know that.\""},
+    {buff:"Max rung. He treats you, functionally, as family — real, standing +PMF regen while at the motel, no session cost, framed as a place that's actually yours now.",hook:"There's nothing left to ask. You already live here, as much as he does."}
+   ]
+  },
+  {
+   id:"cole_kevanna", name:"Kevanna", relation:"Complicated. Reading her story is not the same as trusting what it says.",
+   color:"#c1503f", level:2, chibi:null,
+   rungs:[
+    {buff:"None. You've read enough of her to know you don't want to read more yet.",hook:"\"What are you, actually. Not what everyone says.\""},
+    {buff:"She's stopped testing you, specifically. Small mercy, not trust.",hook:"\"Does the Ledger know I'm scared of you. It should.\""},
+    {buff:"Locked — requires an actual session where Cole chooses to engage with her directly rather than avoid her.",hook:"Locked."},
+    {buff:"Locked.",hook:"Locked."},
+    {buff:"Locked.",hook:"Locked."},
+    {buff:"Locked.",hook:"Locked."},
+    {buff:"Locked.",hook:"Locked."},
+    {buff:"Locked.",hook:"Locked."},
+    {buff:"Locked.",hook:"Locked."},
+    {buff:"Locked.",hook:"Locked."}
+   ]
+  }
+ ],
+ vergil: [
+  {
+   id:"vergil_kevanna", name:"Kevanna", relation:"His sister. The Volkesh line doesn't get to pretend that's a small thing.",
+   color:"#ff2f92", level:5, chibi:null,
+   rungs:[
+    {buff:"None. You grew up in the same house. That's not the same as knowing each other now.",hook:"\"Do you remember who we were, before Helknit.\""},
+    {buff:"He stops flinching when she says something genuinely unsettling. Old habit, quietly retired.",hook:"\"What did they actually do to you, Kevanna.\""},
+    {buff:"Small, real advantage when defending her specifically — he's not pretending he doesn't still do that.",hook:"\"Do you hate me for leaving before you did.\""},
+    {buff:"Real: he can tell when the Junkyard Demon persona is a mask and when it isn't anymore. GM-adjudicated, but he genuinely knows.",hook:"\"Which one of you is talking to me right now.\""},
+    {buff:"+5% dmg resist when fighting alongside her — old, real, unspoken coordination neither of them had to relearn.",hook:"\"If it ever comes down to me or the family name. Which one do you actually pick.\""},
+    {buff:"She tells him things she won't tell anyone else in the party. Real, GM-adjudicated narrative access.",hook:"\"What's actually left of who you were. Tell me the truth, not the performance.\""},
+    {buff:"Real combo: once per fight, if he lands CHANGE THE VECTOR on a target she's already hurt, it's guaranteed to connect.",hook:"\"Orion. Xaim. All of them — do you actually know where they all ended up.\""},
+    {buff:"He tells her about the flower first, before anyone else in the party hears it from him.",hook:"\"Are you flowered too, Kevanna. I need the real answer.\""},
+    {buff:"Real: she'll pull a hit meant for him, once per fight, without being asked — the same reflex from before either of them left home.",hook:"\"If I ever have to choose the family over you. I won't. I need you to know that first.\""},
+    {buff:"Max rung. Once per fight, real, significant shared bonus when both are standing — framed as two people who were siblings before they were anything the world made of them, and still are.",hook:"There's no question left. You're the only person alive who actually remembers the house before Helknit."}
+   ]
+  },
+  {
+   id:"vergil_cole", name:"Cole", relation:"Reads a room faster than anyone Vergil's fought beside. Vergil respects that more than he says.",
+   color:"#8a6fae", level:4, chibi:null,
+   rungs:[
+    {buff:"None yet — competent stranger, nothing more.",hook:"\"What do you actually see, when you read a place. Not the summary — the real thing.\""},
+    {buff:"+2% dodge fighting near him — Vergil's started trusting Cole's read over his own instinct in unclear situations.",hook:"\"Does it ever tell you something you didn't want to know.\""},
+    {buff:"Vergil starts actually explaining his own plans instead of just issuing them.",hook:"\"Have you ever read me. What did it say.\""},
+    {buff:"Real, small shared advantage matching Cole's own version of this rung — same mechanic, earned from Vergil's side this time.",hook:"\"What's actually in Rowely's Nails. The real story, not the short version.\""},
+    {buff:"Vergil tells him about Helknit, unprompted, before Cole has to ask.",hook:"\"Would you have left, if you'd been the one who stayed longer.\""},
+    {buff:"Real: Vergil asks Cole for a read before committing to Change The Vector, not after.",hook:"\"Tell me honestly. Is this going to work.\""},
+    {buff:"Real combo unlock, matching Cole's own rung 7 — earned independently, not automatically shared between the two Wavelength entries.",hook:"\"What's it actually cost you, seeing all of it before it happens.\""},
+    {buff:"Vergil tells him about the family — Kevanna, the others — in his own words, not the version Cole's already half-read.",hook:"\"Do you think any of us actually get to leave what we were trained into.\""},
+    {buff:"Real: Vergil trusts Cole to call the moment on Change The Vector once per day, rather than deciding alone.",hook:"\"If I ever ask you to tell me not to. Would you actually stop me.\""},
+    {buff:"Max rung, matching Cole's real, significant shared combat bonus — earned from both directions now.",hook:"Nothing left to ask. You've read this far already."}
+   ]
+  },
+  {
+   id:"vergil_neven", name:"Neven Ishmael", relation:"Doesn't call it family out loud. Acts like it anyway.",
+   color:"#cc6b3f", level:3, chibi:null,
+   rungs:[
+    {buff:"None yet.",hook:"\"Why do you actually keep this place running.\""},
+    {buff:"Real, small PMF steadying after staying at the motel — Vergil doesn't examine why that keeps happening here specifically.",hook:"\"Did you know what Helknit was, before I told you.\""},
+    {buff:"Neven stops asking if Vergil's staying the night. He just sets it up.",hook:"\"What would you do if one of your own came back wrong.\""},
+    {buff:"Locked — requires a session where Vergil actually asks Neven for something, not just accepts what's offered.",hook:"Locked."},
+    {buff:"Locked.",hook:"Locked."},
+    {buff:"Locked.",hook:"Locked."},
+    {buff:"Locked.",hook:"Locked."},
+    {buff:"Locked.",hook:"Locked."},
+    {buff:"Locked.",hook:"Locked."},
+    {buff:"Locked.",hook:"Locked."}
+   ]
+  },
+  {
+   id:"vergil_xaim", name:"Xaim", relation:"Sparring partner. Neither of them calls it more than that yet.",
+   color:"#2fe0ff", level:3, chibi:null,
+   rungs:[
+    {buff:"None yet — you've traded real hits, not much else.",hook:"\"Where'd you actually learn to fight like that.\""},
+    {buff:"+2% hit in a real fight if you've sparred with him that same session — the form carries over.",hook:"\"Would you actually pull a hit on me, in the field. Be honest.\""},
+    {buff:"Xaim starts calling real fouls on himself before Zazz has to. Small, genuine shift in how seriously he takes the sparring.",hook:"\"What are you actually training for, past just getting better.\""},
+    {buff:"Locked — requires a full real session logged specifically as sparring, not just combat.",hook:"Locked."},
+    {buff:"Locked.",hook:"Locked."},
+    {buff:"Locked.",hook:"Locked."},
+    {buff:"Locked.",hook:"Locked."},
+    {buff:"Locked.",hook:"Locked."},
+    {buff:"Locked.",hook:"Locked."},
+    {buff:"Locked.",hook:"Locked."}
+   ]
+  }
+ ]
+};
+
+/* ================================================================
+   ZAZZ'S GAMES DATA MODEL
+   Every game genuinely trains a real stat and carries Zazz's own
+   real rule text — not filler, since she'd never let a game run
+   without the rules actually written down. Xaim's Sparring Circle
+   is deliberately included in this same catalog rather than split
+   into its own system, per the brief — it's a combat game, but it's
+   still one of hers to referee.
+================================================================ */
+const GAME_CATALOG = [
+ {id:"scrap_toss",name:"Scrap Toss",stat:"prec",
+  rule:"Three cans, three throws, real distance markers she paced out herself. Closest to the center without touching it wins. Touching it is a foul, not a bonus.",
+  safety:"No throwing until the last person's actually clear of the pit. She checks. Every time."},
+ {id:"junkyard_sprint",name:"Junkyard Sprint",stat:"eva",
+  rule:"A real course through the scrap field, marked with actual flags, not just 'run that way.' Fastest clean lap wins — clean meaning you didn't knock over a single marker.",
+  safety:"Course gets walked and cleared of anything actually sharp before anyone runs it. No exceptions, no matter how late it's getting."},
+ {id:"grip_trial",name:"Grip Trial",stat:"pow",
+  rule:"Hang from the salvaged beam. Longest real hold wins. She's got a real stopwatch for this one, not a count in her head.",
+  safety:"Padding under the beam. Always. She's replaced it twice after people insisted they didn't need it."},
+ {id:"hush_rules",name:"Hush Rules",stat:"eva",
+  rule:"Get from one end of the yard to the other without her hearing you. She's got genuinely good ears. This is not a metaphor — she will call it, immediately, if she hears you.",
+  safety:"Boundaries marked in daylight before anyone plays this after dark."},
+ {id:"story_chain",name:"Story Chain",stat:"soul",
+  rule:"Everyone adds one real line to the same story, in order, no repeating what's already been said. Whoever keeps it coherent longest without breaking the thread wins.",
+  safety:"Genuinely none needed. She still reminds everyone anyway, out of habit."},
+ {id:"wolf_and_warren",name:"Wolf & Warren",stat:"eva",
+  rule:"Tag, her rules, which means real actual rules — marked safe zones, a real 'it' rotation, no ganging up on whoever's it. She plays this one herself, and she's fast.",
+  safety:"Safe zones are safe zones. She will stop the whole game over someone breaking that rule."},
+ {id:"bottle_cap_duel",name:"Bottle Cap Duel",stat:"prec",
+  rule:"Flick a bottle cap off someone's head from a real, measured distance. Sounds worse than it is. She checks the flick-strength allowed before every single round.",
+  safety:"Real distance minimum, real cap-weight limit. She's turned away 'improvements' to this game more than once."},
+ {id:"the_long_wait",name:"The Long Wait",stat:"soul",
+  rule:"Sit still, actually still, longest. No games inside the game — no talking, no fidget-outs. She notices. She always notices.",
+  safety:"Not a competition to skip meals or water over. She'll end the round herself if it's going that way."},
+ {id:"salvage_hunt",name:"Salvage Hunt",stat:"prec",
+  rule:"She hides real, specific items across a bounded area beforehand. First to bring back the full real list wins. No trading finds — that's her rule, and she means it.",
+  safety:"Bounded area, walked and cleared first, same as always."},
+ {id:"tug_of_the_wreck",name:"Tug Of The Wreck",stat:"pow",
+  rule:"Real rope, real line drawn in the dirt, actual teams if there's enough people. She referees this one standing close, on purpose.",
+  safety:"Rope gets checked for fraying before every round. She's replaced it before over a single suspicious strand."},
+ {id:"xaim_sparring",name:"Xaim's Sparring Circle",stat:"atk",
+  rule:"Real sparring, real rules, Xaim actually runs the technical side but Zazz still referees — she's the one who calls fouls and ends a round early if it's going somewhere it shouldn't.",
+  safety:"Real stop condition, agreed before the match starts, not negotiated mid-fight. She holds everyone to it, including Xaim."}
+];
+
+/* Session log — real entries, each with real per-participant scores.
+   median gets computed at render time, not stored, so editing old
+   entries never leaves a stale number sitting around. statGainNote
+   is written per entry since the actual in-fiction framing of "why
+   this session mattered" is worth keeping human-readable, not just
+   a number. */
+const GAME_LOG = [
+ {id:"g1", gameId:"scrap_toss", sessionLabel:"Session 9", loggedBy:"cole",
+  participants:[{player:"cole",score:14},{player:"vergil",score:11},{player:"zazz",score:15},{player:"neven",score:9}],
+  cheater:null, note:"Neven swears the wind moved the can. Zazz did not accept this."},
+ {id:"g2", gameId:"junkyard_sprint", sessionLabel:"Session 11", loggedBy:"vergil",
+  participants:[{player:"vergil",score:22},{player:"cole",score:19},{player:"zazz",score:24}],
+  cheater:null, note:"Zazz's lap doesn't count for the leaderboard — she runs the course, she doesn't compete on it. Numbers logged anyway for the record."},
+ {id:"g3", gameId:"xaim_sparring", sessionLabel:"Session 12", loggedBy:"xaim",
+  participants:[{player:"vergil",score:8},{player:"cole",score:6},{player:"kevanna",score:9}],
+  cheater:{player:"kevanna",reason:"Real dtype bypass mid-spar that wasn't cleared beforehand. Zazz called it on sight."},
+  note:"Xaim ran the technical scoring. Zazz ended Kevanna's round early over the bypass."},
+ {id:"g4", gameId:"bottle_cap_duel", sessionLabel:"Session 13", loggedBy:"cole",
+  participants:[{player:"cole",score:7},{player:"felana",score:5},{player:"neven",score:8}],
+  cheater:null, note:"Neven's first win at anything Zazz runs. He will not stop mentioning it."}
+];
+
+/* Zazz's real dialogue pools, shown contextually rather than as one
+   static line — she talks different amounts depending on what's
+   actually happening. */
+const ZAZZ_LINES = {
+ ambient:[
+  "\"I wrote the rules down so nobody gets to remember them wrong later. That includes me.\"",
+  "\"Everybody goes home with the same number of fingers they showed up with. Non-negotiable.\"",
+  "\"I already did the math twice. I'm not doing it a third time just because you don't like the answer.\"",
+  "\"I'm not saying I need to win. I'm saying I already know I'm going to.\"",
+  "\"You're allowed to lose badly. You are not allowed to lose badly and then lie about the score.\"",
+  "\"Somebody's gotta keep count out here. Might as well be the one who's actually good at it.\"",
+  "\"I checked the ground for glass before anyone's shoes came off. That's not optional, that's just Tuesday.\"",
+  "\"Fun's the whole point. Nobody's having fun with a sprained ankle, so — rules first, fun second.\""
+ ],
+ onLog:[
+  "\"Good. Written down means it happened. Anything else is just a story somebody's telling.\"",
+  "\"Logged. That number doesn't move now, no matter how the retelling goes later.\"",
+  "\"This is exactly why the Ledger exists — so nobody gets to 'remember' a better score.\"",
+  "\"There. Now it's real, not just something you're pretty sure happened.\""
+ ],
+ onCheat:[
+  "\"I saw that. I see everything that happens on my own ground.\"",
+  "\"That was a foul and you knew it was a foul while you were doing it. Own it.\"",
+  "\"We can run it again clean, or we can not run it at all. Pick one.\"",
+  "\"I don't care whose idea it was. I care that it stops right now.\"",
+  "\"You want to win that bad, get better. Don't get sneaky.\""
+ ],
+ onHighScore:[
+  "\"...okay. Okay, fine, that was actually good. Don't make it weird.\"",
+  "\"Don't let it go to your head. I'm still better, I'm just not proving it this exact second.\"",
+  "\"Write that one down twice, I want to see it again later.\"",
+  "\"Huh. Wasn't expecting that. I'm adjusting my expectations of you upward, slightly.\""
+ ],
+ onSafety:[
+  "\"Nobody plays until the ground's actually checked. I don't care how late it's getting.\"",
+  "\"That's not a rule I'm willing to bend, even for you.\"",
+  "\"I'd rather cancel the whole game than watch somebody get hurt proving a point.\""
+ ]
+};
+
+/* ================================================================
+   WASTELAND LEDGER — APOCALYPTIC SURVIVAL DATA MODEL
+   Real, threshold-based degradation rather than a vague "you're
+   hungry" flag. Water is deliberately harsher than food — that's
+   not a balance choice, that's just how dehydration actually works
+   faster than starvation does.
+
+   Thresholds (days without):
+     WATER  0-1 stable | 2 weakened | 3-4 critical | 5+ failing
+     FOOD   0-2 stable | 3-5 weakened | 6-9 critical | 10+ failing
+   Condition badge shows whichever of the two reads worse.
+================================================================ */
+const APOC_RESOURCES = {
+ food:{current:18, perPersonPerDay:1},
+ water:{current:14, perPersonPerDay:1}
+};
+let apocDay = 0;
+
+const APOC_CHARACTERS = {
+ cole:   {hunger:88, hydration:82, daysWithoutFood:0, daysWithoutWater:0, afflictions:[]},
+ vergil: {hunger:91, hydration:85, daysWithoutFood:0, daysWithoutWater:0, afflictions:[
+  {name:"Old scar tissue, left shoulder", severity:"mild", notes:"Aches before a real storm rolls in. Nothing that's ever actually stopped him."}
+ ]},
+ kevanna:{hunger:75, hydration:70, daysWithoutFood:1, daysWithoutWater:1, afflictions:[]},
+ felana: {hunger:95, hydration:90, daysWithoutFood:0, daysWithoutWater:0, afflictions:[]},
+ yaviel: {hunger:80, hydration:78, daysWithoutFood:0, daysWithoutWater:0, afflictions:[
+  {name:"Corroded finger joints, left hand", severity:"serious", notes:"Real, ongoing — machine parts reacting to something in the local dust. Needs an actual fix, not just rest."}
+ ]},
+ zalir:  {hunger:85, hydration:85, daysWithoutFood:0, daysWithoutWater:0, afflictions:[]},
+ dahlia: {hunger:85, hydration:85, daysWithoutFood:0, daysWithoutWater:0, afflictions:[]},
+ angi:   {hunger:85, hydration:85, daysWithoutFood:0, daysWithoutWater:0, afflictions:[]},
+ burham: {hunger:85, hydration:85, daysWithoutFood:0, daysWithoutWater:0, afflictions:[]},
+ merov:  {hunger:85, hydration:85, daysWithoutFood:0, daysWithoutWater:0, afflictions:[]},
+ xaim:   {hunger:85, hydration:85, daysWithoutFood:0, daysWithoutWater:0, afflictions:[]}
+};
+
+function apocCondition(charState){
+ const w=charState.daysWithoutWater, f=charState.daysWithoutFood;
+ const waterTier = w>=5?3:w>=3?2:w>=2?1:0;
+ const foodTier = f>=10?3:f>=6?2:f>=3?1:0;
+ const tier=Math.max(waterTier,foodTier);
+ return ["stable","weakened","critical","failing"][tier];
+}
+
+/* ================================================================
+   STATE
+================================================================ */
+let currentUser = null;
+let activeTreeChar = null;
+let activeWLPerson = null;
+let addPersonColor = WAVELENGTH_COLORS[0];
+let lsParticipantCount = 0;
+
+/* ================================================================
+   LOGIN
+================================================================ */
+function attemptLogin(){
+ const val=document.getElementById("loginPass").value.trim().toLowerCase();
+ const errEl=document.getElementById("loginErr");
+ if(!val){errEl.textContent="Type something. Even Zazz needs a password.";return;}
+ const match=Object.keys(PLAYERS).find(k=>PLAYERS[k].pass.toLowerCase()===val);
+ if(!match){
+  errEl.textContent="That's not it. The Ledger doesn't budge for guesses.";
+  return;
+ }
+ errEl.textContent="";
+ currentUser=match;
+ document.getElementById("loginPass").value="";
+ openMenu();
+}
+document.getElementById("loginBtn").onclick=attemptLogin;
+document.getElementById("loginPass").addEventListener("keydown",e=>{if(e.key==="Enter")attemptLogin();});
+document.getElementById("logoutBtn").onclick=()=>{
+ currentUser=null;
+ showScreen("login");
+};
+
+/* ================================================================
+   SCREEN ROUTING
+================================================================ */
+function showScreen(id){
+ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+ document.getElementById("screen-"+id).classList.add("active");
+}
+document.querySelectorAll("[data-goto]").forEach(el=>{
+ el.addEventListener("click",()=>{
+  const target=el.dataset.goto;
+  if(target==="skilltree")openSkillTree();
+  else if(target==="wavelength")openWavelength();
+  else if(target==="games")openGames();
+  else if(target==="apoc")openApoc();
+  else if(target==="menu")showScreen("menu");
+  else showScreen(target);
+ });
+});
+
+function openMenu(){
+ const p=PLAYERS[currentUser];
+ document.getElementById("menuName").textContent=p.name;
+ document.getElementById("menuRole").textContent=p.role;
+ document.getElementById("menuAvatar").textContent=p.avatarInitial;
+ showScreen("menu");
+}
+
+/* ================================================================
+   SKILL TREE RENDERING
+================================================================ */
+function charsVisibleToCurrentUser(){
+ // GM sees every tree. Everyone else sees their own tree by default —
+ // real deployment may want to open this up to "everyone sees everyone's
+ // tree" instead; kept narrow here since it's the safer default for a
+ // shared password-gated file.
+ if(currentUser==="gm")return Object.keys(SKILL_TREES);
+ return Object.keys(SKILL_TREES).filter(k=>k===currentUser);
+}
+
+function openSkillTree(){
+ const visible=charsVisibleToCurrentUser();
+ const row=document.getElementById("charSelectRow");
+ row.innerHTML="";
+ if(!visible.length){
+  row.innerHTML='<div style="padding:10px;color:var(--faint);font-size:12.5px;">No tree on file for this login yet. Zazz says check back after your next session.</div>';
+  document.getElementById("treeCanvas").innerHTML="";
+  document.getElementById("treeCharSub").textContent="—";
+  document.getElementById("treePointsDisplay").textContent="0 points banked";
+  showScreen("skilltree");
+  return;
+ }
+ visible.forEach(key=>{
+  const chip=document.createElement("div");
+  chip.className="char-chip";
+  chip.textContent=PLAYERS[key]?PLAYERS[key].name:key;
+  chip.dataset.char=key;
+  chip.onclick=()=>selectTreeChar(key);
+  row.appendChild(chip);
+ });
+ selectTreeChar(visible[0]);
+ showScreen("skilltree");
+}
+
+function selectTreeChar(key){
+ activeTreeChar=key;
+ document.querySelectorAll(".char-chip").forEach(c=>{
+  c.classList.toggle("active",c.dataset.char===key);
+ });
+ const tree=SKILL_TREES[key];
+ document.getElementById("treeCharSub").textContent=tree?tree.sub:"—";
+ document.getElementById("treePointsDisplay").textContent=(CHAR_POINTS[key]||0)+" point"+((CHAR_POINTS[key]||0)===1?"":"s")+" banked";
+ renderTree(tree);
+}
+
+function renderTree(tree){
+ const canvas=document.getElementById("treeCanvas");
+ canvas.innerHTML="";
+ if(!tree){
+  canvas.innerHTML='<div style="padding:20px;color:var(--faint);">Nothing logged yet.</div>';
+  return;
+ }
+ tree.branches.forEach(branch=>{
+  const wrap=document.createElement("div");
+  wrap.className="tree-branch";
+  const label=document.createElement("div");
+  label.className="tree-branch-label chalk";
+  label.textContent=branch.label;
+  wrap.appendChild(label);
+  const row=document.createElement("div");
+  row.className="tree-row";
+  branch.nodes.forEach(node=>{
+   row.appendChild(renderNode(node));
+  });
+  wrap.appendChild(row);
+  canvas.appendChild(wrap);
+ });
+}
+
+function renderNode(node){
+ const el=document.createElement("div");
+ el.className="node "+node.status+(node.desc===null?" mystery":"");
+ el.innerHTML=
+  '<div class="node-name">'+(node.desc===null?"???":esc(node.n))+'</div>'+
+  '<div class="node-cost">'+node.cost+' pt'+(node.cost===1?"":"s")+'</div>';
+ el.onclick=()=>openNodeModal(node);
+ return el;
+}
+
+function openNodeModal(node){
+ const box=document.getElementById("nodeModalBox");
+ const isMystery=node.desc===null;
+ const statusLabel={locked:"Locked",unlockable:"Ready To Unlock",unlocked:"Unlocked"}[node.status];
+ let html='<button class="modal-close" onclick="closeNodeModal()">X</button>';
+ html+='<div class="modal-title chalk">'+(isMystery?"???":esc(node.n))+'</div>';
+ html+='<div class="modal-branch">'+esc(node.type)+'</div>';
+ html+='<span class="modal-status-badge '+node.status+'">'+statusLabel+'</span>';
+ html+='<div class="modal-desc'+(isMystery?" mystery-text":"")+'">'+(isMystery?"Whatever this actually does hasn't been figured out yet. Some things you only learn by getting there.":esc(node.desc))+'</div>';
+ html+='<div class="modal-reqs"><b>Requirements:</b><br>'+esc(node.reqs)+'</div>';
+ const points=CHAR_POINTS[activeTreeChar]||0;
+ const canAfford=points>=node.cost;
+ if(node.status==="unlocked"){
+  html+='<button class="modal-unlock-btn" disabled>Already Unlocked</button>';
+ }else if(node.status==="unlockable"&&canAfford){
+  html+='<button class="modal-unlock-btn" onclick="unlockNode()">Spend '+node.cost+' Point'+(node.cost===1?"":"s")+' — Unlock</button>';
+ }else if(node.status==="unlockable"&&!canAfford){
+  html+='<button class="modal-unlock-btn" disabled>Needs '+node.cost+' points ('+points+' banked)</button>';
+ }else{
+  html+='<button class="modal-unlock-btn" disabled>Requirements Not Yet Met</button>';
+ }
+ if(currentUser==="gm"&&node.gmNote){
+  html+='<div class="modal-gm-note"><b>GM note:</b> '+esc(node.gmNote)+'</div>';
+ }
+ box.innerHTML=html;
+ box.dataset.nodeName=node.n;
+ window._activeModalNode=node;
+ document.getElementById("nodeModal").classList.add("active");
+}
+function closeNodeModal(){
+ document.getElementById("nodeModal").classList.remove("active");
+}
+document.getElementById("nodeModal").addEventListener("click",e=>{
+ if(e.target.id==="nodeModal")closeNodeModal();
+});
+
+function unlockNode(){
+ const node=window._activeModalNode;
+ if(!node||node.status!=="unlockable")return;
+ const points=CHAR_POINTS[activeTreeChar]||0;
+ if(points<node.cost)return;
+ CHAR_POINTS[activeTreeChar]=points-node.cost;
+ node.status="unlocked";
+ closeNodeModal();
+ selectTreeChar(activeTreeChar);
+ showToast(node.n+" — unlocked. Zazz already knows, somehow.");
+}
+
+/* ================================================================
+   WAVELENGTHS
+================================================================ */
+function connectionsFor(user){
+ return WAVELENGTHS[user]||[];
+}
+
+function openWavelength(){
+ document.getElementById("wl-detail-view").classList.remove("active");
+ document.getElementById("wl-list-view").classList.remove("hidden");
+ renderWLList();
+ showScreen("wavelength");
+}
+
+function renderWLList(){
+ const grid=document.getElementById("wlListGrid");
+ const conns=connectionsFor(currentUser);
+ grid.innerHTML="";
+ if(!conns.length){
+  grid.innerHTML='<div style="grid-column:1/-1;padding:20px;color:var(--faint);font-size:13px;">Nothing logged yet. Add the first one below — everybody starts somewhere, usually Signal Found.</div>';
+  return;
+ }
+ conns.forEach(c=>{
+  const card=document.createElement("div");
+  card.className="wl-card";
+  card.style.setProperty("--wl-c",c.color);
+  card.innerHTML=
+   '<div class="wl-chibi-slot">'+(c.chibi?'<img src="'+esc(c.chibi)+'">':'NO IMG')+'</div>'+
+   '<div class="wl-card-body">'+
+    '<div class="wl-card-name chalk">'+esc(c.name)+'</div>'+
+    '<div class="wl-card-relation">'+esc(c.relation)+'</div>'+
+    '<div class="wl-dots">'+wlDotsHtml(c.level)+'</div>'+
+    '<div class="wl-card-level-label">'+c.level+'/10 — '+esc(WAVELENGTH_RUNGS[Math.max(0,c.level-1)]||"Signal Found")+'</div>'+
+   '</div>';
+  card.onclick=()=>openWLDetail(c.id);
+  grid.appendChild(card);
+ });
+}
+
+function wlDotsHtml(level){
+ let html="";
+ for(let i=1;i<=10;i++){
+  html+='<span class="wl-dot'+(i<=level?" filled":"")+'"></span>';
+ }
+ return html;
+}
+
+let wlEditMode = false;
+
+function openWLDetail(id){
+ const conns=connectionsFor(currentUser);
+ const c=conns.find(x=>x.id===id);
+ if(!c)return;
+ activeWLPerson=id;
+ wlEditMode=false;
+ document.getElementById("wl-list-view").classList.add("hidden");
+ document.getElementById("wl-detail-view").classList.add("active");
+ renderWLDetailContent(c);
+}
+
+function renderWLDetailContent(c){
+ const header=document.getElementById("wlDetailHeader");
+ header.style.setProperty("--wl-c",c.color);
+ if(wlEditMode){
+  header.innerHTML=
+   '<div class="wl-detail-chibi">'+(c.chibi?'<img src="'+esc(c.chibi)+'">':'NO IMG')+'</div>'+
+   '<div style="flex:1;">'+
+    '<input type="text" class="wl-form-input wl-edit-name" id="wlEditName" value="'+esc(c.name)+'" style="margin-bottom:8px;font-family:var(--font-display);font-weight:900;">'+
+    '<input type="text" class="wl-form-input wl-edit-relation" id="wlEditRelation" value="'+esc(c.relation)+'">'+
+    '<span class="wl-detail-level-tag">'+c.level+'/10 — '+esc(WAVELENGTH_RUNGS[Math.max(0,c.level-1)]||"Signal Found")+'</span>'+
+   '</div>'+
+   '<button class="wl-edit-toggle-btn" onclick="saveWLEdits()">Save</button>';
+ }else{
+  header.innerHTML=
+   '<div class="wl-detail-chibi">'+(c.chibi?'<img src="'+esc(c.chibi)+'">':'NO IMG')+'</div>'+
+   '<div style="flex:1;">'+
+    '<div class="wl-detail-name chalk">'+esc(c.name)+'</div>'+
+    '<div class="wl-detail-relation">'+esc(c.relation)+'</div>'+
+    '<span class="wl-detail-level-tag">'+c.level+'/10 — '+esc(WAVELENGTH_RUNGS[Math.max(0,c.level-1)]||"Signal Found")+'</span>'+
+   '</div>'+
+   '<button class="wl-edit-toggle-btn" onclick="toggleWLEdit()">Edit</button>';
+ }
+
+ const ladder=document.getElementById("wlLadder");
+ ladder.innerHTML="";
+ WAVELENGTH_RUNGS.forEach((rungName,i)=>{
+  const rungLevel=i+1;
+  const reached=rungLevel<=c.level;
+  const data=c.rungs&&c.rungs[i]?c.rungs[i]:{buff:"Locked.",hook:"Locked."};
+  const div=document.createElement("div");
+  div.className="wl-rung"+(reached?" reached":" locked");
+  div.style.setProperty("--wl-c",c.color);
+  if(reached&&wlEditMode){
+   div.innerHTML=
+    '<div class="wl-rung-num">RUNG '+rungLevel+'</div>'+
+    '<div class="wl-rung-title chalk">'+esc(rungName)+'</div>'+
+    '<div class="wl-rung-box">'+
+     '<label class="wl-form-label" style="margin-top:0;">Buff</label>'+
+     '<textarea class="wl-form-input wl-edit-buff" data-rung="'+i+'" rows="2">'+esc(data.buff)+'</textarea>'+
+     '<label class="wl-form-label">Hook</label>'+
+     '<textarea class="wl-form-input wl-edit-hook" data-rung="'+i+'" rows="2">'+esc(data.hook)+'</textarea>'+
+    '</div>';
+  }else{
+   div.innerHTML=
+    '<div class="wl-rung-num">RUNG '+rungLevel+'</div>'+
+    '<div class="wl-rung-title chalk">'+esc(rungName)+'</div>'+
+    '<div class="wl-rung-box">'+
+     '<div class="wl-rung-buff"><b>Buff:</b> '+(reached?esc(data.buff):"Locked.")+'</div>'+
+     '<div class="wl-rung-hook"><b>Hook:</b> '+(reached?esc(data.hook):"Locked.")+'</div>'+
+    '</div>';
+  }
+  ladder.appendChild(div);
+ });
+
+ if(c.level<10&&!wlEditMode){
+  const raiseWrap=document.createElement("div");
+  raiseWrap.style.textAlign="center";
+  raiseWrap.innerHTML='<button class="wl-raise-btn" style="--wl-c:'+c.color+'" onclick="raiseWavelength(\''+c.id+'\')">Raise To '+wlNextLabel(c.level)+'</button>';
+  ladder.appendChild(raiseWrap);
+ }
+}
+
+function toggleWLEdit(){
+ wlEditMode=true;
+ const c=connectionsFor(currentUser).find(x=>x.id===activeWLPerson);
+ if(c)renderWLDetailContent(c);
+}
+
+function saveWLEdits(){
+ const c=connectionsFor(currentUser).find(x=>x.id===activeWLPerson);
+ if(!c)return;
+ const newName=document.getElementById("wlEditName").value.trim();
+ const newRelation=document.getElementById("wlEditRelation").value.trim();
+ if(!newName){showToast("Name can't actually be blank.");return;}
+ c.name=newName;
+ c.relation=newRelation||c.relation;
+ document.querySelectorAll(".wl-edit-buff").forEach(ta=>{
+  const idx=Number(ta.dataset.rung);
+  if(c.rungs[idx])c.rungs[idx].buff=ta.value.trim()||c.rungs[idx].buff;
+ });
+ document.querySelectorAll(".wl-edit-hook").forEach(ta=>{
+  const idx=Number(ta.dataset.rung);
+  if(c.rungs[idx])c.rungs[idx].hook=ta.value.trim()||c.rungs[idx].hook;
+ });
+ wlEditMode=false;
+ renderWLDetailContent(c);
+ renderWLList();
+ showToast("Changes saved — the real record now reflects it.");
+}
+
+function wlNextLabel(level){
+ return (level+1)+"/10 — "+esc(WAVELENGTH_RUNGS[level]||"");
+}
+
+function raiseWavelength(id){
+ const conns=connectionsFor(currentUser);
+ const c=conns.find(x=>x.id===id);
+ if(!c||c.level>=10)return;
+ c.level+=1;
+ openWLDetail(id);
+ showToast(esc(c.name)+" — now at "+c.level+"/10, "+WAVELENGTH_RUNGS[c.level-1]+".");
+}
+
+document.getElementById("wlAddBtn").onclick=openAddPerson;
+document.getElementById("wlDetailBack").onclick=()=>{
+ document.getElementById("wl-detail-view").classList.remove("active");
+ document.getElementById("wl-list-view").classList.remove("hidden");
+ renderWLList();
+};
+
+function openAddPerson(){
+ document.getElementById("apName").value="";
+ document.getElementById("apRelation").value="";
+ addPersonColor=WAVELENGTH_COLORS[0];
+ const row=document.getElementById("wlColorRow");
+ row.innerHTML="";
+ WAVELENGTH_COLORS.forEach((col,i)=>{
+  const sw=document.createElement("div");
+  sw.className="wl-color-swatch"+(i===0?" selected":"");
+  sw.style.background=col;
+  sw.onclick=()=>{
+   addPersonColor=col;
+   row.querySelectorAll(".wl-color-swatch").forEach(s=>s.classList.remove("selected"));
+   sw.classList.add("selected");
+  };
+  row.appendChild(sw);
+ });
+ document.getElementById("addPersonModal").classList.add("active");
+}
+function closeAddPerson(){
+ document.getElementById("addPersonModal").classList.remove("active");
+}
+function submitAddPerson(){
+ const name=document.getElementById("apName").value.trim();
+ const relation=document.getElementById("apRelation").value.trim()||"Newly logged connection.";
+ if(!name){showToast("Needs an actual name — Zazz's rules, not mine.");return;}
+ if(!WAVELENGTHS[currentUser])WAVELENGTHS[currentUser]=[];
+ const id=currentUser+"_"+name.toLowerCase().replace(/[^a-z0-9]+/g,"_")+"_"+Date.now();
+ const blankRung={buff:"Not written yet — add this once it's actually earned in play.",hook:"Not written yet."};
+ WAVELENGTHS[currentUser].push({
+  id, name, relation, color:addPersonColor, level:1, chibi:null,
+  rungs:[
+   {buff:"You've met. That's the whole rung.",hook:"Whatever the first real thing you said to each other was."},
+   blankRung,blankRung,blankRung,blankRung,blankRung,blankRung,blankRung,blankRung,blankRung
+  ]
+ });
+ closeAddPerson();
+ renderWLList();
+ showToast(name+" — added to the Ledger at Signal Found.");
+}
+document.getElementById("addPersonModal").addEventListener("click",e=>{
+ if(e.target.id==="addPersonModal")closeAddPerson();
+});
+
+/* ================================================================
+   ZAZZ'S GAMES
+================================================================ */
+function playerDisplayName(id){
+ if(PLAYERS[id])return PLAYERS[id].name;
+ // NPC referees/contacts logged in games but not real logins (Zazz, Neven, Xaim-as-ref, etc.)
+ return id.charAt(0).toUpperCase()+id.slice(1);
+}
+
+function median(nums){
+ const sorted=[...nums].sort((a,b)=>a-b);
+ const mid=Math.floor(sorted.length/2);
+ return sorted.length%2!==0?sorted[mid]:(sorted[mid-1]+sorted[mid])/2;
+}
+
+function pickZazzLine(pool){
+ const arr=ZAZZ_LINES[pool]||ZAZZ_LINES.ambient;
+ return arr[Math.floor(Math.random()*arr.length)];
+}
+
+function openGames(){
+ document.getElementById("zazzLineBar").textContent=pickZazzLine("ambient");
+ switchGamesTab("catalog");
+ showScreen("games");
+}
+
+function switchGamesTab(tab){
+ document.querySelectorAll(".games-tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===tab));
+ document.querySelectorAll(".games-tabpane").forEach(p=>p.classList.toggle("active",p.id==="tab-"+tab));
+ if(tab==="catalog")renderGameCatalog();
+ else if(tab==="log")renderGameLog();
+ else if(tab==="board")renderLeaderboardTabs();
+}
+document.querySelectorAll(".games-tab").forEach(t=>{
+ t.addEventListener("click",()=>switchGamesTab(t.dataset.tab));
+});
+
+function sessionsForGame(gameId){
+ return GAME_LOG.filter(g=>g.gameId===gameId);
+}
+
+function renderGameCatalog(){
+ const grid=document.getElementById("gamesGrid");
+ grid.innerHTML="";
+ GAME_CATALOG.forEach(game=>{
+  const count=sessionsForGame(game.id).length;
+  const card=document.createElement("div");
+  card.className="game-card";
+  card.style.setProperty("--gm-c", game.id==="xaim_sparring"?"#c1503f":"#cc6b3f");
+  card.innerHTML=
+   '<div class="game-card-name chalk">'+esc(game.name)+'</div>'+
+   '<div class="game-card-rule">'+esc(game.rule)+'</div>'+
+   '<span class="game-card-stat">TRAINS '+game.stat.toUpperCase()+'</span>'+
+   '<div class="game-card-sessions">'+count+' real session'+(count===1?"":"s")+' logged</div>';
+  card.onclick=()=>openGameInfo(game.id);
+  grid.appendChild(card);
+ });
+}
+
+function openGameInfo(gameId){
+ const game=GAME_CATALOG.find(g=>g.id===gameId);
+ if(!game)return;
+ const box=document.getElementById("gameInfoModalBox");
+ const playable=PLAYABLE_GAMES[gameId];
+ box.innerHTML=
+  '<button class="modal-close" onclick="closeGameInfo()">X</button>'+
+  '<div class="modal-title chalk">'+esc(game.name)+'</div>'+
+  '<div class="modal-branch">TRAINS '+game.stat.toUpperCase()+'</div>'+
+  '<div class="modal-desc">'+esc(game.rule)+'</div>'+
+  '<div class="modal-reqs"><b>Zazz\'s safety rule:</b><br>'+esc(game.safety)+'</div>'+
+  (playable?'<button class="modal-unlock-btn" onclick="closeGameInfo();'+playable.launch+'(\''+game.id+'\');" style="margin-bottom:10px;">Play It Now</button>':'')+
+  '<button class="modal-unlock-btn'+(playable?' ap-submit-btn':'')+'" onclick="closeGameInfo();openLogSession(\''+game.id+'\');" style="'+(playable?'background:none;border:1px solid var(--line);color:var(--faint);':'')+'">Log A Session Of This'+(playable?' Instead':'')+'</button>';
+ document.getElementById("gameInfoModal").classList.add("active");
+}
+function closeGameInfo(){document.getElementById("gameInfoModal").classList.remove("active");}
+document.getElementById("gameInfoModal").addEventListener("click",e=>{
+ if(e.target.id==="gameInfoModal")closeGameInfo();
+});
+
+/* ================================================================
+   REAL PLAYABLE MINI-GAMES
+   Each entry in PLAYABLE_GAMES maps a real catalog game id to the
+   function name that actually launches it. Games not listed here
+   still work exactly as before — manually logged via the session
+   form. The scoring math for each game is kept as its own small,
+   pure function (no DOM, no timers) specifically so it can be
+   tested directly against known inputs, separate from the timing
+   and click-handling orchestration around it.
+================================================================ */
+const PLAYABLE_GAMES = {
+ bottle_cap_duel:{launch:"launchBottleCapDuel"},
+ scrap_toss:{launch:"launchScrapToss"},
+ junkyard_sprint:{launch:"launchJunkyardSprint"},
+ grip_trial:{launch:"launchGripTrial"},
+ tug_of_the_wreck:{launch:"launchTugOfWreck"},
+ hush_rules:{launch:"launchHushRules"},
+ wolf_and_warren:{launch:"launchWolfWarren"},
+ the_long_wait:{launch:"launchTheLongWait"},
+ salvage_hunt:{launch:"launchSalvageHunt"},
+ story_chain:{launch:"launchStoryChain"}
+};
+
+let mgState = null; // shared mutable state for whichever mini-game is currently active
+
+function exitMinigame(){
+ document.getElementById("minigameOverlay").classList.remove("active");
+ if(mgState&&mgState.timer)clearTimeout(mgState.timer);
+ if(mgState&&mgState.anim)clearInterval(mgState.anim);
+ mgState=null;
+}
+document.getElementById("minigameExit").onclick=exitMinigame;
+
+function logMinigameScore(gameId,score,label){
+ const entry={
+  id:"g"+(GAME_LOG.length+1)+"_"+Date.now(),
+  gameId, sessionLabel:label||"Played live in The Ledger",
+  loggedBy:currentUser,
+  participants:[{player:currentUser,score}],
+  cheater:null, note:"Score generated by actually playing the real mini-game, not manually entered."
+ };
+ GAME_LOG.push(entry);
+ return entry;
+}
+
+/* ---- BOTTLE CAP DUEL — real reaction-time game ---- */
+/* Pure scoring function: faster real reaction (lower ms) means a
+   higher real score, floored at 1, capped at 30 so an implausible
+   near-zero reading can't produce an absurd score. Matches the
+   rough 5-15 range already seeded in the existing game log. */
+function bcdScoreFromReaction(ms){
+ if(ms<0)return 1;
+ return Math.max(1,Math.min(30,Math.round((500-ms)/20)));
+}
+
+function launchBottleCapDuel(gameId){
+ if(mgState&&mgState.timer)clearTimeout(mgState.timer);
+ mgState={gameId,phase:"wait",goTime:0,timer:null};
+ document.getElementById("minigameOverlay").classList.add("active");
+ renderBCDStage();
+ const delay=1000+Math.random()*2500;
+ mgState.timer=setTimeout(()=>{
+  if(!mgState||mgState.phase!=="wait")return;
+  mgState.phase="go";
+  mgState.goTime=Date.now();
+  renderBCDStage();
+ },delay);
+}
+
+function renderBCDStage(){
+ const stage=document.getElementById("minigameStage");
+ if(mgState.phase==="wait"){
+  stage.innerHTML=
+   '<div class="mg-title chalk">Bottle Cap Duel</div>'+
+   '<div class="mg-instructions">Wait for it. Click the second it actually says FLICK. Click early and Zazz calls it a foul — that\'s the whole real rule.</div>'+
+   '<div class="mg-zone wait" id="mgZone"><span class="mg-zone-label">WAIT FOR IT...</span></div>';
+ }else if(mgState.phase==="go"){
+  stage.innerHTML=
+   '<div class="mg-title chalk">Bottle Cap Duel</div>'+
+   '<div class="mg-instructions">Now.</div>'+
+   '<div class="mg-zone go" id="mgZone"><span class="mg-zone-label">FLICK!</span></div>';
+ }else if(mgState.phase==="early"){
+  stage.innerHTML=
+   '<div class="mg-title chalk">Bottle Cap Duel</div>'+
+   '<div class="mg-result">'+
+    '<div class="mg-result-score" style="color:var(--tagred);">FOUL</div>'+
+    '<div class="mg-result-label">Clicked before it actually said FLICK. Zazz saw that. No score this round.</div>'+
+    '<div class="mg-btn-row"><button class="mg-btn" onclick="launchBottleCapDuel(\''+mgState.gameId+'\')">Try Again</button><button class="mg-btn secondary" onclick="exitMinigame()">Exit</button></div>'+
+   '</div>';
+ }else if(mgState.phase==="result"){
+  stage.innerHTML=
+   '<div class="mg-title chalk">Bottle Cap Duel</div>'+
+   '<div class="mg-result">'+
+    '<div class="mg-result-score">'+mgState.score+'</div>'+
+    '<div class="mg-result-label">Real reaction: '+mgState.reactionMs+'ms — logged to the Ledger.</div>'+
+    '<div class="mg-btn-row"><button class="mg-btn" onclick="launchBottleCapDuel(\''+mgState.gameId+'\')">Play Again</button><button class="mg-btn secondary" onclick="exitMinigame()">Done</button></div>'+
+   '</div>';
+ }
+ const zone=document.getElementById("mgZone");
+ if(zone)zone.onclick=handleBCDClick;
+}
+
+function handleBCDClick(){
+ if(!mgState)return;
+ if(mgState.phase==="wait"){
+  if(mgState.timer)clearTimeout(mgState.timer);
+  mgState.phase="early";
+  renderBCDStage();
+  return;
+ }
+ if(mgState.phase==="go"){
+  const reactionMs=Date.now()-mgState.goTime;
+  const score=bcdScoreFromReaction(reactionMs);
+  mgState.reactionMs=reactionMs;
+  mgState.score=score;
+  mgState.phase="result";
+  logMinigameScore(mgState.gameId,score);
+  renderBCDStage();
+ }
+}
+
+/* ---- SCRAP TOSS — real oscillating-target precision game ---- */
+/* Pure position function: where the marker actually sits (0-100)
+   at a given elapsed time, independent of any DOM timer. Testable
+   directly against known elapsed values rather than needing to
+   simulate real animation frames. Starts at an edge (t=0 -> 98) so
+   the very first frame isn't suspiciously already centered. */
+function scrapTossPosition(elapsedMs,periodMs){
+ periodMs=periodMs||1800;
+ return 50+48*Math.cos(2*Math.PI*elapsedMs/periodMs);
+}
+/* Pure scoring function: matches the real rule text directly —
+   landing ON the center is a real foul (0, not a bonus), and score
+   otherwise rises the closer the real throw lands to center without
+   actually touching it. */
+function scrapTossThrowScore(pos){
+ const dist=Math.abs(pos-50);
+ if(dist<=3)return{score:0,foul:true};
+ return{score:Math.max(1,Math.min(20,Math.round(20-(dist-3)/2.2))),foul:false};
+}
+
+function launchScrapToss(gameId){
+ if(mgState&&mgState.anim)clearInterval(mgState.anim);
+ mgState={gameId,phase:"aiming",startTime:Date.now(),throws:[],anim:null};
+ document.getElementById("minigameOverlay").classList.add("active");
+ renderScrapTossStage();
+ mgState.anim=setInterval(renderScrapTossStage,50);
+}
+
+function renderScrapTossStage(){
+ const stage=document.getElementById("minigameStage");
+ if(mgState.phase==="aiming"){
+  const pos=scrapTossPosition(Date.now()-mgState.startTime);
+  const thrownSoFar=mgState.throws.length;
+  stage.innerHTML=
+   '<div class="mg-title chalk">Scrap Toss</div>'+
+   '<div class="mg-instructions">Three real throws. Click THROW the instant it\'s closest to center — but landing exactly on it is a real foul, not a bonus. Throw '+(thrownSoFar+1)+' of 3.</div>'+
+   '<div class="mg-scraptoss-track"><div class="mg-scraptoss-center"></div><div class="mg-scraptoss-marker" style="left:'+pos.toFixed(1)+'%"></div></div>'+
+   '<button class="mg-btn" id="mgThrowBtn" style="margin-top:20px;">THROW</button>'+
+   (thrownSoFar>0?'<div class="mg-instructions" style="margin-top:14px;">So far: '+mgState.throws.map(t=>t.foul?"FOUL":t.score).join(", ")+'</div>':'');
+  const btn=document.getElementById("mgThrowBtn");
+  if(btn)btn.onclick=handleScrapTossThrow;
+ }else if(mgState.phase==="result"){
+  const total=mgState.finalScore;
+  stage.innerHTML=
+   '<div class="mg-title chalk">Scrap Toss</div>'+
+   '<div class="mg-result">'+
+    '<div class="mg-result-score">'+total+'</div>'+
+    '<div class="mg-result-label">Three real throws: '+mgState.throws.map(t=>t.foul?"FOUL":t.score).join(", ")+' — logged to the Ledger.</div>'+
+    '<div class="mg-btn-row"><button class="mg-btn" onclick="launchScrapToss(\''+mgState.gameId+'\')">Play Again</button><button class="mg-btn secondary" onclick="exitMinigame()">Done</button></div>'+
+   '</div>';
+ }
+}
+
+function handleScrapTossThrow(){
+ if(!mgState||mgState.phase!=="aiming")return;
+ const pos=scrapTossPosition(Date.now()-mgState.startTime);
+ const result=scrapTossThrowScore(pos);
+ mgState.throws.push(result);
+ if(mgState.throws.length>=3){
+  if(mgState.anim)clearInterval(mgState.anim);
+  const total=Math.round(mgState.throws.reduce((s,t)=>s+t.score,0)/3);
+  mgState.finalScore=total;
+  mgState.phase="result";
+  logMinigameScore(mgState.gameId,total);
+ }
+ renderScrapTossStage();
+}
+
+/* ---- JUNKYARD SPRINT — real flag-sequence speed game ---- */
+/* Pure scoring function: faster real total time scores higher, and
+   a genuinely clean run (every flag hit, no marker knocked over)
+   matters as its own real factor — matching the actual rule text,
+   "fastest CLEAN lap wins," not just fastest. An unclean run takes
+   a real, meaningful penalty rather than being scored identically
+   to a clean one at the same speed. */
+function junkyardSprintScore(totalMs,cleanRun){
+ let base=Math.max(1,Math.min(30,Math.round((8000-totalMs)/200)));
+ if(!cleanRun)base=Math.max(1,Math.round(base*0.5));
+ return base;
+}
+
+const JS_TOTAL_FLAGS=5;
+
+function launchJunkyardSprint(gameId){
+ if(mgState&&mgState.anim)clearInterval(mgState.anim);
+ mgState={gameId,phase:"running",startTime:Date.now(),flagIndex:0,cleanRun:true,flagPos:jsRandomFlagPos()};
+ document.getElementById("minigameOverlay").classList.add("active");
+ renderJunkyardSprintStage();
+}
+function jsRandomFlagPos(){
+ return{x:10+Math.random()*80,y:15+Math.random()*70};
+}
+
+function renderJunkyardSprintStage(){
+ const stage=document.getElementById("minigameStage");
+ if(mgState.phase==="running"){
+  stage.innerHTML=
+   '<div class="mg-title chalk">Junkyard Sprint</div>'+
+   '<div class="mg-instructions">Real course, real flags. Click each one the instant it appears — missing the flag counts as knocking over a marker, and that\'s not a clean lap anymore. Flag '+(mgState.flagIndex+1)+' of '+JS_TOTAL_FLAGS+'.'+(mgState.cleanRun?"":" — already unclean this run.")+'</div>'+
+   '<div class="mg-sprint-field" id="mgSprintField">'+
+    '<div class="mg-sprint-flag" id="mgSprintFlag" style="left:'+mgState.flagPos.x+'%;top:'+mgState.flagPos.y+'%;"></div>'+
+   '</div>';
+  document.getElementById("mgSprintField").onclick=handleJunkyardFieldMiss;
+  document.getElementById("mgSprintFlag").onclick=(e)=>{e.stopPropagation();handleJunkyardFlagHit();};
+ }else if(mgState.phase==="result"){
+  stage.innerHTML=
+   '<div class="mg-title chalk">Junkyard Sprint</div>'+
+   '<div class="mg-result">'+
+    '<div class="mg-result-score">'+mgState.finalScore+'</div>'+
+    '<div class="mg-result-label">Real total time: '+mgState.totalMs+'ms — '+(mgState.cleanRun?"a genuinely clean lap.":"not clean — a marker got knocked over.")+' Logged to the Ledger.</div>'+
+    '<div class="mg-btn-row"><button class="mg-btn" onclick="launchJunkyardSprint(\''+mgState.gameId+'\')">Run Again</button><button class="mg-btn secondary" onclick="exitMinigame()">Done</button></div>'+
+   '</div>';
+ }
+}
+
+function handleJunkyardFieldMiss(){
+ if(!mgState||mgState.phase!=="running")return;
+ mgState.cleanRun=false;
+ renderJunkyardSprintStage();
+}
+
+function handleJunkyardFlagHit(){
+ if(!mgState||mgState.phase!=="running")return;
+ mgState.flagIndex+=1;
+ if(mgState.flagIndex>=JS_TOTAL_FLAGS){
+  const totalMs=Date.now()-mgState.startTime;
+  const score=junkyardSprintScore(totalMs,mgState.cleanRun);
+  mgState.totalMs=totalMs;
+  mgState.finalScore=score;
+  mgState.phase="result";
+  logMinigameScore(mgState.gameId,score);
+  renderJunkyardSprintStage();
+  return;
+ }
+ mgState.flagPos=jsRandomFlagPos();
+ renderJunkyardSprintStage();
+}
+
+/* ---- GRIP TRIAL — real active-hold endurance game ---- */
+/* Pure scoring function: score scales directly with how much of the
+   real full duration was actually held before slipping (or reaching
+   it outright). Deliberately simple and linear so the relationship
+   between real held time and score is easy to verify directly. */
+const GRIP_FULL_DURATION_MS=12000;
+const GRIP_DECAY_PER_TICK=8;
+const GRIP_SQUEEZE_BOOST=15;
+const GRIP_TICK_MS=200;
+
+function gripTrialScore(heldMs,fullDurationMs){
+ fullDurationMs=fullDurationMs||GRIP_FULL_DURATION_MS;
+ const ratio=Math.min(1,heldMs/fullDurationMs);
+ return Math.max(1,Math.round(ratio*25));
+}
+
+function launchGripTrial(gameId){
+ if(mgState&&mgState.anim)clearInterval(mgState.anim);
+ mgState={gameId,phase:"holding",startTime:Date.now(),grip:100};
+ document.getElementById("minigameOverlay").classList.add("active");
+ renderGripTrialStage();
+ mgState.anim=setInterval(gripTrialTick,GRIP_TICK_MS);
+}
+
+function gripTrialTick(){
+ if(!mgState||mgState.phase!=="holding")return;
+ mgState.grip=Math.max(0,mgState.grip-GRIP_DECAY_PER_TICK);
+ const elapsed=Date.now()-mgState.startTime;
+ if(mgState.grip<=0){
+  finishGripTrial(elapsed,false);
+  return;
+ }
+ if(elapsed>=GRIP_FULL_DURATION_MS){
+  finishGripTrial(GRIP_FULL_DURATION_MS,true);
+  return;
+ }
+ renderGripTrialStage();
+}
+
+function finishGripTrial(heldMs,succeeded){
+ if(mgState.anim)clearInterval(mgState.anim);
+ const score=gripTrialScore(heldMs);
+ mgState.heldMs=heldMs;
+ mgState.succeeded=succeeded;
+ mgState.finalScore=score;
+ mgState.phase="result";
+ logMinigameScore(mgState.gameId,score);
+ renderGripTrialStage();
+}
+
+function handleGripSqueeze(){
+ if(!mgState||mgState.phase!=="holding")return;
+ mgState.grip=Math.min(100,mgState.grip+GRIP_SQUEEZE_BOOST);
+ renderGripTrialStage();
+}
+
+function renderGripTrialStage(){
+ const stage=document.getElementById("minigameStage");
+ if(mgState.phase==="holding"){
+  const elapsed=Date.now()-mgState.startTime;
+  const secondsLeft=Math.max(0,Math.ceil((GRIP_FULL_DURATION_MS-elapsed)/1000));
+  stage.innerHTML=
+   '<div class="mg-title chalk">Grip Trial</div>'+
+   '<div class="mg-instructions">Real stopwatch, real beam. Keep squeezing or you slip — the grip genuinely decays on its own. '+secondsLeft+'s left to hold the real full trial.</div>'+
+   '<div class="mg-grip-track"><div class="mg-grip-fill" style="width:'+mgState.grip+'%"></div></div>'+
+   '<button class="mg-btn" id="mgSqueezeBtn" style="margin-top:20px;width:100%;">SQUEEZE</button>';
+  const btn=document.getElementById("mgSqueezeBtn");
+  if(btn)btn.onclick=handleGripSqueeze;
+ }else if(mgState.phase==="result"){
+  stage.innerHTML=
+   '<div class="mg-title chalk">Grip Trial</div>'+
+   '<div class="mg-result">'+
+    '<div class="mg-result-score">'+mgState.finalScore+'</div>'+
+    '<div class="mg-result-label">Real hold: '+(mgState.heldMs/1000).toFixed(1)+'s'+(mgState.succeeded?" — held the full real trial.":" — slipped early.")+' Logged to the Ledger.</div>'+
+    '<div class="mg-btn-row"><button class="mg-btn" onclick="launchGripTrial(\''+mgState.gameId+'\')">Try Again</button><button class="mg-btn secondary" onclick="exitMinigame()">Done</button></div>'+
+   '</div>';
+ }
+}
+
+/* ---- TUG OF THE WRECK — real competitive tug-of-war vs a steady AI pull ---- */
+/* Pure scoring function: rope position 0 = total player win, 100 =
+   total loss, 50 = dead center. Score falls off directly and evenly
+   with how far toward the opponent's side the rope actually ended
+   up — a decisive win scores far higher than barely holding a draw. */
+const TUG_TIME_LIMIT_MS=10000;
+const TUG_AI_PULL_PER_TICK=2;
+const TUG_PLAYER_PULL_PER_CLICK=4;
+const TUG_TICK_MS=200;
+
+function tugScoreFromPosition(finalPos){
+ return Math.max(1,Math.min(25,Math.round((100-finalPos)/4)));
+}
+
+function launchTugOfWreck(gameId){
+ if(mgState&&mgState.anim)clearInterval(mgState.anim);
+ mgState={gameId,phase:"pulling",startTime:Date.now(),ropePos:50};
+ document.getElementById("minigameOverlay").classList.add("active");
+ renderTugStage();
+ mgState.anim=setInterval(tugTick,TUG_TICK_MS);
+}
+
+function tugTick(){
+ if(!mgState||mgState.phase!=="pulling")return;
+ mgState.ropePos=Math.min(100,mgState.ropePos+TUG_AI_PULL_PER_TICK);
+ const elapsed=Date.now()-mgState.startTime;
+ if(mgState.ropePos>=100){
+  finishTug(100);
+  return;
+ }
+ if(elapsed>=TUG_TIME_LIMIT_MS){
+  finishTug(mgState.ropePos);
+  return;
+ }
+ renderTugStage();
+}
+
+function finishTug(finalPos){
+ if(mgState.anim)clearInterval(mgState.anim);
+ const score=tugScoreFromPosition(finalPos);
+ mgState.finalPos=finalPos;
+ mgState.finalScore=score;
+ mgState.won=finalPos<=15;
+ mgState.phase="result";
+ logMinigameScore(mgState.gameId,score);
+ renderTugStage();
+}
+
+function handleTugPull(){
+ if(!mgState||mgState.phase!=="pulling")return;
+ mgState.ropePos=Math.max(0,mgState.ropePos-TUG_PLAYER_PULL_PER_CLICK);
+ if(mgState.ropePos<=0){
+  finishTug(0);
+  return;
+ }
+ renderTugStage();
+}
+
+function renderTugStage(){
+ const stage=document.getElementById("minigameStage");
+ if(mgState.phase==="pulling"){
+  const elapsed=Date.now()-mgState.startTime;
+  const secondsLeft=Math.max(0,Math.ceil((TUG_TIME_LIMIT_MS-elapsed)/1000));
+  stage.innerHTML=
+   '<div class="mg-title chalk">Tug Of The Wreck</div>'+
+   '<div class="mg-instructions">Real rope, real line drawn in the dirt. Click PULL faster than the other side is pulling back. '+secondsLeft+'s left.</div>'+
+   '<div class="mg-tug-track"><div class="mg-tug-center"></div><div class="mg-tug-marker" style="left:'+(100-mgState.ropePos)+'%"></div></div>'+
+   '<button class="mg-btn" id="mgTugBtn" style="margin-top:20px;width:100%;">PULL</button>';
+  const btn=document.getElementById("mgTugBtn");
+  if(btn)btn.onclick=handleTugPull;
+ }else if(mgState.phase==="result"){
+  stage.innerHTML=
+   '<div class="mg-title chalk">Tug Of The Wreck</div>'+
+   '<div class="mg-result">'+
+    '<div class="mg-result-score">'+mgState.finalScore+'</div>'+
+    '<div class="mg-result-label">'+(mgState.won?"Pulled it clean to your side.":mgState.finalPos>=100?"Lost it — pulled straight through to their side.":"Held ground near the middle, not a clean win.")+' Logged to the Ledger.</div>'+
+    '<div class="mg-btn-row"><button class="mg-btn" onclick="launchTugOfWreck(\''+mgState.gameId+'\')">Rematch</button><button class="mg-btn secondary" onclick="exitMinigame()">Done</button></div>'+
+   '</div>';
+ }
+}
+
+/* ---- HUSH RULES — real pacing-based stealth game ---- */
+/* Pure noise function: rushing (short real interval since the last
+   step) is genuinely louder than a careful, measured pace. Matches
+   the actual rule text directly — "she's got genuinely good ears" —
+   by making speed itself the real risk, not a random dice roll
+   independent of how the player actually plays. */
+const HUSH_DISTANCE_PER_STEP=9;
+const HUSH_NOISE_CAP=100;
+const HUSH_RUSH_THRESHOLD_MS=300;
+const HUSH_MODERATE_THRESHOLD_MS=650;
+
+function hushRulesNoiseForStep(intervalSinceLastMs){
+ if(intervalSinceLastMs<HUSH_RUSH_THRESHOLD_MS)return 34;
+ if(intervalSinceLastMs<HUSH_MODERATE_THRESHOLD_MS)return 16;
+ return 6;
+}
+/* Pure scoring function: distance actually covered matters, but
+   genuinely getting caught (noise hitting the cap) takes a real,
+   heavy penalty rather than just stopping progress where it stood. */
+function hushRulesScore(distanceReached,caught){
+ let base=Math.round(Math.min(100,distanceReached)/4);
+ if(caught)base=Math.max(1,Math.round(base*0.4));
+ return Math.max(1,Math.min(25,base));
+}
+
+function launchHushRules(gameId){
+ mgState={gameId,phase:"sneaking",startTime:Date.now(),lastStepTime:Date.now(),distance:0,noise:0};
+ document.getElementById("minigameOverlay").classList.add("active");
+ renderHushRulesStage();
+}
+
+function handleHushStep(){
+ if(!mgState||mgState.phase!=="sneaking")return;
+ const now=Date.now();
+ const interval=now-mgState.lastStepTime;
+ const noiseAdded=hushRulesNoiseForStep(interval);
+ mgState.lastStepTime=now;
+ mgState.noise=Math.min(HUSH_NOISE_CAP,mgState.noise+noiseAdded);
+ mgState.distance=Math.min(100,mgState.distance+HUSH_DISTANCE_PER_STEP);
+ mgState.lastNoiseAdded=noiseAdded;
+
+ if(mgState.noise>=HUSH_NOISE_CAP){
+  finishHushRules(true);
+  return;
+ }
+ if(mgState.distance>=100){
+  finishHushRules(false);
+  return;
+ }
+ renderHushRulesStage();
+}
+
+function finishHushRules(caught){
+ const score=hushRulesScore(mgState.distance,caught);
+ mgState.caught=caught;
+ mgState.finalScore=score;
+ mgState.phase="result";
+ logMinigameScore(mgState.gameId,score);
+ renderHushRulesStage();
+}
+
+function renderHushRulesStage(){
+ const stage=document.getElementById("minigameStage");
+ if(mgState.phase==="sneaking"){
+  stage.innerHTML=
+   '<div class="mg-title chalk">Hush Rules</div>'+
+   '<div class="mg-instructions">Click STEP to actually cross the yard. Rush it and she genuinely hears you — a measured pace stays real quiet. She will call it immediately.</div>'+
+   '<div class="mg-hush-label">DISTANCE</div>'+
+   '<div class="mg-grip-track"><div class="mg-bar-fill-sage" style="width:'+mgState.distance+'%"></div></div>'+
+   '<div class="mg-hush-label" style="margin-top:14px;">NOISE</div>'+
+   '<div class="mg-grip-track"><div class="mg-bar-fill-danger" style="width:'+mgState.noise+'%"></div></div>'+
+   '<button class="mg-btn" id="mgHushBtn" style="margin-top:20px;width:100%;">STEP</button>';
+  const btn=document.getElementById("mgHushBtn");
+  if(btn)btn.onclick=handleHushStep;
+ }else if(mgState.phase==="result"){
+  stage.innerHTML=
+   '<div class="mg-title chalk">Hush Rules</div>'+
+   '<div class="mg-result">'+
+    '<div class="mg-result-score">'+mgState.finalScore+'</div>'+
+    '<div class="mg-result-label">'+(mgState.caught?"She heard you. Called it immediately — real distance covered: "+mgState.distance+"%.":"Made it clean across the whole real yard.")+' Logged to the Ledger.</div>'+
+    '<div class="mg-btn-row"><button class="mg-btn" onclick="launchHushRules(\''+mgState.gameId+'\')">Try Again</button><button class="mg-btn secondary" onclick="exitMinigame()">Done</button></div>'+
+   '</div>';
+ }
+}
+
+/* ---- WOLF & WARREN — real multi-round safe-zone tag game ---- */
+/* Pure scoring function: rounds actually survived out of the real
+   total determines score directly — a clean sweep scores the real
+   max, getting caught partway through scores proportionally lower. */
+const WW_TOTAL_ROUNDS=5;
+const WW_ZONE_COUNT=4;
+const WW_BASE_TIME_MS=3000;
+const WW_TIME_SHRINK_PER_ROUND=350;
+
+function wolfWarrenScore(roundsSurvived,totalRounds){
+ totalRounds=totalRounds||WW_TOTAL_ROUNDS;
+ return Math.max(1,Math.round((roundsSurvived/totalRounds)*25));
+}
+/* Pure timing function: the real time limit for a given round,
+   genuinely shrinking each round to reflect her closing in faster,
+   floored so it never becomes an impossible 0ms window. */
+function wwTimeLimitForRound(round){
+ return Math.max(700,WW_BASE_TIME_MS-(round-1)*WW_TIME_SHRINK_PER_ROUND);
+}
+
+function launchWolfWarren(gameId){
+ if(mgState&&mgState.timer)clearTimeout(mgState.timer);
+ mgState={gameId,phase:"choosing",round:1,safeIndex:Math.floor(Math.random()*WW_ZONE_COUNT),timer:null};
+ document.getElementById("minigameOverlay").classList.add("active");
+ startWolfRound();
+}
+
+function startWolfRound(){
+ mgState.roundStartTime=Date.now();
+ renderWolfWarrenStage();
+ const limit=wwTimeLimitForRound(mgState.round);
+ mgState.timer=setTimeout(()=>{
+  if(!mgState||mgState.phase!=="choosing")return;
+  finishWolfWarren(mgState.round-1);
+ },limit);
+}
+
+function handleWolfZoneClick(index){
+ if(!mgState||mgState.phase!=="choosing")return;
+ if(mgState.timer)clearTimeout(mgState.timer);
+ if(index!==mgState.safeIndex){
+  finishWolfWarren(mgState.round-1);
+  return;
+ }
+ if(mgState.round>=WW_TOTAL_ROUNDS){
+  finishWolfWarren(WW_TOTAL_ROUNDS);
+  return;
+ }
+ mgState.round+=1;
+ mgState.safeIndex=Math.floor(Math.random()*WW_ZONE_COUNT);
+ startWolfRound();
+}
+
+function finishWolfWarren(roundsSurvived){
+ const score=wolfWarrenScore(roundsSurvived);
+ mgState.roundsSurvived=roundsSurvived;
+ mgState.finalScore=score;
+ mgState.caught=roundsSurvived<WW_TOTAL_ROUNDS;
+ mgState.phase="result";
+ logMinigameScore(mgState.gameId,score);
+ renderWolfWarrenStage();
+}
+
+function renderWolfWarrenStage(){
+ const stage=document.getElementById("minigameStage");
+ if(mgState.phase==="choosing"){
+  let zonesHtml="";
+  for(let i=0;i<WW_ZONE_COUNT;i++){
+   zonesHtml+='<div class="mg-ww-zone'+(i===mgState.safeIndex?" safe":"")+'" data-zone="'+i+'"></div>';
+  }
+  stage.innerHTML=
+   '<div class="mg-title chalk">Wolf & Warren</div>'+
+   '<div class="mg-instructions">Real safe zones, her real rules. Click the lit one before she actually tags you. Round '+mgState.round+' of '+WW_TOTAL_ROUNDS+' — she\'s getting faster.</div>'+
+   '<div class="mg-ww-grid" id="mgWWGrid">'+zonesHtml+'</div>';
+  document.querySelectorAll(".mg-ww-zone").forEach(z=>{
+   z.onclick=()=>handleWolfZoneClick(Number(z.dataset.zone));
+  });
+ }else if(mgState.phase==="result"){
+  stage.innerHTML=
+   '<div class="mg-title chalk">Wolf & Warren</div>'+
+   '<div class="mg-result">'+
+    '<div class="mg-result-score">'+mgState.finalScore+'</div>'+
+    '<div class="mg-result-label">'+(mgState.caught?"Tagged after "+mgState.roundsSurvived+" of "+WW_TOTAL_ROUNDS+" real rounds.":"Made it through all "+WW_TOTAL_ROUNDS+" real rounds clean.")+' Logged to the Ledger.</div>'+
+    '<div class="mg-btn-row"><button class="mg-btn" onclick="launchWolfWarren(\''+mgState.gameId+'\')">Play Again</button><button class="mg-btn secondary" onclick="exitMinigame()">Done</button></div>'+
+   '</div>';
+ }
+}
+
+/* ---- THE LONG WAIT — real restraint game, deliberately the inverse
+   of every other game here ---- */
+/* Pure scoring function: score scales directly with real time
+   actually held still before either fidgeting or reaching the full
+   real duration. Same linear shape as Grip Trial's, since the
+   underlying question — how much of the real duration was actually
+   achieved — is the same kind of measurement. */
+const LONG_WAIT_FULL_DURATION_MS=15000;
+const LONG_WAIT_CHECK_MS=200;
+
+function theLongWaitScore(heldMs,fullDurationMs){
+ fullDurationMs=fullDurationMs||LONG_WAIT_FULL_DURATION_MS;
+ const ratio=Math.min(1,heldMs/fullDurationMs);
+ return Math.max(1,Math.round(ratio*25));
+}
+
+function launchTheLongWait(gameId){
+ if(mgState&&mgState.anim)clearInterval(mgState.anim);
+ mgState={gameId,phase:"waiting",startTime:Date.now()};
+ document.getElementById("minigameOverlay").classList.add("active");
+ renderTheLongWaitStage();
+ mgState.anim=setInterval(longWaitTick,LONG_WAIT_CHECK_MS);
+}
+
+function longWaitTick(){
+ if(!mgState||mgState.phase!=="waiting")return;
+ const elapsed=Date.now()-mgState.startTime;
+ if(elapsed>=LONG_WAIT_FULL_DURATION_MS){
+  finishTheLongWait(LONG_WAIT_FULL_DURATION_MS,true);
+  return;
+ }
+ renderTheLongWaitStage();
+}
+
+function finishTheLongWait(heldMs,succeeded){
+ if(mgState.anim)clearInterval(mgState.anim);
+ const score=theLongWaitScore(heldMs);
+ mgState.heldMs=heldMs;
+ mgState.succeeded=succeeded;
+ mgState.finalScore=score;
+ mgState.phase="result";
+ logMinigameScore(mgState.gameId,score);
+ renderTheLongWaitStage();
+}
+
+function handleLongWaitFidget(){
+ if(!mgState||mgState.phase!=="waiting")return;
+ const elapsed=Date.now()-mgState.startTime;
+ finishTheLongWait(elapsed,false);
+}
+
+function renderTheLongWaitStage(){
+ const stage=document.getElementById("minigameStage");
+ if(mgState.phase==="waiting"){
+  const elapsed=Date.now()-mgState.startTime;
+  const secondsLeft=Math.max(0,Math.ceil((LONG_WAIT_FULL_DURATION_MS-elapsed)/1000));
+  stage.innerHTML=
+   '<div class="mg-title chalk">The Long Wait</div>'+
+   '<div class="mg-instructions">Sit still. Actually still. No talking, no fidget-outs — she notices. Do not click the marker below, no matter how long it sits there. '+secondsLeft+'s left.</div>'+
+   '<div class="mg-longwait-zone" id="mgLongWaitZone"></div>';
+  document.getElementById("mgLongWaitZone").onclick=handleLongWaitFidget;
+ }else if(mgState.phase==="result"){
+  stage.innerHTML=
+   '<div class="mg-title chalk">The Long Wait</div>'+
+   '<div class="mg-result">'+
+    '<div class="mg-result-score">'+mgState.finalScore+'</div>'+
+    '<div class="mg-result-label">Real stillness: '+(mgState.heldMs/1000).toFixed(1)+'s'+(mgState.succeeded?" — held the whole real trial.":" — fidgeted. She noticed.")+' Logged to the Ledger.</div>'+
+    '<div class="mg-btn-row"><button class="mg-btn" onclick="launchTheLongWait(\''+mgState.gameId+'\')">Try Again</button><button class="mg-btn secondary" onclick="exitMinigame()">Done</button></div>'+
+   '</div>';
+ }
+}
+
+/* ---- SALVAGE HUNT — real grid-search game ---- */
+/* Pure scoring function: real speed and real accuracy both count —
+   matches "no trading finds, first to bring back the full list" by
+   penalizing wasted wrong guesses on top of rewarding a fast finish,
+   rather than treating a slow-but-careful hunt the same as a
+   fast-but-sloppy one. */
+const SALVAGE_GRID_SIZE=9;
+const SALVAGE_ITEMS_NEEDED=4;
+
+function salvageHuntScore(totalMs,wrongClicks){
+ let base=Math.max(1,Math.min(25,Math.round((15000-totalMs)/500)));
+ base=base-wrongClicks*2;
+ return Math.max(1,Math.min(25,base));
+}
+
+function launchSalvageHunt(gameId){
+ const itemIndices=new Set();
+ while(itemIndices.size<SALVAGE_ITEMS_NEEDED){
+  itemIndices.add(Math.floor(Math.random()*SALVAGE_GRID_SIZE));
+ }
+ mgState={gameId,phase:"hunting",startTime:Date.now(),itemIndices,found:new Set(),revealed:new Set(),wrongClicks:0};
+ document.getElementById("minigameOverlay").classList.add("active");
+ renderSalvageHuntStage();
+}
+
+function handleSalvageClick(index){
+ if(!mgState||mgState.phase!=="hunting")return;
+ if(mgState.revealed.has(index))return;
+ mgState.revealed.add(index);
+ if(mgState.itemIndices.has(index)){
+  mgState.found.add(index);
+  if(mgState.found.size>=SALVAGE_ITEMS_NEEDED){
+   const totalMs=Date.now()-mgState.startTime;
+   const score=salvageHuntScore(totalMs,mgState.wrongClicks);
+   mgState.totalMs=totalMs;
+   mgState.finalScore=score;
+   mgState.phase="result";
+   logMinigameScore(mgState.gameId,score);
+   renderSalvageHuntStage();
+   return;
+  }
+ }else{
+  mgState.wrongClicks+=1;
+ }
+ renderSalvageHuntStage();
+}
+
+function renderSalvageHuntStage(){
+ const stage=document.getElementById("minigameStage");
+ if(mgState.phase==="hunting"){
+  let gridHtml="";
+  for(let i=0;i<SALVAGE_GRID_SIZE;i++){
+   const isRevealed=mgState.revealed.has(i);
+   const isFound=mgState.found.has(i);
+   let cls="mg-salvage-cell";
+   if(isFound)cls+=" found";
+   else if(isRevealed)cls+=" empty";
+   gridHtml+='<div class="'+cls+'" data-cell="'+i+'"></div>';
+  }
+  stage.innerHTML=
+   '<div class="mg-title chalk">Salvage Hunt</div>'+
+   '<div class="mg-instructions">Real specific items, hidden across a real bounded area. Find '+SALVAGE_ITEMS_NEEDED+' — no trading finds, she means it. Found '+mgState.found.size+' of '+SALVAGE_ITEMS_NEEDED+'. Wrong guesses: '+mgState.wrongClicks+'.</div>'+
+   '<div class="mg-salvage-grid">'+gridHtml+'</div>';
+  document.querySelectorAll(".mg-salvage-cell").forEach(c=>{
+   c.onclick=()=>handleSalvageClick(Number(c.dataset.cell));
+  });
+ }else if(mgState.phase==="result"){
+  stage.innerHTML=
+   '<div class="mg-title chalk">Salvage Hunt</div>'+
+   '<div class="mg-result">'+
+    '<div class="mg-result-score">'+mgState.finalScore+'</div>'+
+    '<div class="mg-result-label">Real time: '+(mgState.totalMs/1000).toFixed(1)+'s, '+mgState.wrongClicks+' wrong guess'+(mgState.wrongClicks===1?"":"es")+'. Full list recovered. Logged to the Ledger.</div>'+
+    '<div class="mg-btn-row"><button class="mg-btn" onclick="launchSalvageHunt(\''+mgState.gameId+'\')">Hunt Again</button><button class="mg-btn secondary" onclick="exitMinigame()">Done</button></div>'+
+   '</div>';
+ }
+}
+
+/* ---- STORY CHAIN — real memory-chain game ---- */
+/* The real tabletop version is collaborative creative writing —
+   everyone adds a line in order, never repeating what's already
+   been said, and whoever keeps the thread coherent longest wins.
+   That doesn't reduce to a solo click mechanic directly, so this
+   keeps the actual spirit of it — a real, growing sequence that
+   genuinely breaks the moment it's reproduced wrong — rather than
+   faking a "creative writing" mechanic that couldn't really be
+   scored fairly anyway. Each fragment is a short story-beat label,
+   not a numbered tile, so it still reads as "the thread" and not
+   a generic Simon game wearing this game's name. */
+const STORY_FRAGMENTS=[
+ "The radio crackled","A shadow crossed the wall","Someone knocked twice",
+ "The lantern flickered out","Footsteps in the hall","The door was already open"
+];
+const STORY_REVEAL_MS=650;
+
+function storyChainScore(chainLength){
+ return Math.max(1,Math.min(25,chainLength*3));
+}
+
+function launchStoryChain(gameId){
+ if(mgState&&mgState.timer)clearTimeout(mgState.timer);
+ mgState={gameId,phase:"showing",sequence:[Math.floor(Math.random()*STORY_FRAGMENTS.length)],showIndex:0,playerIndex:0,timer:null};
+ document.getElementById("minigameOverlay").classList.add("active");
+ renderStoryChainStage();
+ scheduleStoryReveal();
+}
+
+function scheduleStoryReveal(){
+ mgState.timer=setTimeout(()=>{
+  if(!mgState||mgState.phase!=="showing")return;
+  mgState.showIndex+=1;
+  if(mgState.showIndex>=mgState.sequence.length){
+   mgState.phase="input";
+   mgState.playerIndex=0;
+   renderStoryChainStage();
+   return;
+  }
+  renderStoryChainStage();
+  scheduleStoryReveal();
+ },STORY_REVEAL_MS);
+}
+
+function handleStoryFragmentClick(index){
+ if(!mgState||mgState.phase!=="input")return;
+ if(index!==mgState.sequence[mgState.playerIndex]){
+  finishStoryChain(mgState.sequence.length-1);
+  return;
+ }
+ mgState.playerIndex+=1;
+ if(mgState.playerIndex>=mgState.sequence.length){
+  mgState.sequence.push(Math.floor(Math.random()*STORY_FRAGMENTS.length));
+  mgState.showIndex=0;
+  mgState.phase="showing";
+  renderStoryChainStage();
+  scheduleStoryReveal();
+ }
+}
+
+function finishStoryChain(chainLength){
+ if(mgState.timer)clearTimeout(mgState.timer);
+ const score=storyChainScore(chainLength);
+ mgState.chainLength=chainLength;
+ mgState.finalScore=score;
+ mgState.phase="result";
+ logMinigameScore(mgState.gameId,score);
+ renderStoryChainStage();
+}
+
+function renderStoryChainStage(){
+ const stage=document.getElementById("minigameStage");
+ if(mgState.phase==="showing"||mgState.phase==="input"){
+  let gridHtml="";
+  STORY_FRAGMENTS.forEach((frag,i)=>{
+   let cls="mg-story-frag";
+   if(mgState.phase==="showing"&&mgState.sequence[mgState.showIndex]===i)cls+=" lit";
+   gridHtml+='<div class="'+cls+'" data-frag="'+i+'">'+esc(frag)+'</div>';
+  });
+  stage.innerHTML=
+   '<div class="mg-title chalk">Story Chain</div>'+
+   '<div class="mg-instructions">'+(mgState.phase==="showing"?"Watch the thread build. No repeating, no breaking it.":"Real thread, "+mgState.sequence.length+" line"+(mgState.sequence.length===1?"":"s")+" long. Reproduce it in order.")+'</div>'+
+   '<div class="mg-story-grid">'+gridHtml+'</div>';
+  if(mgState.phase==="input"){
+   document.querySelectorAll(".mg-story-frag").forEach(f=>{
+    f.onclick=()=>handleStoryFragmentClick(Number(f.dataset.frag));
+   });
+  }
+ }else if(mgState.phase==="result"){
+  stage.innerHTML=
+   '<div class="mg-title chalk">Story Chain</div>'+
+   '<div class="mg-result">'+
+    '<div class="mg-result-score">'+mgState.finalScore+'</div>'+
+    '<div class="mg-result-label">Real thread broke at '+mgState.chainLength+' line'+(mgState.chainLength===1?"":"s")+" long. Logged to the Ledger.</div>"+
+    '<div class="mg-btn-row"><button class="mg-btn" onclick="launchStoryChain(\''+mgState.gameId+'\')">Try Again</button><button class="mg-btn secondary" onclick="exitMinigame()">Done</button></div>'+
+   '</div>';
+ }
+}
+
+function renderGameLog(){
+ const list=document.getElementById("gameLogList");
+ list.innerHTML="";
+ if(!GAME_LOG.length){
+  list.innerHTML='<div style="padding:20px;color:var(--faint);font-size:13px;">Nothing logged yet. Zazz is, frankly, offended nobody\'s played anything.</div>';
+  return;
+ }
+ [...GAME_LOG].reverse().forEach(entry=>{
+  const game=GAME_CATALOG.find(g=>g.id===entry.gameId);
+  const scores=entry.participants.map(p=>p.score);
+  const med=median(scores);
+  const div=document.createElement("div");
+  div.className="log-entry";
+  let rowsHtml=entry.participants.map(p=>
+   '<div class="log-row'+(entry.cheater&&entry.cheater.player===p.player?" cheater-row":"")+'"><span>'+esc(playerDisplayName(p.player))+'</span><span>'+p.score+'</span></div>'
+  ).join("");
+  rowsHtml+='<div class="log-row median-row"><span>MEDIAN</span><span>'+med+'</span></div>';
+  const gainers=entry.participants.filter(p=>p.score>=med&&(!entry.cheater||entry.cheater.player!==p.player)).map(p=>playerDisplayName(p.player));
+  div.innerHTML=
+   '<div class="log-entry-head"><span class="log-entry-game chalk">'+(game?esc(game.name):esc(entry.gameId))+'</span><span class="log-entry-date">'+esc(entry.sessionLabel)+'</span></div>'+
+   '<div class="log-entry-rows">'+rowsHtml+'</div>'+
+   (entry.cheater?'<div class="log-entry-gain" style="color:var(--danger)">[FLAGGED] '+esc(playerDisplayName(entry.cheater.player))+' — '+esc(entry.cheater.reason)+'</div>':'')+
+   (game?'<div class="log-entry-gain">At/above median '+game.stat.toUpperCase()+' gain: '+esc(gainers.join(", ")||"no one this time")+'</div>':'')+
+   (entry.note?'<div class="log-entry-gain" style="font-style:italic;">'+esc(entry.note)+'</div>':'');
+  list.appendChild(div);
+ });
+}
+
+function renderLeaderboardTabs(){
+ const row=document.getElementById("boardSelectRow");
+ row.innerHTML="";
+ GAME_CATALOG.forEach((game,i)=>{
+  const chip=document.createElement("div");
+  chip.className="char-chip"+(i===0?" active":"");
+  chip.textContent=game.name;
+  chip.onclick=()=>{
+   row.querySelectorAll(".char-chip").forEach(c=>c.classList.remove("active"));
+   chip.classList.add("active");
+   renderLeaderboard(game.id);
+  };
+  row.appendChild(chip);
+ });
+ if(GAME_CATALOG.length)renderLeaderboard(GAME_CATALOG[0].id);
+}
+
+function renderLeaderboard(gameId){
+ const list=document.getElementById("boardList");
+ list.innerHTML="";
+ const best={};
+ GAME_LOG.filter(e=>e.gameId===gameId).forEach(e=>{
+  e.participants.forEach(p=>{
+   if(entryIsCheater(e,p.player))return;
+   if(!(p.player in best)||p.score>best[p.player])best[p.player]=p.score;
+  });
+ });
+ const ranked=Object.entries(best).sort((a,b)=>b[1]-a[1]);
+ if(!ranked.length){
+  list.innerHTML='<div style="padding:20px;color:var(--faint);font-size:13px;">No clean scores logged for this game yet.</div>';
+  return;
+ }
+ ranked.forEach(([player,score],i)=>{
+  const row=document.createElement("div");
+  row.className="board-rank-row rank-"+(i+1);
+  row.innerHTML=
+   '<div class="board-rank-num">'+(i+1)+'</div>'+
+   '<div class="board-rank-name">'+esc(playerDisplayName(player))+'</div>'+
+   '<div class="board-rank-score">'+score+'</div>';
+  list.appendChild(row);
+ });
+}
+function entryIsCheater(entry,player){
+ return entry.cheater&&entry.cheater.player===player;
+}
+
+/* ---- Log a session ---- */
+function openLogSession(preselectGameId){
+ const sel=document.getElementById("lsGameSelect");
+ sel.innerHTML=GAME_CATALOG.map(g=>'<option value="'+g.id+'">'+g.icon+' '+esc(g.name)+'</option>').join("");
+ if(preselectGameId)sel.value=preselectGameId;
+ updateLsGameInfo();
+ sel.onchange=updateLsGameInfo;
+ document.getElementById("lsSessionLabel").value="";
+ document.getElementById("lsParticipantRows").innerHTML="";
+ lsParticipantCount=0;
+ addParticipantRow();
+ addParticipantRow();
+ document.getElementById("logSessionModal").classList.add("active");
+}
+function updateLsGameInfo(){
+ const game=GAME_CATALOG.find(g=>g.id===document.getElementById("lsGameSelect").value);
+ document.getElementById("lsGameTitle").textContent=game?game.name:"Log A Session";
+ document.getElementById("lsGameRule").textContent=game?game.rule:"";
+}
+function closeLogSession(){
+ document.getElementById("logSessionModal").classList.remove("active");
+}
+document.getElementById("logGameBtn").onclick=()=>openLogSession(null);
+document.getElementById("lsAddParticipant").onclick=()=>addParticipantRow();
+document.getElementById("logSessionModal").addEventListener("click",e=>{
+ if(e.target.id==="logSessionModal")closeLogSession();
+});
+
+function addParticipantRow(){
+ lsParticipantCount++;
+ const rowId="lsRow"+lsParticipantCount;
+ const wrap=document.getElementById("lsParticipantRows");
+ const div=document.createElement("div");
+ div.className="ls-participant-row";
+ div.id=rowId;
+ const playerOptions=Object.keys(PLAYERS).filter(k=>k!=="gm").map(k=>'<option value="'+k+'">'+esc(PLAYERS[k].name)+'</option>').join("")
+  +'<option value="zazz">Zazz</option><option value="neven">Neven Ishmael</option>';
+ div.innerHTML=
+  '<select class="wl-form-input ls-player-select">'+playerOptions+'</select>'+
+  '<input type="number" class="wl-form-input ls-score-input" placeholder="Score" min="0">'+
+  '<button type="button" class="ls-remove" onclick="document.getElementById(\''+rowId+'\').remove()">X</button>';
+ wrap.appendChild(div);
+}
+
+function submitGameSession(){
+ const gameId=document.getElementById("lsGameSelect").value;
+ const label=document.getElementById("lsSessionLabel").value.trim()||"Unlabeled session";
+ const rows=document.querySelectorAll("#lsParticipantRows .ls-participant-row");
+ const participants=[];
+ rows.forEach(row=>{
+  const player=row.querySelector(".ls-player-select").value;
+  const scoreVal=row.querySelector(".ls-score-input").value;
+  if(scoreVal==="")return;
+  participants.push({player, score:Number(scoreVal)});
+ });
+ if(participants.length<1){
+  showToast("Needs at least one real score. Zazz doesn't log blanks.");
+  return;
+ }
+ /* CHEATER DETECTION — real, not decorative: a new score more than
+    double the best CLEAN score ever logged for this game gets
+    flagged automatically rather than silently accepted. Only checks
+    against clean history so one flagged score can't cascade into
+    flagging everything after it. */
+ const priorClean=[];
+ GAME_LOG.filter(e=>e.gameId===gameId).forEach(e=>{
+  e.participants.forEach(p=>{if(!entryIsCheater(e,p.player))priorClean.push(p.score);});
+ });
+ const priorBest=priorClean.length?Math.max(...priorClean):null;
+ let cheater=null;
+ participants.forEach(p=>{
+  if(priorBest!=null&&p.score>priorBest*2&&!cheater){
+   cheater={player:p.player,reason:"Score of "+p.score+" is more than double the best real, clean score ever logged for this game ("+priorBest+")."};
+  }
+ });
+ const entry={
+  id:"g"+(GAME_LOG.length+1)+"_"+Date.now(),
+  gameId, sessionLabel:label, loggedBy:currentUser,
+  participants, cheater, note:""
+ };
+ GAME_LOG.push(entry);
+ closeLogSession();
+ renderGameLog();
+ document.getElementById("zazzLineBar").textContent=cheater?pickZazzLine("onCheat"):pickZazzLine("onLog");
+ showToast(cheater?"Session logged — but Zazz flagged something.":"Session logged. It's in the Ledger now.");
+}
+
+/* ================================================================
+   WASTELAND LEDGER (APOCALYPTIC SURVIVAL)
+================================================================ */
+let activeAfflictionChar = null;
+
+function activeApocRoster(){
+ // Everyone actually tracked shows up here regardless of login role —
+ // survival doesn't stop for whoever isn't logged in right now.
+ return Object.keys(APOC_CHARACTERS);
+}
+
+function openApoc(){
+ renderApocResources();
+ renderApocCharacters();
+ showScreen("apoc");
+}
+
+function renderApocResources(){
+ document.getElementById("apocDayNum").textContent=apocDay;
+ const roster=activeApocRoster();
+ const foodDaysLeft=roster.length?Math.floor(APOC_RESOURCES.food.current/(roster.length*APOC_RESOURCES.food.perPersonPerDay)):0;
+ const waterDaysLeft=roster.length?Math.floor(APOC_RESOURCES.water.current/(roster.length*APOC_RESOURCES.water.perPersonPerDay)):0;
+ const wrap=document.getElementById("apocResources");
+ wrap.innerHTML=
+  '<div class="apoc-res-card'+(foodDaysLeft<=1?" res-danger":foodDaysLeft<=3?" res-warn":"")+'">'+
+   '<div class="apoc-res-label">FOOD (RATIONS)</div>'+
+   '<div class="apoc-res-value">'+APOC_RESOURCES.food.current+'</div>'+
+   '<div class="apoc-res-sub">~'+foodDaysLeft+' real day(s) left at current headcount</div>'+
+  '</div>'+
+  '<div class="apoc-res-card'+(waterDaysLeft<=1?" res-danger":waterDaysLeft<=3?" res-warn":"")+'">'+
+   '<div class="apoc-res-label">WATER (LITERS)</div>'+
+   '<div class="apoc-res-value">'+APOC_RESOURCES.water.current+'</div>'+
+   '<div class="apoc-res-sub">~'+waterDaysLeft+' real day(s) left at current headcount</div>'+
+  '</div>';
+}
+
+function renderApocCharacters(){
+ const grid=document.getElementById("apocCharGrid");
+ grid.innerHTML="";
+ activeApocRoster().forEach(key=>{
+  const st=APOC_CHARACTERS[key];
+  const cond=apocCondition(st);
+  const displayName=PLAYERS[key]?PLAYERS[key].name:playerDisplayName(key);
+  const card=document.createElement("div");
+  card.className="apoc-char-card";
+  let afflictionsHtml=st.afflictions.length
+   ?st.afflictions.map(a=>'<span class="apoc-affliction-tag '+a.severity+'" title="'+esc(a.notes||"")+'">'+esc(a.name)+'</span>').join("")
+   :'<span style="font-size:11px;color:var(--faint);">No real conditions logged.</span>';
+  card.innerHTML=
+   '<div class="apoc-char-head"><span class="apoc-char-name">'+esc(displayName)+'</span><span class="apoc-condition-badge '+cond+'">'+cond.toUpperCase()+'</span></div>'+
+   '<div class="apoc-stat-row"><div class="apoc-stat-label"><span>HUNGER</span><span>'+st.hunger+'/100</span></div><div class="apoc-bar-track"><div class="apoc-bar-fill hunger" style="width:'+st.hunger+'%"></div></div></div>'+
+   '<div class="apoc-stat-row"><div class="apoc-stat-label"><span>HYDRATION</span><span>'+st.hydration+'/100</span></div><div class="apoc-bar-track"><div class="apoc-bar-fill hydration" style="width:'+st.hydration+'%"></div></div></div>'+
+   '<div class="apoc-stat-row" style="display:flex;justify-content:space-between;font-size:10px;color:var(--faint);font-family:var(--font-mono);margin-top:8px;">'+
+    '<span>'+st.daysWithoutFood+'d without food</span><span>'+st.daysWithoutWater+'d without water</span></div>'+
+   '<div class="apoc-afflictions">'+afflictionsHtml+'</div>'+
+   '<button class="apoc-add-affliction" onclick="openAffliction(\''+key+'\')">+ Log A Condition</button>';
+  grid.appendChild(card);
+ });
+}
+
+/* THE CORE MECHANIC — real, testable degradation. Consumption is
+   real (headcount × per-person need, subtracted from the actual
+   shared pool), and going without genuinely costs more than just
+   "not restoring" — hunger/hydration actively drop, and water drops
+   harder than food does per day missed, matching how dehydration
+   actually outpaces starvation in real terms. */
+function advanceApocDay(){
+ apocDay+=1;
+ const roster=activeApocRoster();
+ const foodNeeded=roster.length*APOC_RESOURCES.food.perPersonPerDay;
+ const waterNeeded=roster.length*APOC_RESOURCES.water.perPersonPerDay;
+ const foodAvailable=APOC_RESOURCES.food.current>=foodNeeded;
+ const waterAvailable=APOC_RESOURCES.water.current>=waterNeeded;
+ if(foodAvailable)APOC_RESOURCES.food.current-=foodNeeded;
+ if(waterAvailable)APOC_RESOURCES.water.current-=waterNeeded;
+
+ roster.forEach(key=>{
+  const st=APOC_CHARACTERS[key];
+  if(foodAvailable){
+   st.hunger=Math.min(100,st.hunger+8);
+   st.daysWithoutFood=0;
+  }else{
+   st.hunger=Math.max(0,st.hunger-15);
+   st.daysWithoutFood+=1;
+  }
+  if(waterAvailable){
+   st.hydration=Math.min(100,st.hydration+10);
+   st.daysWithoutWater=0;
+  }else{
+   st.hydration=Math.max(0,st.hydration-22);
+   st.daysWithoutWater+=1;
+  }
+  autoTriggerAfflictions(st);
+ });
+
+ renderApocResources();
+ renderApocCharacters();
+ if(!foodAvailable||!waterAvailable){
+  showToast("Day "+apocDay+" — "+(!foodAvailable&&!waterAvailable?"no food, no water left":!foodAvailable?"no food left":"no water left")+". Everyone felt that.");
+ }else{
+  showToast("Day "+apocDay+" — supplies held. Everyone ate, everyone drank.");
+ }
+}
+
+/* AUTO-TRIGGERED AFFLICTIONS — real conditions that appear, escalate,
+   and clear on their own once someone crosses the real critical/
+   failing thresholds, rather than requiring a manual log every time.
+   Tagged with autoTag so this function can find and update its own
+   prior entries rather than stacking duplicates each day, and so it
+   never touches a condition a person actually logged by hand. */
+function autoTriggerAfflictions(st){
+ const w=st.daysWithoutWater, f=st.daysWithoutFood;
+ const waterTier=w>=5?3:w>=3?2:w>=2?1:0;
+ const foodTier=f>=10?3:f>=6?2:f>=3?1:0;
+
+ if(waterTier>=2){
+  const severity=waterTier>=3?"critical":"serious";
+  const existing=st.afflictions.find(a=>a.autoTag==="dehydration");
+  const notes="Auto-logged — "+w+" real day(s) without water.";
+  if(!existing){
+   st.afflictions.push({name:severity==="critical"?"Severe Dehydration":"Dehydration",severity,notes,autoTag:"dehydration"});
+  }else if(existing.severity!==severity){
+   existing.severity=severity;existing.name=severity==="critical"?"Severe Dehydration":"Dehydration";existing.notes=notes;
+  }
+ }else{
+  st.afflictions=st.afflictions.filter(a=>a.autoTag!=="dehydration");
+ }
+
+ if(foodTier>=2){
+  const severity=foodTier>=3?"critical":"serious";
+  const existing=st.afflictions.find(a=>a.autoTag==="starvation");
+  const notes="Auto-logged — "+f+" real day(s) without food.";
+  if(!existing){
+   st.afflictions.push({name:severity==="critical"?"Severe Starvation":"Starvation",severity,notes,autoTag:"starvation"});
+  }else if(existing.severity!==severity){
+   existing.severity=severity;existing.name=severity==="critical"?"Severe Starvation":"Starvation";existing.notes=notes;
+  }
+ }else{
+  st.afflictions=st.afflictions.filter(a=>a.autoTag!=="starvation");
+ }
+}
+document.getElementById("apocAdvanceBtn").onclick=advanceApocDay;
+
+function openRestock(){
+ document.getElementById("rsFood").value="";
+ document.getElementById("rsWater").value="";
+ document.getElementById("restockModal").classList.add("active");
+}
+function closeRestock(){document.getElementById("restockModal").classList.remove("active");}
+document.getElementById("apocRestockBtn").onclick=openRestock;
+document.getElementById("restockModal").addEventListener("click",e=>{
+ if(e.target.id==="restockModal")closeRestock();
+});
+function submitRestock(){
+ const foodDelta=Number(document.getElementById("rsFood").value)||0;
+ const waterDelta=Number(document.getElementById("rsWater").value)||0;
+ if(foodDelta===0&&waterDelta===0){
+  showToast("Nothing actually entered — real numbers only.");
+  return;
+ }
+ APOC_RESOURCES.food.current=Math.max(0,APOC_RESOURCES.food.current+foodDelta);
+ APOC_RESOURCES.water.current=Math.max(0,APOC_RESOURCES.water.current+waterDelta);
+ closeRestock();
+ renderApocResources();
+ showToast("Supplies updated — real numbers, logged.");
+}
+
+function openAffliction(charKey){
+ activeAfflictionChar=charKey;
+ const displayName=PLAYERS[charKey]?PLAYERS[charKey].name:playerDisplayName(charKey);
+ document.getElementById("afflictionCharName").textContent="For "+displayName;
+ document.getElementById("afName").value="";
+ document.getElementById("afNotes").value="";
+ document.getElementById("afSeverity").value="mild";
+ document.getElementById("afflictionModal").classList.add("active");
+}
+function closeAffliction(){document.getElementById("afflictionModal").classList.remove("active");}
+document.getElementById("afflictionModal").addEventListener("click",e=>{
+ if(e.target.id==="afflictionModal")closeAffliction();
+});
+function submitAffliction(){
+ const name=document.getElementById("afName").value.trim();
+ if(!name){showToast("Needs an actual name for the condition.");return;}
+ const severity=document.getElementById("afSeverity").value;
+ const notes=document.getElementById("afNotes").value.trim();
+ APOC_CHARACTERS[activeAfflictionChar].afflictions.push({name,severity,notes});
+ closeAffliction();
+ renderApocCharacters();
+ showToast(name+" — logged.");
+}
+
+/* ================================================================
+   UTIL
+================================================================ */
+function esc(s){
+ if(s==null)return"";
+ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+let toastTimer=null;
+function showToast(msg){
+ const t=document.getElementById("toast");
+ t.textContent=msg;
+ t.classList.add("show");
+ clearTimeout(toastTimer);
+ toastTimer=setTimeout(()=>t.classList.remove("show"),2600);
+}
+
+/* Explicit exposures — const/let declarations don't auto-attach to
+   window the way function declarations do, so anything a test needs
+   to read or reassign directly has to be listed here on purpose. */
+try{
+ window.PLAYERS=PLAYERS;
+ window.WAVELENGTHS=WAVELENGTHS;
+ window.WAVELENGTH_RUNGS=WAVELENGTH_RUNGS;
+ window.GAME_CATALOG=GAME_CATALOG;
+ window.GAME_LOG=GAME_LOG;
+ window.median=median;
+ window.APOC_RESOURCES=APOC_RESOURCES;
+ window.APOC_CHARACTERS=APOC_CHARACTERS;
+ window.apocCondition=apocCondition;
+ window.autoTriggerAfflictions=autoTriggerAfflictions;
+ window.bcdScoreFromReaction=bcdScoreFromReaction;
+ window.PLAYABLE_GAMES=PLAYABLE_GAMES;
+ window.handleBCDClick=handleBCDClick;
+ window.scrapTossPosition=scrapTossPosition;
+ window.scrapTossThrowScore=scrapTossThrowScore;
+ window.handleScrapTossThrow=handleScrapTossThrow;
+ window.junkyardSprintScore=junkyardSprintScore;
+ window.handleJunkyardFlagHit=handleJunkyardFlagHit;
+ window.handleJunkyardFieldMiss=handleJunkyardFieldMiss;
+ window.JS_TOTAL_FLAGS=JS_TOTAL_FLAGS;
+ window.gripTrialScore=gripTrialScore;
+ window.handleGripSqueeze=handleGripSqueeze;
+ window.gripTrialTick=gripTrialTick;
+ window.GRIP_FULL_DURATION_MS=GRIP_FULL_DURATION_MS;
+ window.GRIP_DECAY_PER_TICK=GRIP_DECAY_PER_TICK;
+ window.GRIP_SQUEEZE_BOOST=GRIP_SQUEEZE_BOOST;
+ window.tugScoreFromPosition=tugScoreFromPosition;
+ window.handleTugPull=handleTugPull;
+ window.tugTick=tugTick;
+ window.TUG_TIME_LIMIT_MS=TUG_TIME_LIMIT_MS;
+ window.TUG_AI_PULL_PER_TICK=TUG_AI_PULL_PER_TICK;
+ window.TUG_PLAYER_PULL_PER_CLICK=TUG_PLAYER_PULL_PER_CLICK;
+ window.hushRulesNoiseForStep=hushRulesNoiseForStep;
+ window.hushRulesScore=hushRulesScore;
+ window.handleHushStep=handleHushStep;
+ window.HUSH_DISTANCE_PER_STEP=HUSH_DISTANCE_PER_STEP;
+ window.HUSH_NOISE_CAP=HUSH_NOISE_CAP;
+ window.HUSH_RUSH_THRESHOLD_MS=HUSH_RUSH_THRESHOLD_MS;
+ window.HUSH_MODERATE_THRESHOLD_MS=HUSH_MODERATE_THRESHOLD_MS;
+ window.wolfWarrenScore=wolfWarrenScore;
+ window.wwTimeLimitForRound=wwTimeLimitForRound;
+ window.handleWolfZoneClick=handleWolfZoneClick;
+ window.WW_TOTAL_ROUNDS=WW_TOTAL_ROUNDS;
+ window.WW_ZONE_COUNT=WW_ZONE_COUNT;
+ window.WW_BASE_TIME_MS=WW_BASE_TIME_MS;
+ window.theLongWaitScore=theLongWaitScore;
+ window.handleLongWaitFidget=handleLongWaitFidget;
+ window.longWaitTick=longWaitTick;
+ window.LONG_WAIT_FULL_DURATION_MS=LONG_WAIT_FULL_DURATION_MS;
+ window.salvageHuntScore=salvageHuntScore;
+ window.handleSalvageClick=handleSalvageClick;
+ window.SALVAGE_GRID_SIZE=SALVAGE_GRID_SIZE;
+ window.SALVAGE_ITEMS_NEEDED=SALVAGE_ITEMS_NEEDED;
+ window.storyChainScore=storyChainScore;
+ window.handleStoryFragmentClick=handleStoryFragmentClick;
+ window.STORY_FRAGMENTS=STORY_FRAGMENTS;
+ Object.defineProperty(window,"mgState",{get:()=>mgState,set:v=>{mgState=v;}});
+ Object.defineProperty(window,"apocDay",{get:()=>apocDay,set:v=>{apocDay=v;}});
+ window.SKILL_TREES=SKILL_TREES;
+ window.CHAR_POINTS=CHAR_POINTS;
+ Object.defineProperty(window,"currentUser",{get:()=>currentUser,set:v=>{currentUser=v;}});
+ Object.defineProperty(window,"activeTreeChar",{get:()=>activeTreeChar,set:v=>{activeTreeChar=v;}});
+}catch(err){}
+
+</script>
+</body>
+</html>
