@@ -126,6 +126,7 @@
   --neon:url("__NEON__");
   --tags:url("__TAGS__");
   --stickers:url("__STICKERS__");
+  --slaps:url("__SLAPS__");
  }
  /* Three more stencil sheets, masked the same way as everything else so one
     file serves every colour. hex is the ability set (36), oct the survival set
@@ -1950,6 +1951,29 @@
   { s: 19, note: { who: "vergil",  t: "Someone's idea of a joke. It is not a good one." } }
  ];
 
+ /* SLAPS — the big vinyl ones, as opposed to the hand tags. Sixteen character
+    stickers rather than lettering, which is why they get the loudest notes:
+    a name on a wall invites a correction, but a two-foot cartoon skull in a
+    riot helmet invites an argument. */
+ const SLAPS = [
+  { s: 0,  note: { who: "cole",    t: "A man and a small copy of the man. I don't love what that's doing to me." } },
+  { s: 1,  note: { who: "angi",    t: "this one has a CHAINSAW ARM. why does nobody else care" } },
+  { s: 2,  note: { who: "felana",  t: "he's happy!! why is he melting though" } },
+  { s: 3,  note: { who: "yaviel",  t: "Six arms and no thumbs. Whoever drew this had never held a tool." } },
+  { s: 4,  note: { who: "kevanna", t: "cat with a sword. thats it thats the sticker" } },
+  { s: 5,  note: { who: "burham",  t: "Three men with masks and poles. That's not art, that's a memory." } },
+  { s: 6,  note: { who: "dahlia",  t: "The rabbit is not a rabbit. Look at the teeth again." } },
+  { s: 7,  note: { who: "zalir",   t: "Helmet's the wrong size for that skull. Somebody died in the wrong kit." } },
+  { s: 8,  note: null },
+  { s: 9,  note: { who: "vergil",  t: "A man in a good coat, badly drawn. I have been him." } },
+  { s: 10, note: { who: "kevanna", t: "the brain one. felana bought four of these" } },
+  { s: 11, note: { who: "angi",    t: "wings on a skull. correct. no notes" } },
+  { s: 12, note: { who: "felana",  t: "she looks how i feel at 4am" } },
+  { s: 13, note: { who: "yaviel",  t: "Serving something under a cloche. Out here that's a threat." } },
+  { s: 14, note: { who: "burham",  t: "A warning triangle for a person. Somebody thought that was funny." } },
+  { s: 15, note: { who: "zalir",   t: "That's a tool for cutting wood being used for something else." } }
+ ];
+
  function rng(seedStr) {
   let h = 2166136261;
   for (let i = 0; i < seedStr.length; i++) { h ^= seedStr.charCodeAt(i); h = Math.imul(h, 16777619); }
@@ -1957,14 +1981,18 @@
  }
 
  function wallPiece(kind, idx, x, y, size, rot, note, byName) {
-  const cols = 6, rows = kind === "tag" ? 4 : 4;
+  const GEOM = { tag: { cols: 6, rows: 4, v: "--tags", ar: .55 },
+                 sticker: { cols: 6, rows: 4, v: "--stickers", ar: .55 },
+                 slap: { cols: 6, rows: 3, v: "--slaps", ar: 1 } };
+  const gm = GEOM[kind] || GEOM.tag;
+  const cols = gm.cols, rows = gm.rows;
   const c = idx % cols, r = Math.floor(idx / cols) % rows;
-  const v = kind === "tag" ? "--tags" : "--stickers";
+  const v = gm.v;
   const bx = (c * 100 / (cols - 1)), by2 = (r * 100 / (rows - 1));
   let h = '<div class="lx-wall-piece" style="left:' + x + '%;top:' + y + '%;' +
     'transform:rotate(' + rot.toFixed(1) + 'deg)">' +
-    '<i class="lx-wall-art" style="width:' + size + 'px;height:' + Math.round(size * .55) + 'px;' +
-      'background-image:var(' + v + ');background-size:600% 400%;' +
+    '<i class="lx-wall-art" style="width:' + size + 'px;height:' + Math.round(size * gm.ar) + 'px;' +
+      'background-image:var(' + v + ');background-size:' + (cols * 100) + '% ' + (rows * 100) + '%;' +
       'background-position:' + bx + '% ' + by2 + '%"></i>';
   if (note) {
    /* WHO IS SPEAKING, not who painted it. The label first read as the tag's
@@ -2007,23 +2035,50 @@
    }
    return a2;
   };
-  const tagBag = shuffle(WALL), stBag = shuffle(STICK);
+  const tagBag = shuffle(WALL), stBag = shuffle(STICK), slapBag = shuffle(SLAPS);
+
+  /* Placed with a spacing check. Independent random positions let two pieces
+     land on the same spot, and because each carries a note UNDER it the
+     result was two paragraphs printed through each other -- unreadable, and
+     it looked like a bug rather than like a crowded wall. Twelve tries for a
+     spot at least `apart` away from everything placed, then give up and take
+     the last one; a wall that occasionally crowds is fine, a wall that hangs
+     looking for perfection is not. */
+  const placed = [];
+  function spot(z, apart) {
+   let x = 0, y = 0;
+   for (let k = 0; k < 12; k++) {
+    x = z.x[0] + R() * (z.x[1] - z.x[0]);
+    y = z.y[0] + R() * (z.y[1] - z.y[0]);
+    if (placed.every(q => Math.abs(q.x - x) > apart * .5 || Math.abs(q.y - y) > apart)) break;
+   }
+   placed.push({ x: x, y: y });
+   return { x: x, y: y };
+  }
   let html = "";
   const nTags = Math.min(tagBag.length, 4 + Math.floor(R() * 3));
   for (let i = 0; i < nTags; i++) {
    const w = tagBag[i];
-   const z = zones[Math.floor(R() * zones.length)];
-   html += wallPiece("tag", w.t,
-     z.x[0] + R() * (z.x[1] - z.x[0]), z.y[0] + R() * (z.y[1] - z.y[0]),
+   const pt = spot(zones[Math.floor(R() * zones.length)], 13);
+   html += wallPiece("tag", w.t, pt.x, pt.y,
      70 + R() * 70, -14 + R() * 28, w.note, (P[w.by] || {}).name || w.by);
   }
   const nSt = Math.min(stBag.length, 1 + Math.floor(R() * 3));
   for (let i = 0; i < nSt; i++) {
    const st = stBag[i];
-   const z = zones[Math.floor(R() * zones.length)];
-   html += wallPiece("sticker", st.s,
-     z.x[0] + R() * (z.x[1] - z.x[0]), z.y[0] + R() * (z.y[1] - z.y[0]),
+   const pt = spot(zones[Math.floor(R() * zones.length)], 13);
+   html += wallPiece("sticker", st.s, pt.x, pt.y,
      60 + R() * 50, -9 + R() * 18, st.note, null);
+  }
+  /* One or two slaps a screen, and no more. They are much bigger than a tag
+     and they carry the loudest notes, so a wall of them stops being texture
+     and starts being a gallery competing with the page. */
+  const nSlap = Math.min(slapBag.length, 1 + Math.floor(R() * 2));
+  for (let i = 0; i < nSlap; i++) {
+   const sp = slapBag[i];
+   const pt = spot(zones[Math.floor(R() * zones.length)], 17);
+   html += wallPiece("slap", sp.s, pt.x, pt.y,
+     54 + R() * 34, -11 + R() * 22, sp.note, null);
   }
   layer.innerHTML = html;
   scr.style.position = scr.style.position || "relative";
