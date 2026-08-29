@@ -90,7 +90,9 @@ def main():
                         ("__ICOOCT__", "web/led_ico_oct.webp"),
                         ("__ICOROGUE__", "web/led_ico_rogue.webp"),
                         ("__DECALS__", "web/led_decals.webp"),
-                        ("__NEON__", "web/led_neon.webp")):
+                        ("__NEON__", "web/led_neon.webp"),
+                        ("__TAGS__", "web/led_tags.webp"),
+                        ("__STICKERS__", "web/led_stickers.webp")):
         if token not in js:
             continue
         if not os.path.exists(path):

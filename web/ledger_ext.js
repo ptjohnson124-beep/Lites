@@ -124,6 +124,8 @@
   --ico-rogue:url("__ICOROGUE__");
   --decals:url("__DECALS__");
   --neon:url("__NEON__");
+  --tags:url("__TAGS__");
+  --stickers:url("__STICKERS__");
  }
  /* Three more stencil sheets, masked the same way as everything else so one
     file serves every colour. hex is the ability set (36), oct the survival set
@@ -344,6 +346,23 @@
  .lx-t-btm .blocks i{width:9px;height:9px;background:#39404a;display:block}
  .lx-t-btm .blocks i.on{background:#c9cfd6}
  @media(max-width:820px){.lx-t-rail{display:none}.lx-t-menu{width:auto;flex:1}}
+
+ /* ---- THE WALL ------------------------------------------------------
+    Behind everything, unclickable, and quiet until you look at it. The note
+    beside a tag is deliberately small: it should read as pencil in a margin
+    that you notice on the third visit, not as a caption demanding to be read
+    the first time. Hovering brings it up to full. */
+ .lx-wall{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+ .lx-wall-piece{position:absolute;pointer-events:auto;max-width:190px}
+ .lx-wall-art{display:block;background-repeat:no-repeat;background-position:center;
+  opacity:.34;transition:opacity .18s ease;filter:saturate(1.15)}
+ .lx-wall-piece:hover .lx-wall-art{opacity:.75}
+ .lx-wall-note{font-size:8.5px;line-height:1.35;opacity:.40;margin-top:2px;max-width:170px;
+  transition:opacity .18s ease;letter-spacing:.01em;transform:rotate(-1.5deg)}
+ .lx-wall-piece:hover .lx-wall-note{opacity:.92}
+ .lx-wall-note .w{display:block;font-family:var(--font-mono);font-size:7px;
+  letter-spacing:.14em;opacity:.65;margin-bottom:1px}
+ @media(max-width:900px){.lx-wall{display:none}}
 
  /* ---- 4. GUEST BOOK -------------------------------------------------
     A book rather than a list. Ruled lines, a red margin rule, a foxed paper
@@ -1874,6 +1893,160 @@
   });
  }
 
+ /* ================================================================
+    THE WALL — graffiti, stickers, and what people think of them
+    ================================================================
+    Twenty-four hand tags and twenty street stickers scattered through every
+    screen so the Ledger reads as a thing that has been LIVED IN rather than
+    deployed. They sit in the outer margins at low opacity, rotated a few
+    degrees, behind everything and unclickable.
+
+    The part that matters is the marginalia. A tag on its own is texture; a tag
+    with somebody's opinion pencilled next to it is the yard talking. Every
+    piece is attributed to whoever put it there and most carry a note from
+    somebody else about it, written in that person's own ink from the guest
+    book's HANDS table -- so the handwriting in the margin matches the
+    handwriting in the book, and Yaviel correcting Kevanna looks the same
+    wherever she does it.
+
+    PLACEMENT IS SEEDED, NOT RANDOM. Each screen hashes its own id into the
+    generator, so the wall is different on every screen and identical every
+    time you come back to that screen. Graffiti that moves when you look away
+    is not graffiti, it is a screensaver -- the same rule the circuit bed and
+    the guest book's wobble already follow. */
+ const WALL = [
+  { t: 0,  by: "kevanna", note: { who: "yaviel",  t: "She spelled it wrong. Twice." } },
+  { t: 3,  by: "felana",  note: { who: "burham",  t: "That's not a face. That's what she thinks a face is." } },
+  { t: 6,  by: "angi",    note: { who: "kevanna", t: "i was gonna put mine there" } },
+  { t: 9,  by: "dahlia",  note: { who: "cole",    t: "She wrote this before it happened. I checked the date." } },
+  { t: 12, by: "zalir",   note: null },
+  { t: 14, by: "yaviel",  note: { who: "felana",  t: "even her tag is neat. how." } },
+  { t: 17, by: "kevanna", note: { who: "zalir",   t: "Fine." } },
+  { t: 19, by: "burham",  note: { who: "angi",    t: "he measured the wall first. i watched him do it" } },
+  { t: 21, by: "felana",  note: { who: "vergil",  t: "This was here when I arrived. It is still here." } },
+  { t: 2,  by: "dahlia",  note: { who: "yaviel",  t: "Painted over something. I'd like to know what." } },
+  { t: 5,  by: "angi",    note: null },
+  { t: 8,  by: "cole",    note: { who: "kevanna", t: "cole did a tag. COLE did a TAG" } },
+  { t: 11, by: "kevanna", note: { who: "burham",  t: "Third one this week. She's running out of wall." } },
+  { t: 15, by: "felana",  note: null },
+  { t: 18, by: "zalir",   note: { who: "dahlia",  t: "He only signs things he means." } },
+  { t: 22, by: "vergil",  note: { who: "cole",    t: "He wrote his own name and then looked embarrassed." } },
+  { t: 4,  by: "yaviel",  note: null },
+  { t: 10, by: "burham",  note: { who: "felana",  t: "what does it MEAN burham" } },
+  { t: 13, by: "angi",    note: { who: "yaviel",  t: "Fast, and it shows. That isn't a criticism." } },
+  { t: 20, by: "dahlia",  note: null }
+ ];
+ /* Stickers get their own commentary. They are found objects rather than
+    somebody's hand, so the note is about the OBJECT -- who stuck it there and
+    why it is funny that it is there. */
+ const STICK = [
+  { s: 1,  note: { who: "kevanna", t: "peeled it off a rig. it's mine now" } },
+  { s: 4,  note: { who: "burham",  t: "Whatever it was warning about already happened." } },
+  { s: 7,  note: { who: "felana",  t: "i like this one. no reason." } },
+  { s: 10, note: { who: "yaviel",  t: "It's upside down. Nobody will move it." } },
+  { s: 13, note: { who: "angi",    t: "zalir put this up. he's TALL" } },
+  { s: 16, note: null },
+  { s: 3,  note: { who: "dahlia",  t: "This one comes off in eight days. Don't ask." } },
+  { s: 19, note: { who: "vergil",  t: "Someone's idea of a joke. It is not a good one." } }
+ ];
+
+ function rng(seedStr) {
+  let h = 2166136261;
+  for (let i = 0; i < seedStr.length; i++) { h ^= seedStr.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return () => { h = (h * 1103515245 + 12345) & 0x7fffffff; return h / 0x7fffffff; };
+ }
+
+ function wallPiece(kind, idx, x, y, size, rot, note, byName) {
+  const cols = 6, rows = kind === "tag" ? 4 : 4;
+  const c = idx % cols, r = Math.floor(idx / cols) % rows;
+  const v = kind === "tag" ? "--tags" : "--stickers";
+  const bx = (c * 100 / (cols - 1)), by2 = (r * 100 / (rows - 1));
+  let h = '<div class="lx-wall-piece" style="left:' + x + '%;top:' + y + '%;' +
+    'transform:rotate(' + rot.toFixed(1) + 'deg)">' +
+    '<i class="lx-wall-art" style="width:' + size + 'px;height:' + Math.round(size * .55) + 'px;' +
+      'background-image:var(' + v + ');background-size:600% 400%;' +
+      'background-position:' + bx + '% ' + by2 + '%"></i>';
+  if (note) {
+   /* WHO IS SPEAKING, not who painted it. The label first read as the tag's
+      author, which put Kevanna's name over a sentence Burham wrote about her
+      -- exactly backwards. It names the commenter, and the tag's author only
+      when there is one to name. */
+   const hh = HANDS[note.who] || HANDS.gm;
+   const P2 = G("PLAYERS") || {};
+   const speaker = (P2[note.who] || {}).name || note.who;
+   const about = byName ? " on " + byName + "'s" : "";
+   h += '<div class="lx-wall-note" style="color:' + hh.ink + ';font-family:' + hh.font + '">' +
+     '<span class="w">' + esc(speaker + about) + '</span>' + esc(note.t) + '</div>';
+  }
+  return h + '</div>';
+ }
+
+ /* Painted onto a screen once. The margins only: a band down each side and a
+    strip along the bottom, so nothing lands on top of the thing the screen is
+    actually for. */
+ function paintWall(scr) {
+  if (!scr || scr.querySelector(".lx-wall")) return;
+  const P = G("PLAYERS") || {};
+  const R = rng(scr.id || "wall");
+  const layer = document.createElement("div");
+  layer.className = "lx-wall";
+  const zones = [
+   { x: [1, 12],  y: [12, 88] },     // left margin
+   { x: [86, 96], y: [12, 88] },     // right margin
+   { x: [14, 82], y: [88, 96] }      // bottom strip
+  ];
+  /* Drawn WITHOUT replacement. Picking each piece independently let the same
+     tag and the same pencil note land twice on one screen, which reads as a
+     rendering fault rather than as a wall -- nobody writes the identical
+     sentence in two margins. A seeded shuffle, then take from the front. */
+  const shuffle = (arr) => {
+   const a2 = arr.slice();
+   for (let i = a2.length - 1; i > 0; i--) {
+    const j = Math.floor(R() * (i + 1));
+    const t2 = a2[i]; a2[i] = a2[j]; a2[j] = t2;
+   }
+   return a2;
+  };
+  const tagBag = shuffle(WALL), stBag = shuffle(STICK);
+  let html = "";
+  const nTags = Math.min(tagBag.length, 4 + Math.floor(R() * 3));
+  for (let i = 0; i < nTags; i++) {
+   const w = tagBag[i];
+   const z = zones[Math.floor(R() * zones.length)];
+   html += wallPiece("tag", w.t,
+     z.x[0] + R() * (z.x[1] - z.x[0]), z.y[0] + R() * (z.y[1] - z.y[0]),
+     70 + R() * 70, -14 + R() * 28, w.note, (P[w.by] || {}).name || w.by);
+  }
+  const nSt = Math.min(stBag.length, 1 + Math.floor(R() * 3));
+  for (let i = 0; i < nSt; i++) {
+   const st = stBag[i];
+   const z = zones[Math.floor(R() * zones.length)];
+   html += wallPiece("sticker", st.s,
+     z.x[0] + R() * (z.x[1] - z.x[0]), z.y[0] + R() * (z.y[1] - z.y[0]),
+     60 + R() * 50, -9 + R() * 18, st.note, null);
+  }
+  layer.innerHTML = html;
+  scr.style.position = scr.style.position || "relative";
+  scr.insertBefore(layer, scr.firstChild);
+ }
+
+ /* Every screen, including the ones this block added, and again whenever a
+    screen is shown for the first time. The login terminal is skipped: it is a
+    machine that has not been lived in, and that contrast is the point. */
+ function paintAllWalls() {
+  T(() => {
+   document.querySelectorAll(".screen").forEach(scr => {
+    if (scr.id === "screen-login") return;
+    paintWall(scr);
+   });
+  });
+ }
+ T(() => {
+  const orig = window.showScreen;
+  if (typeof orig !== "function") return;
+  window.showScreen = function () { const r = orig.apply(this, arguments); T(paintAllWalls); return r; };
+ });
+
  /* ---- wiring the new screens into the menu ------------------------- */
  T(() => {
   const menu = $("screen-menu");
@@ -1941,6 +2114,7 @@
  /* The terminal skin over the login screen, and the yard's furniture. Mounted
     at the end so every function they call already exists. */
  T(mountTerminal);
+ T(paintAllWalls);
  T(dressApoc);
  T(dressYard);
 
