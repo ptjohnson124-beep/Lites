@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+"""Turn a Gemini chibi into the transparent PNG the Ledger's slot needs.
+
+Gemini cannot output an alpha channel -- not Nano Banana, not Nano Banana Pro,
+not any of that family. Ask it for a transparent background and it paints one:
+solid white, solid black, or a drawn-on checkerboard. So the prompt asks for a
+flat chroma field instead and this removes it, which is the half that makes the
+prompt actually produce a file you can use.
+
+Three things beyond a plain colour swap, because a naive key looks keyed:
+
+  * the edge is a RAMP, not a threshold -- one distance where the pixel is
+    certainly background and a wider one where it is certainly not, and a
+    smooth fall between, so the outline keeps its antialiasing instead of
+    turning into a staircase at 56 pixels.
+  * SPILL is suppressed. A green field bounces green onto every edge pixel;
+    left alone that reads as a lime halo against the Ledger's dark panel,
+    which is exactly where it shows worst.
+  * the result is TRIMMED to what is actually drawn and re-padded square,
+    because the slot is object-fit:cover and will happily zoom into the empty
+    margin Gemini leaves around a subject.
+
+Prints the data URI to paste into the connection's `chibi:` field, since that
+field goes straight into <img src> and file:// will not fetch a sibling.
+"""
+
+import argparse
+import base64
+import io
+import os
+import sys
+
+from PIL import Image
+
+KEYS = {"green": (0, 255, 0), "magenta": (255, 0, 255), "blue": (0, 0, 255)}
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("src", help="the PNG/JPEG Gemini gave you")
+    ap.add_argument("-o", "--out", help="output PNG (default: <src>_keyed.png)")
+    ap.add_argument("-k", "--key", default="green",
+                    help="green, magenta, blue, or #rrggbb (default: green)")
+    ap.add_argument("-s", "--size", type=int, default=512, help="output square (default 512)")
+    ap.add_argument("--inner", type=int, default=90,
+                    help="distance at or under which a pixel is certainly background")
+    ap.add_argument("--outer", type=int, default=190,
+                    help="distance at or over which a pixel is certainly the subject")
+    ap.add_argument("--margin", type=float, default=.06,
+                    help="fraction of the square left as breathing room (default .06)")
+    ap.add_argument("--uri", action="store_true", help="also write <out>.txt holding the data URI")
+    args = ap.parse_args()
+
+    if args.key.startswith("#"):
+        h = args.key.lstrip("#")
+        key = tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+    elif args.key in KEYS:
+        key = KEYS[args.key]
+    else:
+        raise SystemExit(f"unknown key colour {args.key!r} — use green, magenta, blue or #rrggbb")
+    if args.inner >= args.outer:
+        raise SystemExit("--inner must be below --outer; they are the two ends of the edge ramp")
+
+    im = Image.open(args.src).convert("RGB")
+    w, h = im.size
+    px = im.load()
+    out = Image.new("RGBA", (w, h))
+    op = out.load()
+    kr, kg, kb = key
+    span = args.outer - args.inner
+    # which channel the field is strongest in, so spill is pulled off that one
+    dom = max(range(3), key=lambda i: key[i])
+    kept = 0
+    for y in range(h):
+        for x in range(w):
+            r, g, b = px[x, y]
+            d = ((r - kr) ** 2 + (g - kg) ** 2 + (b - kb) ** 2) ** .5
+            if d <= args.inner:
+                op[x, y] = (0, 0, 0, 0)
+                continue
+            a = 255 if d >= args.outer else int(255 * (d - args.inner) / span)
+            c = [r, g, b]
+            if a < 255 or d < args.outer * 1.35:
+                others = [c[i] for i in range(3) if i != dom]
+                cap = sum(others) / 2
+                if c[dom] > cap:
+                    c[dom] = int(cap)
+            op[x, y] = (c[0], c[1], c[2], a)
+            kept += 1
+    if not kept:
+        raise SystemExit("everything keyed out — the field colour does not match --key, "
+                         "or --inner is far too wide")
+    cov = kept / (w * h)
+    print(f"  kept   {cov:.1%} of the frame")
+    if cov > .96:
+        print("  note   almost nothing was removed. If the background is still there, "
+              "Gemini probably ignored the chroma field — check the source image.")
+
+    box = out.getbbox()
+    if not box:
+        raise SystemExit("nothing left after keying")
+    sub = out.crop(box)
+    side = int(max(sub.size) / (1 - 2 * args.margin))
+    sq = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+    sq.alpha_composite(sub, ((side - sub.width) // 2, (side - sub.height) // 2))
+    sq = sq.resize((args.size, args.size), Image.LANCZOS)
+    print(f"  trim   {w}x{h} -> subject {sub.size[0]}x{sub.size[1]} -> {args.size}x{args.size}")
+
+    dest = args.out or os.path.splitext(args.src)[0] + "_keyed.png"
+    sq.save(dest, optimize=True)
+    print(f"  wrote  {dest} ({os.path.getsize(dest) / 1e3:.1f} KB)")
+
+    buf = io.BytesIO()
+    sq.save(buf, "PNG", optimize=True)
+    uri = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+    print(f"  uri    {len(uri) / 1e3:.1f} KB of text for the chibi: field")
+    if args.uri:
+        open(dest + ".txt", "w").write(uri)
+        print(f"  wrote  {dest}.txt")
+    else:
+        print(f"         {uri[:78]}…  (pass --uri to write the whole thing to a file)")
+
+    # A 56px look, because that is the only size that decides whether it worked.
+    prev = sq.resize((56, 56), Image.LANCZOS)
+    panel = Image.new("RGBA", (56, 56), (26, 23, 34, 255))
+    panel.alpha_composite(prev)
+    pv = os.path.splitext(dest)[0] + "_56.png"
+    panel.resize((224, 224), Image.NEAREST).save(pv)
+    print(f"  wrote  {pv} — this is the size it is judged at")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
