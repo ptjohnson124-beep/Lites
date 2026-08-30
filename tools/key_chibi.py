@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Turn a Gemini chibi into the transparent PNG the Ledger's slot needs.
+"""Turn a generated chibi into the transparent PNG the Ledger's slot needs.
 
 Gemini cannot output an alpha channel -- not Nano Banana, not Nano Banana Pro,
 not any of that family. Ask it for a transparent background and it paints one:
@@ -22,6 +22,11 @@ Three things beyond a plain colour swap, because a naive key looks keyed:
 
 Prints the data URI to paste into the connection's `chibi:` field, since that
 field goes straight into <img src> and file:// will not fetch a sibling.
+
+Grok Imagine can already hand back real alpha through its Background Removal
+tool, so --alpha skips the keying and runs only the rest -- which is still most
+of the value, because the trim, the square pad and the 56-pixel look are what
+the slot actually needs and no image tool does them for you.
 """
 
 import argparse
@@ -33,6 +38,43 @@ import sys
 from PIL import Image
 
 KEYS = {"green": (0, 255, 0), "magenta": (255, 0, 255), "blue": (0, 0, 255)}
+
+
+def finish(out, args, w, h):
+    box = out.getbbox()
+    if not box:
+        raise SystemExit("nothing left after keying")
+    sub = out.crop(box)
+    side = int(max(sub.size) / (1 - 2 * args.margin))
+    sq = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+    sq.alpha_composite(sub, ((side - sub.width) // 2, (side - sub.height) // 2))
+    sq = sq.resize((args.size, args.size), Image.LANCZOS)
+    print(f"  trim   {w}x{h} -> subject {sub.size[0]}x{sub.size[1]} -> {args.size}x{args.size}")
+
+    dest = args.out or os.path.splitext(args.src)[0] + "_keyed.png"
+    sq.save(dest, optimize=True)
+    print(f"  wrote  {dest} ({os.path.getsize(dest) / 1e3:.1f} KB)")
+
+    buf = io.BytesIO()
+    sq.save(buf, "PNG", optimize=True)
+    uri = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+    print(f"  uri    {len(uri) / 1e3:.1f} KB of text for the chibi: field")
+    if args.uri:
+        open(dest + ".txt", "w").write(uri)
+        print(f"  wrote  {dest}.txt")
+    else:
+        print(f"         {uri[:78]}…  (pass --uri to write the whole thing to a file)")
+
+    # A 56px look, because that is the only size that decides whether it worked.
+    prev = sq.resize((56, 56), Image.LANCZOS)
+    panel = Image.new("RGBA", (56, 56), (26, 23, 34, 255))
+    panel.alpha_composite(prev)
+    pv = os.path.splitext(dest)[0] + "_56.png"
+    panel.resize((224, 224), Image.NEAREST).save(pv)
+    print(f"  wrote  {pv} — this is the size it is judged at")
+    return 0
+
+
 
 
 def main():
@@ -50,7 +92,28 @@ def main():
     ap.add_argument("--margin", type=float, default=.06,
                     help="fraction of the square left as breathing room (default .06)")
     ap.add_argument("--uri", action="store_true", help="also write <out>.txt holding the data URI")
+    ap.add_argument("--alpha", action="store_true",
+                    help="the source already has a real alpha channel (Grok's Background "
+                         "Removal, or anything else that writes one) — skip the key and "
+                         "only trim, pad, resize and encode")
     args = ap.parse_args()
+
+    if args.alpha:
+        im = Image.open(args.src)
+        if im.mode != "RGBA":
+            raise SystemExit(f"--alpha was passed but {args.src} is mode {im.mode} with no "
+                             "alpha channel. Either the export dropped the transparency "
+                             "(JPEG cannot carry it at all), or it needs keying — drop "
+                             "--alpha and pass the field colour instead.")
+        out = im
+        a = out.getchannel("A")
+        cov = sum(a.histogram()[8:]) / (out.width * out.height)
+        print(f"  alpha  {cov:.1%} of the frame is opaque")
+        if cov > .985:
+            raise SystemExit("the alpha channel is effectively solid — the background is "
+                             "still painted on rather than removed. Run Background Removal "
+                             "first, or key it: drop --alpha.")
+        return finish(out, args, out.width, out.height)
 
     if args.key.startswith("#"):
         h = args.key.lstrip("#")
@@ -97,38 +160,7 @@ def main():
         print("  note   almost nothing was removed. If the background is still there, "
               "Gemini probably ignored the chroma field — check the source image.")
 
-    box = out.getbbox()
-    if not box:
-        raise SystemExit("nothing left after keying")
-    sub = out.crop(box)
-    side = int(max(sub.size) / (1 - 2 * args.margin))
-    sq = Image.new("RGBA", (side, side), (0, 0, 0, 0))
-    sq.alpha_composite(sub, ((side - sub.width) // 2, (side - sub.height) // 2))
-    sq = sq.resize((args.size, args.size), Image.LANCZOS)
-    print(f"  trim   {w}x{h} -> subject {sub.size[0]}x{sub.size[1]} -> {args.size}x{args.size}")
-
-    dest = args.out or os.path.splitext(args.src)[0] + "_keyed.png"
-    sq.save(dest, optimize=True)
-    print(f"  wrote  {dest} ({os.path.getsize(dest) / 1e3:.1f} KB)")
-
-    buf = io.BytesIO()
-    sq.save(buf, "PNG", optimize=True)
-    uri = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
-    print(f"  uri    {len(uri) / 1e3:.1f} KB of text for the chibi: field")
-    if args.uri:
-        open(dest + ".txt", "w").write(uri)
-        print(f"  wrote  {dest}.txt")
-    else:
-        print(f"         {uri[:78]}…  (pass --uri to write the whole thing to a file)")
-
-    # A 56px look, because that is the only size that decides whether it worked.
-    prev = sq.resize((56, 56), Image.LANCZOS)
-    panel = Image.new("RGBA", (56, 56), (26, 23, 34, 255))
-    panel.alpha_composite(prev)
-    pv = os.path.splitext(dest)[0] + "_56.png"
-    panel.resize((224, 224), Image.NEAREST).save(pv)
-    print(f"  wrote  {pv} — this is the size it is judged at")
-    return 0
+    return finish(out, args, w, h)
 
 
 if __name__ == "__main__":

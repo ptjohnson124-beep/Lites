@@ -7,7 +7,7 @@ for two concrete reasons, not stylistic ones:
    not Nano Banana 2 — none of that family writes an alpha channel. Ask for a
    transparent background and it *paints* one: flat white, flat black, or a
    drawn-on checkerboard that looks transparent and isn't. So the prompt asks
-   for a **flat chroma field** and `tools/key_chibi.py` removes it.
+   for a **flat chroma field** and `tools/key_chibi.py` removes it (see also `chibi_prompt_grok.md`, where Grok's own Background Removal does that step for you).
 2. **Gemini has no negative prompt.** Google's own guidance is to state things
    positively — "an empty street with no traffic", not "no cars". A keyword
    blocklist gets read as a list of things to *include*. Every exclusion below
