@@ -40,49 +40,85 @@ Attach the reference image — **cropped square first** — and paste this with 
 three bracketed slots filled in.
 
 > Using the character in the attached image as reference, create an image of
-> them redrawn as a chibi bust portrait.
+> them redrawn as an anime sticker bust — the kind of clean, carefully lined
+> vinyl sticker or Discord emote you would actually stick on something, not a
+> super-deformed cartoon.
 >
-> Draw the head large and the body small, about a one-to-one-point-six ratio,
-> so the head dominates. Show only the head, shoulders and upper chest, cropped
-> just below the collarbone, sitting in the upper two-thirds of a square frame.
-> Give them large simplified eyes and a minimal nose and mouth.
+> Enlarge the head but keep the drawing anime-proportioned, about one head to
+> two bodies, and let the head and hair together take up roughly sixty percent
+> of the figure's height so they are the widest part of the silhouette. Crop
+> the body at mid-torso, below the elbows, and include the forearms and both
+> hands raised near the chest — have their hands **[HAND POSE — clasped
+> nervously, one hand up mid-gesture, arms folded, holding their one object]**,
+> with the fingers drawn as distinct simple tapered shapes and no knuckle or
+> nail detail.
 >
-> Keep their likeness through three things and let everything else go: the
-> shape of their hair in silhouette, their single most identifying piece of
-> clothing or gear, and their colours. For **[NAME]**, the one detail that must
-> survive is **[THE ONE READABLE FEATURE — the bone-white mask, the split-colour
-> hair, the welding goggles, the missing arm]**. If something has to be
-> simplified away, simplify anything else first.
+> Give them large eyes with a big clean white sclera, a heavy solid dark upper
+> lash line that thickens toward the outer corner, and irises drawn as two or
+> three concentric rings in their accent colour around a dark pupil rather than
+> as a realistic eye or a plain dot. Draw the eyebrows as two tapered strokes
+> in the hair's colour, reduce the nose to a tiny mark, and keep the mouth
+> small and simple. Their expression should be **[EXPRESSION — wary, amused,
+> flat, tired, caught out, openly delighted]**, one clear feeling held plainly.
 >
-> Render it flat, the way a clean vector sticker is rendered: solid blocks of
-> colour, at most two steps of cel shading, a thick dark outline about three
-> percent of the image width running around the whole silhouette, and even
-> lighting with no gradients and no visible brush or paper texture. The world
-> is a grimy desert-cyberpunk one — worn fabric, taped repairs, matte scuffed
-> metal — but show that wear as a few bold simple shapes rather than as fine
-> detail or grain.
+> Hair is the biggest element and most of the silhouette, so draw it as three
+> or four large solid masses with hard, slightly pointed tips, faithful to the
+> reference's outline shape — length, parting, volume, spikes, braids, shave —
+> with only two or three long interior strokes to show the flow, and no
+> individual strands or gradients.
 >
-> Use four or five colours in total and no more. Build them around **[HEX]**,
-> which should be the loudest thing in the picture — their hair, cloth, glow or
-> trim — with everything else muted and desaturated so that one colour carries
-> the character.
+> Keep their likeness through the hair silhouette and one detail above all
+> else: for **[NAME]**, the thing that must survive is **[THE ONE READABLE
+> FEATURE — the bone-white mask, the split-colour hair, the welding goggles,
+> the bandaged eyes, the missing arm]**. Draw it large and in high contrast,
+> and simplify anything else before you simplify that.
 >
-> Put them on a **completely flat, uniform pure green field, hex #00FF00**,
-> filling the entire background edge to edge with a single even colour — no
-> scenery, no floor, no horizon, no gradient, no glow around the figure, no
-> shadow cast on the green, and no checkerboard pattern. The green must be
-> untouched and the same shade in every corner. Do not use any green anywhere
-> on the character themself.
+> Line it cleanly in a very dark warm brown, near-black, at one consistent
+> weight everywhere — outline, folds and fingers all on the same line — with a
+> slight taper at the ends of strokes and clean rounded joins, and no
+> crosshatching, sketch lines or stippling. Outside that lineart, put a solid
+> white die-cut sticker border offset evenly all the way around the outer
+> silhouette, following the shape including the hair tips, as a hard unbroken
+> band with nothing outside it.
 >
-> Compose it as a **square, 1:1**. The figure should fill about eighty-four
-> percent of the frame, centred, with an even band of green all the way around.
-> Keep the whole silhouette clear of the four corners, which are cut off when
-> this is displayed.
+> Shade it with exactly two tones per material — a base and one hard-edged
+> shadow that is a darker, slightly desaturated version of the base rather
+> than a grey wash — lit from the upper left so shadow falls under the hair
+> mass, under the jaw and beneath the sleeves. Use no gradients, no glow, no
+> rim light and no bloom; soft grey folds are fine on white or pale garments
+> only.
 >
-> The picture will be shown at fifty-six pixels across, so it has to hold up
-> tiny: strong contrast between the figure and the background, bold readable
-> shapes, and a surface clean of any lettering, numbers, logos, signature or
-> watermark. One character only.
+> Use seven colours in total: their accent **[HEX]** and one darker shade of
+> it, a skin tone and one darker shade of it, one pale garment colour, one
+> secondary garment colour, and the near-black line. The accent should cover
+> about thirty percent of the figure and be the first thing the eye lands on,
+> with everything else muted around it.
+>
+> The world is a grimy desert-cyberpunk one, so show wear as flat organic
+> shapes rather than texture: grime, blood or rust as a few irregular blotches
+> and drips with the same clean outline, a repair as one beige rectangle of
+> tape with three or four hatch lines across it, a tear as one notch, and
+> fasteners as small plain circles. Keep every surface otherwise smooth, with
+> no photographic texture, noise, speckle or grain.
+>
+> Compose it as a square, 1:1, and crop tighter than a normal portrait so the
+> head is large in the frame: the figure should fill about eighty-four percent
+> of the square, centred, with an even band of background on all four sides
+> rather than tall empty margins at the left and right. Keep the whole
+> silhouette, sticker border included, clear of the four corners, which are cut
+> away when this is displayed.
+>
+> Put them on a completely flat, uniform pure green field, hex #00FF00,
+> filling the entire background edge to edge outside the white sticker border
+> with a single even colour — no scenery, no floor, no horizon, no gradient,
+> no glow around the figure, no shadow cast on the green, and no checkerboard
+> pattern. The green must be untouched and the same shade in every corner. Do
+> not use any green anywhere on the character themself.
+>
+> The picture will be shown at fifty-six pixels across on a near-black panel,
+> so it has to hold up tiny: the hair silhouette, the accent colour and the
+> white sticker border are what carry it at that size. Keep the surface clean
+> of any lettering, numbers, logos, signature or watermark. One character only.
 
 ### Fixing it conversationally
 
@@ -92,6 +128,8 @@ follow-ups rather than rewriting the prompt:
 - *"The outline is too thin — thicken it so it still reads when the image is 56 pixels wide."*
 - *"There's a soft glow bleeding into the green. Make the background one perfectly flat #00FF00 with a hard edge against the character."*
 - *"Their [feature] got lost. Bring it back and simplify the [other thing] to make room."*
+- *"Thicken the white die-cut sticker border evenly all the way around."*
+- *"Make the irises two or three concentric rings in [HEX] around a dark pupil."*
 - *"Too many colours. Cut it to five, keeping [HEX] as the loudest."*
 - *"Zoom out slightly — the top of their head is touching the frame."*
 

@@ -92,11 +92,66 @@ def main():
     ap.add_argument("--margin", type=float, default=.06,
                     help="fraction of the square left as breathing room (default .06)")
     ap.add_argument("--uri", action="store_true", help="also write <out>.txt holding the data URI")
+    ap.add_argument("--checker", action="store_true",
+                    help="the background is a PAINTED transparency checkerboard, or any "
+                         "flat pale background, with no real alpha — remove it by flooding "
+                         "in from the frame edge rather than by colour, so a white coat or "
+                         "a pale prop inside the outline survives")
     ap.add_argument("--alpha", action="store_true",
                     help="the source already has a real alpha channel (Grok's Background "
                          "Removal, or anything else that writes one) — skip the key and "
                          "only trim, pad, resize and encode")
     args = ap.parse_args()
+
+    if args.checker:
+        # Flood in from the border over pale near-neutral pixels. Matching the
+        # checker BY COLOUR would also delete a white lab coat, a bandage or a
+        # pale prop; matching by CONNECTION to the frame edge cannot, because
+        # the character's own outline encloses everything inside them. That is
+        # the whole reason this is a fill and not a threshold.
+        from collections import deque
+        im = Image.open(args.src).convert("RGB")
+        w, h = im.size
+        px = im.load()
+        pale = lambda c: (max(c) - min(c) < 16) and (sum(c) / 3 > 196)
+        bg = [[False] * w for _ in range(h)]
+        q = deque()
+        for x in range(w):
+            for y in (0, h - 1):
+                if pale(px[x, y]) and not bg[y][x]:
+                    bg[y][x] = True; q.append((y, x))
+        for y in range(h):
+            for x in (0, w - 1):
+                if pale(px[x, y]) and not bg[y][x]:
+                    bg[y][x] = True; q.append((y, x))
+        if not q:
+            raise SystemExit("no pale background touching the frame edge — --checker is "
+                             "for a painted checkerboard or a flat pale field, and this "
+                             "is neither. Key it by colour instead.")
+        while q:
+            y, x = q.popleft()
+            for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                ny, nx = y + dy, x + dx
+                if 0 <= ny < h and 0 <= nx < w and not bg[ny][nx] and pale(px[nx, ny]):
+                    bg[ny][nx] = True; q.append((ny, nx))
+        out = Image.new("RGBA", (w, h))
+        op = out.load()
+        kept = 0
+        for y in range(h):
+            row = bg[y]
+            for x in range(w):
+                if row[x]:
+                    op[x, y] = (0, 0, 0, 0)
+                else:
+                    r, g, b = px[x, y]
+                    op[x, y] = (r, g, b, 255)
+                    kept += 1
+        cov = kept / (w * h)
+        print(f"  flood  removed the background, {cov:.1%} of the frame kept")
+        if cov > .97:
+            print("  note   almost nothing was removed — the background may not be pale, "
+                  "or the character touches the frame edge and the fill could not get in.")
+        return finish(out, args, w, h)
 
     if args.alpha:
         im = Image.open(args.src)
