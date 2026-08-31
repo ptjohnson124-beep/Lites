@@ -43,37 +43,62 @@ softening it rather than losing it. Thin lines are safe here; busy ones are not.
 
 ## The prompt
 
-Attach two images — the character reference and the style target — set
-**1:1 / 1K / medium**, fill the five slots and send. That is the whole prompt:
+Attach two images — the character reference and a style target — set
+**1:1 / 1K / medium**, fill the slots and send. That is the whole prompt:
 
-> Redraw the attached character as an anime sticker bust, matching the second
-> image's style closely.
+> Redraw the attached character as a **chibi sticker portrait**, matching the
+> second image's style closely.
 >
-> - **Build:** oversized head — head and hair together about 60% of the
->   figure's height and the widest part of the silhouette — narrow shoulders,
->   cropped at mid-torso, both forearms and hands in frame.
->   Hands **[HAND POSE]**.
-> - **Lines:** fine and thin, about 6 pixels on a 1024 canvas, near-black warm
->   brown. The outer contour is the **same thin weight** as the interior lines
->   — no bold border, no mascot-logo stroke.
-> - **Eyes:** big white sclera, heavy dark upper lash line, irises as two or
->   three concentric rings in **[HEX]**.
-> - **Hair:** three or four solid masses with hard pointed tips, faithful to
->   the reference's outline shape. No strands, no gradients.
-> - **Colour:** flat cel, exactly two tones per material. Five colours built
->   around **[HEX]** as the loudest, about 30% of the figure.
+> - **Build:** true chibi. Head and hair together are about **65% of the whole
+>   figure's height**, and the **widest point of the entire silhouette is the
+>   hair, roughly a third of the way down** — the shoulders are clearly
+>   narrower than the head. Tiny body, cropped at the chest.
+>   Hands: **[HANDS — not in frame / one hand holding (thing) / both hands at
+>   the chest]**.
+> - **Lines:** clean and fairly thin, about **10 pixels on a 1024 canvas**,
+>   near-black. The outer contour is the **same weight** as the interior lines
+>   — no bold border, no thick mascot-logo stroke.
+> - **Eyes:** large, big white sclera, dark upper lash line, irises in
+>   **[HEX]** or their own colour with a small highlight.
+> - **Hair:** solid masses with hard pointed tips, faithful to the reference's
+>   outline shape. No strands, no gradients.
+> - **Outfit — do not invent this:** reproduce the clothing they are actually
+>   wearing in the reference — collar, closure, straps, buckles, patches,
+>   seams, shoulder details — drawn as flat shapes with the same line. Do not
+>   substitute a generic jacket, hoodie or coat. **[OUTFIT — name the garment
+>   and its two or three distinguishing details]**.
+> - **Colour:** flat cel, two tones per material — a base and one hard-edged
+>   shadow. Tight palette built around **[HEX]** as the loudest element.
 > - **Keep:** this is **[NAME]** — **[THE ONE READABLE FEATURE]** must survive,
->   drawn large and high-contrast. Simplify anything else before that.
->   Expression **[EXPRESSION]**.
-> - **Frame:** square, figure fills ~84%, even margin all round, whole
->   silhouette clear of the corners.
-> - **Background:** one flat even colour edge to edge. No scenery, gradient,
->   glow or shadow. No text, logos or watermark. One character.
+>   drawn large. Expression **[EXPRESSION]**.
+> - **Frame:** square, figure fills ~84%, even margin all round, clear of the
+>   corners. Background one flat even colour, edge to edge — no scenery,
+>   gradient, glow or shadow. No text or watermark. One character.
 
-**About 200 words.** The version before it was 1100, and Grok's own
-guidance is short prose plus structured parameters — so everything that used to
-be stated up front is now a line you add *only when something actually goes
-wrong.*
+**About 275 words.** Everything not in it is an escalation line below — one
+sentence you add *only* when a specific thing comes back wrong.
+
+### The numbers, measured off three style targets
+
+Two of these are properly chibi and one is a bust portrait, and the difference
+is not vibes — it is two measurements:
+
+| | head+hair, % of figure height | widest point of the silhouette | stroke at a 1024 canvas |
+|---|---|---|---|
+| chibi swordsman | **62%** | the hair, 29% down | ≈ 10 px (0.96%) |
+| chibi teal-hair | **67%** | the hair, 28% down | ≈ 10 px (0.96%) |
+| lab-coat bust | 53% | the shoulders, 71% down | ≈ 6 px (0.56%) |
+| *a bad run, for scale* | *head only* | *— filled the frame —* | *≈ 22 px (2.13%)* |
+
+**Where the silhouette is widest is the tell.** In a real chibi the hair is the
+widest thing in the picture and it happens near the top; in a bust portrait the
+shoulders are, and it happens near the bottom. That one line in the prompt does
+more than any amount of "make it cuter".
+
+The stroke number moved too. The earlier version of this asked for 6px, taken
+off the lab-coat reference; both chibi targets measure **10px**, so that is the
+number now. Still less than half the 22px a bad run produced — thin, just not
+as thin as a finely-inked bust.
 
 ### The five slots, and how to fill them well
 
@@ -83,7 +108,25 @@ wrong.*
 | `[THE ONE READABLE FEATURE]` | **One** thing, describable in under ten words, that is *visible in silhouette or in colour*. "Kind eyes" is not one. "Bandages over both eyes" is. |
 | `[HEX]` | The connection's own `color` value out of the file. Not an approximation — this exact colour draws the card's left bar and the dashed ring around the slot. |
 | `[EXPRESSION]` | Their resting face, one word or two. This is what stops 66 portraits looking like the same doll in different hats. |
-| `[HAND POSE]` | What their hands are doing. The second-strongest characteriser after the hair, and the reason this style beats a plain bust — a nervous clasp and folded arms are two different people. |
+| `[HANDS]` | Optional now. "Not in frame" is a perfectly good answer and the two chibi targets do exactly that — one shows a single hand holding a sword, the other shows none. Use hands when the character *has* a thing they hold; skip them otherwise rather than inventing a pose. |
+| `[OUTFIT]` | Name the garment and its two or three distinguishing details — "brown field jacket, white leather chest harness with steel rings" beats "brown clothes". This slot exists because the outfit was the thing the prompt kept losing, and it was losing it for a reason: see below. |
+
+### Why the clothes kept disappearing
+
+It was the prompt's fault, not the model's. Two instructions were quietly
+telling it to throw the outfit away:
+
+- **"Simplify anything else before that."** Written to protect the one
+  identifying feature, it reads as licence to discard everything that is not
+  that feature — and the outfit is the largest single thing in that category.
+- **"Exactly five colours."** A brown jacket with a white harness, steel rings
+  and a taped patch is already four colours before you have drawn the face.
+  A hard cap makes dropping the garment the cheapest way to comply.
+
+Both are gone. There is a dedicated **Outfit** line that says *do not invent
+this*, the colour cap is now "a tight palette" rather than a number, and the
+Keep line no longer tells it to simplify everything else. Name the garment in
+the slot and the model has something concrete to hold on to.
 
 ### Escalation lines
 
@@ -93,11 +136,13 @@ prompt:
 | if it comes back… | add |
 |---|---|
 | thick, bold, logo-like | "Much finer lineart — the weight of a printed manga panel, not a vinyl decal. The silhouette is drawn with the same thin pen as the cloth folds." |
-| head only, no hands | "Include the forearms and both hands raised near the chest, fingers as distinct simple tapered shapes with no knuckle or nail detail." |
+| you wanted hands and got none | "Include the forearms and hands, fingers as distinct simple tapered shapes with no knuckle or nail detail." |
 | filling the whole frame | "Zoom out — leave an even band of empty background on all four sides, nothing touching the edge." |
 | flat and lifeless | "Two tones per material: a base and one hard-edged shadow that is a darker, desaturated version of it, lit from the upper left." |
-| too many colours | "Cut to five colours, keeping [HEX] loudest and desaturating everything else." |
+| too colourful / muddy | "Fewer colours: two tones per material, and desaturate everything that is not [HEX] so it stays the loudest. Keep the outfit's own colours — cut the incidental ones." |
 | grime looks like noise | "Show wear as flat organic shapes — blotches with the same clean outline, tape as one beige rectangle with hatch lines, a tear as one notch. No texture or grain." |
+| generic clothes | "Wrong outfit. They are wearing [OUTFIT] — reproduce it from the first image, including the [detail] and the [detail], as flat shapes. Do not substitute a generic jacket." |
+| not chibi enough | "Bigger head, smaller body: head and hair should be about 65% of the figure's height, and the hair should be the widest thing in the whole picture, near the top. Shoulders clearly narrower than the head." |
 | wrong person | "Follow the first image for who they are and the second only for how it is drawn." |
 
 **Need the full spec?** The long-form version — every field spelled out — lives
@@ -111,13 +156,17 @@ Honest result: **the hair mass, the accent colour and the pale garment read
 clearly. The hands, the ring irises and the fine grime do not** — they become
 a suggestion of shape.
 
-That is fine, and it is why the fields are ordered the way they are. The hands
-and the eyes do their work in the **76-pixel detail view** and when someone
-opens the image; the hair silhouette and the accent do all the work on the
-card. Thin lines survive the downscale perfectly well — they blur into a
-softer edge rather than disappearing, which is what you want. It is *thick*
-lines that ruin a small avatar, by eating the colour area that carries the
-character.
+That is fine, and it is the argument for the chibi build over the bust: a head
+that is 65% of the figure puts the hair and the face — the two things that do
+survive — across most of the image, where a bust spends half its height on a
+torso that becomes a coloured block. It is also why the outfit still matters
+even though its details vanish: at 56px the garment is reduced to its *colour
+block and its silhouette*, and a black buckled jacket and a white lab coat
+are still instantly different things.
+
+Thin lines survive the downscale perfectly well — they blur into a softer edge
+rather than disappearing. It is *thick* lines that ruin a small avatar, by
+eating the colour area that carries the character.
 
 ### Why there is no "draw a white sticker border" field any more
 
@@ -132,33 +181,15 @@ using a round pen so the cut edge has no square corners. It still does the job
 it was there for — separating a dark-palette character from the near-black
 panel — and it no longer costs you a line-weight argument with the generator.
 
-### The failure to watch for, with numbers
+### The drift to watch for
 
-The first thing that goes wrong is line weight, and it goes wrong by a lot.
-Measured off a real run:
+Line weight is the first thing that goes, and it never goes alone. In a real
+bad run it came back at 2.13% — nearly four times the chibi targets — and it
+brought three friends: **head only with no body, no margin at all, and a solid
+background baked in with nothing to remove.** The model drifts toward a bold
+mascot logo and takes everything with it.
 
-| | median stroke, as % of image width | at a 1024 canvas |
-|---|---|---|
-| the style target | **0.56%** | ≈ 6 px |
-| what came back | **2.13%** | ≈ 22 px |
-
-Nearly **four times too thick** — and thick lines do not merely look wrong,
-they crowd out the flat colour that is doing all the work at 56 pixels. An
-earlier version of this prompt asked for 1.5%, which was itself almost three
-times the target; that number was guessed rather than measured, and it is now
-0.5% because the reference was measured.
-
-Two other things went with it in the same run, and they are worth checking for
-together, because they arrive as a set — the model drifts toward a bold mascot
-logo and takes everything with it:
-
-- **head only, no hands.** The style target's subject is 838 × 1161, a tall
-  bust including forearms. The bad run was a head filling the whole square.
-- **no margin, and a solid background.** The target fills 50% of its frame with
-  empty space around it; the bad run filled 100% edge to edge, with a flat teal
-  field baked in and nothing to remove.
-
-If you see any one of the three, re-prompt for all three. They fail together.
+If you see any one of those, re-prompt for all of them. They fail as a set.
 
 ### Fixing it in place rather than rerolling
 
@@ -177,7 +208,7 @@ in the first place.
 
 The hex is each connection's own `color` value out of the file.
 
-| | hex | anchor | expression | hands |
+| | hex | anchor | expression | hands (optional) |
 |---|---|---|---|---|
 | **Zazz** | `#d4af6a` | stopwatch on a cord, jacket several sizes too big | busy, unimpressed | clutching the stopwatch in both hands |
 | **Psalmatron** | `#ff2f92` | her hair and eyes worn crooked, like a bad copy | grieving, wrong | one hand reaching toward you, the other held back |

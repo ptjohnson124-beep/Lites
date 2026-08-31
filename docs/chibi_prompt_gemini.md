@@ -41,17 +41,16 @@ three bracketed slots filled in.
 
 > Using the character in the attached image as reference, create an image of
 > them redrawn as an anime sticker bust — the kind of clean, carefully lined
-> vinyl sticker or Discord emote you would actually stick on something, not a
-> super-deformed cartoon.
+> vinyl sticker or Discord emote you would actually stick on something.
 >
-> Enlarge the head but keep the drawing anime-proportioned, about one head to
-> two bodies, and let the head and hair together take up roughly sixty percent
-> of the figure's height so they are the widest part of the silhouette. Crop
-> the body at mid-torso, below the elbows, and include the forearms and both
-> hands raised near the chest — have their hands **[HAND POSE — clasped
-> nervously, one hand up mid-gesture, arms folded, holding their one object]**,
-> with the fingers drawn as distinct simple tapered shapes and no knuckle or
-> nail detail.
+> Draw it as a true chibi: the head and hair together should take up about
+> sixty-five percent of the whole figure's height, and the widest point of the
+> entire silhouette should be the hair, roughly a third of the way down, with
+> the shoulders clearly narrower than the head. Give them a tiny body cropped
+> at the chest. Hands are optional — **[HANDS — not in frame / one hand
+> holding (thing) / both hands at the chest]** — and when they are in frame,
+> draw the fingers as distinct simple tapered shapes with no knuckle or nail
+> detail.
 >
 > Give them large eyes with a big clean white sclera, a heavy solid dark upper
 > lash line that thickens toward the outer corner, and irises drawn as two or
@@ -67,14 +66,19 @@ three bracketed slots filled in.
 > with only two or three long interior strokes to show the flow, and no
 > individual strands or gradients.
 >
+> Reproduce the clothing they are actually wearing in the reference rather than
+> inventing an outfit — the collar, the closure, the straps, buckles, patches,
+> seams and shoulder details, all drawn as flat shapes with the same clean line.
+> Do not substitute a generic jacket, hoodie or coat: they are wearing
+> **[OUTFIT — name the garment and its two or three distinguishing details]**.
+>
 > Keep their likeness through the hair silhouette and one detail above all
 > else: for **[NAME]**, the thing that must survive is **[THE ONE READABLE
 > FEATURE — the bone-white mask, the split-colour hair, the welding goggles,
-> the bandaged eyes, the missing arm]**. Draw it large and in high contrast,
-> and simplify anything else before you simplify that.
+> the bandaged eyes, the missing arm]**. Draw it large and in high contrast.
 >
-> Line it with a fine, thin pen in a very dark warm brown, near-black — on a
-> 1024-pixel image the strokes should be about six pixels wide, roughly half a
+> Line it with a clean, fairly thin pen in a very dark warm brown, near-black —
+> on a 1024-pixel image the strokes should be about ten pixels wide, roughly one
 > percent of the width, the weight of a printed manga panel rather than a
 > vinyl decal. Keep that one weight everywhere: the outer contour of the
 > figure is drawn with exactly the same thin line as the folds in the cloth
@@ -90,11 +94,11 @@ three bracketed slots filled in.
 > rim light and no bloom; soft grey folds are fine on white or pale garments
 > only.
 >
-> Use seven colours in total: their accent **[HEX]** and one darker shade of
-> it, a skin tone and one darker shade of it, one pale garment colour, one
-> secondary garment colour, and the near-black line. The accent should cover
-> about thirty percent of the figure and be the first thing the eye lands on,
-> with everything else muted around it.
+> Keep the palette tight rather than counted: two tones per material — a base
+> and one darker shade — built around their accent **[HEX]**, which should be
+> the first thing the eye lands on, with everything that is not the accent
+> muted around it. The outfit's own colours count as part of that palette and
+> are not to be dropped to save room.
 >
 > The world is a grimy desert-cyberpunk one, so show wear as flat organic
 > shapes rather than texture: grime, blood or rust as a few irregular blotches
@@ -131,7 +135,9 @@ follow-ups rather than rewriting the prompt:
 - *"The outline is too thin — thicken it so it still reads when the image is 56 pixels wide."*
 - *"There's a soft glow bleeding into the green. Make the background one perfectly flat #00FF00 with a hard edge against the character."*
 - *"Their [feature] got lost. Bring it back and simplify the [other thing] to make room."*
-- *"The lines are far too thick. Redraw with fine lineart, about six pixels on a 1024 canvas, and make the outer contour the same thin weight as the interior lines."*
+- *"The lines are far too thick. Redraw with cleaner, thinner lineart — about ten pixels on a 1024 canvas — and make the outer contour the same weight as the interior lines."*
+- *"Wrong outfit. They are wearing [OUTFIT] — reproduce it from the reference, including the [detail] and the [detail], as flat shapes. Do not substitute a generic jacket."*
+- *"Bigger head, smaller body: head and hair about 65% of the figure's height, and the hair the widest thing in the picture, near the top."*
 - *"Less bold and less graphic — the weight of a printed manga panel, not a vinyl decal."*
 - *"Make the irises two or three concentric rings in [HEX] around a dark pupil."*
 - *"Too many colours. Cut it to five, keeping [HEX] as the loudest."*
