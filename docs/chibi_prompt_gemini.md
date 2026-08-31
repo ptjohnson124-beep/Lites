@@ -43,14 +43,16 @@ three bracketed slots filled in.
 > them redrawn as an anime sticker bust — the kind of clean, carefully lined
 > vinyl sticker or Discord emote you would actually stick on something.
 >
-> Draw it as a true chibi: the head and hair together should take up about
-> sixty-five percent of the whole figure's height, and the widest point of the
-> entire silhouette should be the hair, roughly a third of the way down, with
-> the shoulders clearly narrower than the head. Give them a tiny body cropped
-> at the chest. Hands are optional — **[HANDS — not in frame / one hand
-> holding (thing) / both hands at the chest]** — and when they are in frame,
-> draw the fingers as distinct simple tapered shapes with no knuckle or nail
-> detail.
+> Draw it as a true chibi, and get the proportions right before anything else:
+> the whole figure should be **two head-heights tall**, with the head — top of
+> the hair to the chin — filling the top two thirds of the picture and the body
+> occupying only the bottom third. Make the head as wide as the entire image
+> and wider than the shoulders, so the body is the narrowest part of the
+> figure, and let the widest point of the whole silhouette be the hair, about
+> thirty percent down from the top. Crop at the chest, with no waist and no
+> legs. Hands are optional — **[HANDS — not in frame / one hand holding
+> (thing) / both hands at the chest]** — and when they are in frame, draw the
+> fingers as distinct simple tapered shapes with no knuckle or nail detail.
 >
 > Give them large eyes with a big clean white sclera, a heavy solid dark upper
 > lash line that thickens toward the outer corner, and irises drawn as two or
@@ -137,7 +139,8 @@ follow-ups rather than rewriting the prompt:
 - *"Their [feature] got lost. Bring it back and simplify the [other thing] to make room."*
 - *"The lines are far too thick. Redraw with cleaner, thinner lineart — about ten pixels on a 1024 canvas — and make the outer contour the same weight as the interior lines."*
 - *"Wrong outfit. They are wearing [OUTFIT] — reproduce it from the reference, including the [detail] and the [detail], as flat shapes. Do not substitute a generic jacket."*
-- *"Bigger head, smaller body: head and hair about 65% of the figure's height, and the hair the widest thing in the picture, near the top."*
+- *"The head is too small. Make the whole figure exactly two head-heights tall — the head alone fills the top two thirds of the image, and the shoulders are narrower than the head."*
+- *"The widest point of the silhouette must be the hair, about a third of the way down, not the shoulders."*
 - *"Less bold and less graphic — the weight of a printed manga panel, not a vinyl decal."*
 - *"Make the irises two or three concentric rings in [HEX] around a dark pupil."*
 - *"Too many colours. Cut it to five, keeping [HEX] as the loudest."*
