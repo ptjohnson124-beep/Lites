@@ -13,9 +13,10 @@ and **Background Removal, which exports the subject with real transparency**.
 **Grok's house guidance is short prose plus structured parameters** — one to
 three sentences, then constraints. That is not an argument for a vague prompt;
 it is an argument for putting the detail in *labelled fields* rather than in
-paragraphs. Long rambling prose makes Grok worse. A long structured spec does
-not. Everything below is built that way: three sentences of style, then twelve
-labelled fields it can follow one at a time.
+paragraphs, and for keeping the ones you send up front to the few that matter.
+The prompt below is one sentence of style and eight short fields; everything
+else has been moved into escalation lines you add only when something actually
+goes wrong.
 
 Two smaller ones: there is **no negative prompt** on Grok, so every exclusion is
 written as what should be there instead; and **1:1 is a setting, not a
@@ -32,137 +33,76 @@ Read off the Ledger's own CSS, because every line of it decides a field below:
 | both `img` | `width:100%; height:100%; **object-fit: cover**` |
 | slot background | dark panel `#1a1722`, dashed border in that person's own colour |
 
-`cover` centre-crops anything not square. 56px turns fine linework to grey mush.
-Rounded corners clip whatever sits in them. The panel behind is *dark*, so a
-character whose palette is mostly dark loses their silhouette entirely.
+`cover` centre-crops anything not square. Rounded corners clip whatever sits in
+them. The panel behind is *dark*, so a character whose palette is mostly dark
+loses their silhouette entirely. And 56px destroys fine *detail* — crosshatching,
+small props, written marks — though it treats a thin uniform outline kindly,
+softening it rather than losing it. Thin lines are safe here; busy ones are not.
 
 ---
 
 ## The prompt
 
-Attach the reference. Set **aspect ratio 1:1**, **resolution 1K**, **quality
-medium**. Fill the five bracketed slots and send:
+Attach two images — the character reference and the style target — set
+**1:1 / 1K / medium**, fill the five slots and send. That is the whole prompt:
 
-> Redraw the character in the reference image as an anime **sticker bust** —
-> one figure, head and hands, cropped at mid-torso, **fine clean lineart**,
-> flat cel colour. Think a printed manga panel or a high-quality Discord
-> emote: the head is enlarged but the drawing stays anime-proportioned and
-> delicately inked. It will be shown as a 56-pixel avatar on a near-black
-> panel, so the silhouette and the hair mass have to carry it.
+> Redraw the attached character as an anime sticker bust, matching the second
+> image's style closely.
 >
-> **FIDELITY**
-> Follow the second attached image as the style target and match it closely.
-> Copy from it: the **thin line weight**, the semi-chibi proportions, the
-> inclusion of forearms and hands, the large white-sclera eyes with ring
-> irises, the two-tone flat colour, and the tight bust crop. Copy from the
-> character reference: who they are. Do not simplify the drawing further than
-> the style target does, and do not make it bolder, chunkier or more
-> logo-like than it is.
->
-> **PROPORTIONS**
-> Semi-chibi, not full chibi: head-to-body roughly 1 : 2. The head and hair
-> together are about 60% of the figure's height and are the widest part of
-> the silhouette — as wide as the shoulders or slightly wider. Crop the body
-> at mid-torso, below the elbows. Include the forearms and both hands.
-> Shoulders are narrow and sloped. Set the eyeline about 45% down the frame.
->
-> **HANDS**
-> Both hands raised near the chest, held in a pose that says something about
-> them — **[HAND POSE — clasped nervously, one hand up mid-gesture, arms
-> folded, fingers splayed, holding their one object]**. Draw the fingers as
-> distinct simple tapered shapes with the same outline weight as everything
-> else. Hands are a real part of the picture here, not an afterthought, but
-> keep them simplified: no knuckle creases, no nail detail, no fingernails
-> drawn separately.
->
-> **FACE**
-> Large eyes with a big clean white sclera, a heavy solid dark upper lash
-> line thickening toward the outer corner, and a thin lower lid line. The
-> iris is a **ring pattern — two or three concentric circles** in the accent
-> colour around a dark pupil, not a realistic iris and not a plain dot.
-> Eyebrows as two clean tapered strokes, drawn in the hair's colour. Nose
-> reduced to a tiny mark or omitted. Mouth small and simple. Expression:
-> **[EXPRESSION — their default resting face: wary, amused, flat, tired,
-> caught out, openly delighted]** — one clear emotion, held plainly.
->
-> **HAIR**
-> Hair is the single biggest element and most of the silhouette. Draw it as
-> three or four large solid masses with hard, slightly pointed tips, and
-> reproduce its outline shape faithfully from the reference — length,
-> parting, volume, spikes, braids, shave, horns. Two or three long interior
-> strokes only, to show the parting and the flow. No individual strands, no
-> gradients, no wispy feathering.
->
-> **IDENTITY ANCHOR**
-> For **[NAME]**, the one detail that must survive at 56 pixels is
-> **[THE ONE READABLE FEATURE — the bone-white mask, the split-colour hair,
-> the welding goggles, the bandaged eyes, the missing arm]**. Draw it large
-> and in high contrast against whatever it sits on, and simplify literally
-> anything else before you simplify this.
->
-> **LINE — the thing most likely to go wrong**
-> Fine, thin lineart in a very dark warm brown, near-black. On a
-> 1024-by-1024 image the strokes are about **6 pixels wide — roughly half a
-> percent of the image width**, the weight of a manga inking pen or a printed
-> comic, drawn with a slight taper at the ends and clean rounded joins.
->
-> Critically, **the outer contour is the same fine weight as the interior
-> lines.** There is no heavy border around the figure, no bold contour, and
-> no chunky mascot-logo stroke; the silhouette is described by the same thin
-> pen that draws the folds in the coat and the gaps between the fingers.
-> Every line in the picture is delicate. No crosshatching, no sketch lines,
-> no stippling.
->
-> **SHADING**
-> **Exactly two tones per material** — a base and one shadow, hard-edged, no
-> third step. The shadow is a darker, slightly desaturated version of the
-> base, not a grey wash. Light from the upper left, so shadow falls under the
-> hair mass, under the jaw, and on the underside of the sleeves and hands. No
-> gradients, no glow, no rim light, no bloom, no ambient occlusion. Soft grey
-> folds are allowed on white or pale garments only.
->
-> **PALETTE**
-> Seven colours, each doing one job: the accent **[HEX]** as the hair or the
-> loudest garment, plus its one darker shade; a skin tone plus its one darker
-> shade; one pale garment colour; one secondary garment colour; and the
-> near-black line. The accent should cover roughly 30% of the figure and be
-> the first thing the eye lands on. Everything not the accent stays muted.
->
-> **MATERIAL AND WEAR**
-> Grimy desert-cyberpunk wear, drawn as flat organic shapes rather than
-> texture: grime, blood or rust as a few irregular blotches and drips with
-> the same clean outline; a repair as one beige rectangle of tape with three
-> or four straight hatch lines across it; a tear as one notch. Buttons,
-> studs and fasteners as small plain circles. Keep every surface otherwise
-> smooth — no photographic texture, no noise, no speckle, no visible grain.
->
-> **FRAMING**
-> Compose for a **square**, which means a tighter crop than a normal portrait:
-> the figure fills about 84% of the square with an even band of empty
-> background on all four sides, centred horizontally. Do not leave tall empty
-> margins at the left and right — bring the crop in until the head is large in
-> the frame. Keep the entire silhouette clear of the four corners, which are
-> cut away when this is displayed. Nothing touches or crosses the frame edge.
->
-> **BACKGROUND**
-> One flat, unbroken, perfectly even colour filling the frame edge to edge:
-> no scenery, no floor, no gradient, no
-> vignette, no glow, no drop shadow, no cast shadow, and no checkerboard
-> pattern of any kind. The background colour must not appear anywhere on the
-> character.
->
-> **SURFACE**
-> No lettering, numbers, logos, signatures, watermarks, speech bubbles,
-> panel frames or badges. One character only, facing roughly forward, no
-> second figure and no companion animal.
->
-> **ACCEPTANCE TEST**
-> Scaled to 56 pixels across on a near-black background, it should still be
-> obviously **[NAME]**: hair silhouette distinct, **[THE ONE READABLE
-> FEATURE]** still visible, accent colour still dominant. If a detail would
-> vanish at that size, draw it larger or remove it — do not draw it small.
-> The lines stay thin even so; the white cut edge that separates the figure
-> from the dark panel is added afterwards and is not your job.
+> - **Build:** oversized head — head and hair together about 60% of the
+>   figure's height and the widest part of the silhouette — narrow shoulders,
+>   cropped at mid-torso, both forearms and hands in frame.
+>   Hands **[HAND POSE]**.
+> - **Lines:** fine and thin, about 6 pixels on a 1024 canvas, near-black warm
+>   brown. The outer contour is the **same thin weight** as the interior lines
+>   — no bold border, no mascot-logo stroke.
+> - **Eyes:** big white sclera, heavy dark upper lash line, irises as two or
+>   three concentric rings in **[HEX]**.
+> - **Hair:** three or four solid masses with hard pointed tips, faithful to
+>   the reference's outline shape. No strands, no gradients.
+> - **Colour:** flat cel, exactly two tones per material. Five colours built
+>   around **[HEX]** as the loudest, about 30% of the figure.
+> - **Keep:** this is **[NAME]** — **[THE ONE READABLE FEATURE]** must survive,
+>   drawn large and high-contrast. Simplify anything else before that.
+>   Expression **[EXPRESSION]**.
+> - **Frame:** square, figure fills ~84%, even margin all round, whole
+>   silhouette clear of the corners.
+> - **Background:** one flat even colour edge to edge. No scenery, gradient,
+>   glow or shadow. No text, logos or watermark. One character.
+
+**About 200 words.** The version before it was 1100, and Grok's own
+guidance is short prose plus structured parameters — so everything that used to
+be stated up front is now a line you add *only when something actually goes
+wrong.*
+
+### The five slots, and how to fill them well
+
+| slot | what actually goes in it |
+|---|---|
+| `[NAME]` | Their name as the Ledger has it. Naming them anchors the likeness — it is the difference between "a character" and "this character". |
+| `[THE ONE READABLE FEATURE]` | **One** thing, describable in under ten words, that is *visible in silhouette or in colour*. "Kind eyes" is not one. "Bandages over both eyes" is. |
+| `[HEX]` | The connection's own `color` value out of the file. Not an approximation — this exact colour draws the card's left bar and the dashed ring around the slot. |
+| `[EXPRESSION]` | Their resting face, one word or two. This is what stops 66 portraits looking like the same doll in different hats. |
+| `[HAND POSE]` | What their hands are doing. The second-strongest characteriser after the hair, and the reason this style beats a plain bust — a nervous clasp and folded arms are two different people. |
+
+### Escalation lines
+
+Paste one, not all. Each addresses a failure I have actually seen from this
+prompt:
+
+| if it comes back… | add |
+|---|---|
+| thick, bold, logo-like | "Much finer lineart — the weight of a printed manga panel, not a vinyl decal. The silhouette is drawn with the same thin pen as the cloth folds." |
+| head only, no hands | "Include the forearms and both hands raised near the chest, fingers as distinct simple tapered shapes with no knuckle or nail detail." |
+| filling the whole frame | "Zoom out — leave an even band of empty background on all four sides, nothing touching the edge." |
+| flat and lifeless | "Two tones per material: a base and one hard-edged shadow that is a darker, desaturated version of it, lit from the upper left." |
+| too many colours | "Cut to five colours, keeping [HEX] loudest and desaturating everything else." |
+| grime looks like noise | "Show wear as flat organic shapes — blotches with the same clean outline, tape as one beige rectangle with hatch lines, a tear as one notch. No texture or grain." |
+| wrong person | "Follow the first image for who they are and the second only for how it is drawn." |
+
+**Need the full spec?** The long-form version — every field spelled out — lives
+in `chibi_prompt_gemini.md`. Gemini rewards that kind of rich prose; Grok
+punishes it. Same style, same numbers, two lengths.
 
 ### What actually survives at 56 pixels
 
@@ -192,16 +132,6 @@ using a round pen so the cut edge has no square corners. It still does the job
 it was there for — separating a dark-palette character from the near-black
 panel — and it no longer costs you a line-weight argument with the generator.
 
-### The four slots, and how to fill them well
-
-| slot | what actually goes in it |
-|---|---|
-| `[NAME]` | Their name as the Ledger has it. Grok uses it in the acceptance test line, which is where it does the most work. |
-| `[THE ONE READABLE FEATURE]` | **One** thing, describable in under ten words, that is *visible in silhouette or in colour*. "Kind eyes" is not one. "Bandages over both eyes" is. |
-| `[HEX]` | The connection's own `color` value out of the file. Not an approximation — this exact colour draws the card's left bar and the dashed ring around the slot. |
-| `[EXPRESSION]` | Their resting face, one word or two. This is what stops 66 portraits looking like the same doll in different hats. |
-| `[HAND POSE]` | What their hands are doing. The second-strongest characteriser after the hair, and the reason this style beats a plain bust — a nervous clasp and folded arms are two different people. |
-
 ### The failure to watch for, with numbers
 
 The first thing that goes wrong is line weight, and it goes wrong by a lot.
@@ -230,31 +160,18 @@ logo and takes everything with it:
 
 If you see any one of the three, re-prompt for all three. They fail together.
 
-### Fixing it without rerolling
+### Fixing it in place rather than rerolling
 
-Grok Imagine edits regionally, which is the part worth using — the **magic
-wand** changes only the region you point at, and **segmentation** selects a
-precise area like one garment. Correct in place instead of regenerating and
-losing the version you liked:
-
-| what's wrong | point at | say |
-|---|---|---|
-| soft or busy background | the background | "Make this one perfectly flat, even colour with a hard edge against the character." |
-| lost the anchor | that region | "Restore the [feature] at twice this size and simplify the [other thing] to make room." |
-| too colourful | whole image | "Reduce to five colours, keeping [HEX] as the loudest and desaturating the rest." |
-| head cropped | whole image | "Zoom out slightly so there is even empty space on all four sides and nothing touches the edge." |
-| lines too thick | whole image | "Redraw with much finer lineart — about 6 pixels on a 1024 canvas — and make the outer contour the same thin weight as the interior lines, with no heavy border around the figure." |
-| looks like a logo | whole image | "Less bold and less graphic — the weight of a printed manga panel, not a vinyl decal." |
-| disappears on the panel | — | not a prompt problem; pass `--rim 1.4` to the tool |
-| hands look wrong | the hands | "Simplify these into distinct tapered finger shapes on the same line weight, with no knuckle or nail detail." |
-| eyes look generic | the eyes | "Make the irises two or three concentric rings in [HEX] around a dark pupil, with a heavy solid upper lash line." |
+The escalation lines above are for the next generation. For a version you
+mostly like, edit it instead: Grok Imagine's **magic wand** changes only the
+region you point at and **segmentation** selects a precise area like one
+garment, so you can point at the outline, the hands or the background and give
+it that one line without losing the rest.
 
 Avoid **Smart Resize** here. It recomposes into a new ratio by *filling in* the
 frame rather than cropping — right for a banner, wrong for an avatar, because
 it invents body and background you then have to remove again. Generate square
 in the first place.
-
----
 
 ## Filled examples, from the real roster
 
