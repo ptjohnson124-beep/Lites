@@ -35,9 +35,16 @@ import io
 import os
 import sys
 
-from PIL import Image
+from PIL import Image, ImageChops
 
 KEYS = {"green": (0, 255, 0), "magenta": (255, 0, 255), "blue": (0, 0, 255)}
+
+
+def _disc(r):
+    """Offsets on a filled circle of radius r -- a round pen, so the cut edge
+    is round too. Cheap enough: r is a handful of pixels."""
+    return [(dx, dy) for dy in range(-r, r + 1) for dx in range(-r, r + 1)
+            if dx * dx + dy * dy <= r * r]
 
 
 def finish(out, args, w, h):
@@ -45,6 +52,29 @@ def finish(out, args, w, h):
     if not box:
         raise SystemExit("nothing left after keying")
     sub = out.crop(box)
+
+    # The die-cut band, drawn at full resolution before the downscale so its
+    # edge stays smooth. Dilating the alpha by hand rather than with a filter:
+    # MaxFilter is a square kernel and would put corners on a round silhouette,
+    # which is exactly what a cut edge must not have.
+    if args.rim > 0:
+        r = max(1, int(round(args.rim / 100 * max(sub.size) / (1 - 2 * args.margin))))
+        pad = r + 2
+        big = Image.new("RGBA", (sub.width + pad * 2, sub.height + pad * 2), (0, 0, 0, 0))
+        big.alpha_composite(sub, (pad, pad))
+        al = big.getchannel("A").point(lambda v: 255 if v > 96 else 0)
+        grown = al.copy()
+        for dx, dy in _disc(r):
+            grown.paste(ImageChops.lighter(grown, ImageChops.offset(al, dx, dy)), (0, 0))
+        band = ImageChops.subtract(grown, al)
+        hexs = args.rim_color.lstrip("#")
+        col = tuple(int(hexs[i:i + 2], 16) for i in (0, 2, 4))
+        rim = Image.new("RGBA", big.size, col + (0,))
+        rim.putalpha(band)
+        sub = Image.alpha_composite(rim, big)
+        sub = sub.crop(sub.getbbox())
+        print(f"  rim    {r}px die-cut border in {args.rim_color}")
+
     side = int(max(sub.size) / (1 - 2 * args.margin))
     sq = Image.new("RGBA", (side, side), (0, 0, 0, 0))
     sq.alpha_composite(sub, ((side - sub.width) // 2, (side - sub.height) // 2))
@@ -92,6 +122,14 @@ def main():
     ap.add_argument("--margin", type=float, default=.06,
                     help="fraction of the square left as breathing room (default .06)")
     ap.add_argument("--uri", action="store_true", help="also write <out>.txt holding the data URI")
+    ap.add_argument("--rim", type=float, default=0, metavar="PCT",
+                    help="draw a white die-cut sticker border of this width, as a "
+                         "percentage of the output square (1.2 is a good default). "
+                         "Done here rather than asked for in the prompt: image models "
+                         "keep drawing that border in black, and drawn here it is exact, "
+                         "even, and identical on all 66 portraits")
+    ap.add_argument("--rim-color", default="#ffffff", metavar="HEX",
+                    help="colour of the die-cut border (default white)")
     ap.add_argument("--checker", action="store_true",
                     help="the background is a PAINTED transparency checkerboard, or any "
                          "flat pale background, with no real alpha — remove it by flooding "

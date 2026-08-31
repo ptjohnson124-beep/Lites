@@ -44,13 +44,20 @@ Attach the reference. Set **aspect ratio 1:1**, **resolution 1K**, **quality
 medium**. Fill the five bracketed slots and send:
 
 > Redraw the character in the reference image as an anime **sticker bust** —
-> one figure, head and hands, cropped at mid-torso, clean uniform lineart,
-> flat cel colour, and a white die-cut sticker border around the whole
-> silhouette. Think a high-quality Discord emote or vinyl sticker, not a
-> super-deformed cartoon: the head is enlarged but the drawing stays
-> anime-proportioned and carefully lined. It will be shown as a 56-pixel
-> avatar on a near-black panel, so the silhouette and the hair mass have to
-> carry it. Keep them recognisably the same person as the reference.
+> one figure, head and hands, cropped at mid-torso, **fine clean lineart**,
+> flat cel colour. Think a printed manga panel or a high-quality Discord
+> emote: the head is enlarged but the drawing stays anime-proportioned and
+> delicately inked. It will be shown as a 56-pixel avatar on a near-black
+> panel, so the silhouette and the hair mass have to carry it.
+>
+> **FIDELITY**
+> Follow the second attached image as the style target and match it closely.
+> Copy from it: the **thin line weight**, the semi-chibi proportions, the
+> inclusion of forearms and hands, the large white-sclera eyes with ring
+> irises, the two-tone flat colour, and the tight bust crop. Copy from the
+> character reference: who they are. Do not simplify the drawing further than
+> the style target does, and do not make it bolder, chunkier or more
+> logo-like than it is.
 >
 > **PROPORTIONS**
 > Semi-chibi, not full chibi: head-to-body roughly 1 : 2. The head and hair
@@ -93,18 +100,18 @@ medium**. Fill the five bracketed slots and send:
 > and in high contrast against whatever it sits on, and simplify literally
 > anything else before you simplify this.
 >
-> **LINE**
-> Clean uniform lineart in a very dark warm brown, near-black, about 1.5% of
-> the image width, with a slight taper at the ends of strokes and clean
-> rounded joins. The same weight everywhere: outline, interior folds and
-> fingers all sit on one line weight. No crosshatching, no sketch lines, no
-> stippling.
+> **LINE — the thing most likely to go wrong**
+> Fine, thin lineart in a very dark warm brown, near-black. On a
+> 1024-by-1024 image the strokes are about **6 pixels wide — roughly half a
+> percent of the image width**, the weight of a manga inking pen or a printed
+> comic, drawn with a slight taper at the ends and clean rounded joins.
 >
-> **STICKER BORDER**
-> Outside that lineart, a **solid white die-cut border** offset evenly all
-> the way around the outer silhouette, about 2% of the image width, following
-> the shape including the hair tips. This is the sticker cut edge — it must
-> be a hard, even, unbroken band with nothing outside it.
+> Critically, **the outer contour is the same fine weight as the interior
+> lines.** There is no heavy border around the figure, no bold contour, and
+> no chunky mascot-logo stroke; the silhouette is described by the same thin
+> pen that draws the folds in the coat and the gaps between the fingers.
+> Every line in the picture is delicate. No crosshatching, no sketch lines,
+> no stippling.
 >
 > **SHADING**
 > **Exactly two tones per material** — a base and one shadow, hard-edged, no
@@ -134,13 +141,12 @@ medium**. Fill the five bracketed slots and send:
 > the figure fills about 84% of the square with an even band of empty
 > background on all four sides, centred horizontally. Do not leave tall empty
 > margins at the left and right — bring the crop in until the head is large in
-> the frame. Keep the entire silhouette, sticker border included, clear of the
-> four corners, which are cut away when this is displayed. Nothing touches or
-> crosses the frame edge.
+> the frame. Keep the entire silhouette clear of the four corners, which are
+> cut away when this is displayed. Nothing touches or crosses the frame edge.
 >
 > **BACKGROUND**
-> One flat, unbroken, perfectly even colour filling the frame edge to edge
-> outside the white sticker border: no scenery, no floor, no gradient, no
+> One flat, unbroken, perfectly even colour filling the frame edge to edge:
+> no scenery, no floor, no gradient, no
 > vignette, no glow, no drop shadow, no cast shadow, and no checkerboard
 > pattern of any kind. The background colour must not appear anywhere on the
 > character.
@@ -152,25 +158,39 @@ medium**. Fill the five bracketed slots and send:
 >
 > **ACCEPTANCE TEST**
 > Scaled to 56 pixels across on a near-black background, it should still be
-> obviously **[NAME]**: hair silhouette distinct, white sticker border
-> separating the figure from the panel, **[THE ONE READABLE FEATURE]** still
-> visible, accent colour still dominant. If a detail would vanish at that
-> size, draw it larger or remove it — do not draw it small.
+> obviously **[NAME]**: hair silhouette distinct, **[THE ONE READABLE
+> FEATURE]** still visible, accent colour still dominant. If a detail would
+> vanish at that size, draw it larger or remove it — do not draw it small.
+> The lines stay thin even so; the white cut edge that separates the figure
+> from the dark panel is added afterwards and is not your job.
 
 ### What actually survives at 56 pixels
 
 I ran the reference through the pipeline and looked at it at the real size.
-Honest result: **the hair mass, the accent colour, the pale garment and the
-white sticker border all read clearly. The hands, the ring irises and the fine
-grime do not** — they become a suggestion of shape.
+Honest result: **the hair mass, the accent colour and the pale garment read
+clearly. The hands, the ring irises and the fine grime do not** — they become
+a suggestion of shape.
 
 That is fine, and it is why the fields are ordered the way they are. The hands
-and the eyes are doing their work in the **76-pixel detail view** and when
-someone opens the image; the hair silhouette and the accent are doing all the
-work on the card. It also means the **white sticker border is the most valuable
-single thing in this style for our purposes** — it is what stops a
-dark-palette character dissolving into a near-black panel, and it does that job
-better than the light inner rim the previous version of this prompt asked for.
+and the eyes do their work in the **76-pixel detail view** and when someone
+opens the image; the hair silhouette and the accent do all the work on the
+card. Thin lines survive the downscale perfectly well — they blur into a
+softer edge rather than disappearing, which is what you want. It is *thick*
+lines that ruin a small avatar, by eating the colour area that carries the
+character.
+
+### Why there is no "draw a white sticker border" field any more
+
+There was one, asking for a white die-cut band around the silhouette, and it
+was the single worst-behaved instruction in the prompt: models read "border"
+next to "heavy outline" and drew a thick **black** ring instead. It also fought
+the thin-line instruction directly.
+
+So the border moved out of the prompt and into the tool. `--rim` draws it after
+the fact, at an exact width, perfectly even, identical across all 66 portraits,
+using a round pen so the cut edge has no square corners. It still does the job
+it was there for — separating a dark-palette character from the near-black
+panel — and it no longer costs you a line-weight argument with the generator.
 
 ### The four slots, and how to fill them well
 
@@ -182,6 +202,34 @@ better than the light inner rim the previous version of this prompt asked for.
 | `[EXPRESSION]` | Their resting face, one word or two. This is what stops 66 portraits looking like the same doll in different hats. |
 | `[HAND POSE]` | What their hands are doing. The second-strongest characteriser after the hair, and the reason this style beats a plain bust — a nervous clasp and folded arms are two different people. |
 
+### The failure to watch for, with numbers
+
+The first thing that goes wrong is line weight, and it goes wrong by a lot.
+Measured off a real run:
+
+| | median stroke, as % of image width | at a 1024 canvas |
+|---|---|---|
+| the style target | **0.56%** | ≈ 6 px |
+| what came back | **2.13%** | ≈ 22 px |
+
+Nearly **four times too thick** — and thick lines do not merely look wrong,
+they crowd out the flat colour that is doing all the work at 56 pixels. An
+earlier version of this prompt asked for 1.5%, which was itself almost three
+times the target; that number was guessed rather than measured, and it is now
+0.5% because the reference was measured.
+
+Two other things went with it in the same run, and they are worth checking for
+together, because they arrive as a set — the model drifts toward a bold mascot
+logo and takes everything with it:
+
+- **head only, no hands.** The style target's subject is 838 × 1161, a tall
+  bust including forearms. The bad run was a head filling the whole square.
+- **no margin, and a solid background.** The target fills 50% of its frame with
+  empty space around it; the bad run filled 100% edge to edge, with a flat teal
+  field baked in and nothing to remove.
+
+If you see any one of the three, re-prompt for all three. They fail together.
+
 ### Fixing it without rerolling
 
 Grok Imagine edits regionally, which is the part worth using — the **magic
@@ -191,12 +239,13 @@ losing the version you liked:
 
 | what's wrong | point at | say |
 |---|---|---|
-| mushy at small size | the outline | "Thicken this outline to about 3% of the image width so it survives at 56 pixels." |
 | soft or busy background | the background | "Make this one perfectly flat, even colour with a hard edge against the character." |
 | lost the anchor | that region | "Restore the [feature] at twice this size and simplify the [other thing] to make room." |
 | too colourful | whole image | "Reduce to five colours, keeping [HEX] as the loudest and desaturating the rest." |
 | head cropped | whole image | "Zoom out slightly so there is even empty space on all four sides and nothing touches the edge." |
-| disappears on the panel | the silhouette | "Thicken the white die-cut sticker border evenly all the way around so the figure separates from a dark background." |
+| lines too thick | whole image | "Redraw with much finer lineart — about 6 pixels on a 1024 canvas — and make the outer contour the same thin weight as the interior lines, with no heavy border around the figure." |
+| looks like a logo | whole image | "Less bold and less graphic — the weight of a printed manga panel, not a vinyl decal." |
+| disappears on the panel | — | not a prompt problem; pass `--rim 1.4` to the tool |
 | hands look wrong | the hands | "Simplify these into distinct tapered finger shapes on the same line weight, with no knuckle or nail detail." |
 | eyes look generic | the eyes | "Make the irises two or three concentric rings in [HEX] around a dark pupil, with a heavy solid upper lash line." |
 
@@ -239,7 +288,7 @@ The hex is each connection's own `color` value out of the file.
 - **Not a person** — The Junkyard Demon, SWORD, The Engineer whose entry is
   blank. Drop the FACE and HAIR fields and replace the anchor with an object or
   a sigil rendered in the same flat style — drop HANDS too — then keep every
-  other field, the sticker border included, exactly as written. A consistent object among faces reads as deliberate; a vague face
+  other field exactly as written. A consistent object among faces reads as deliberate; a vague face
   reads as a failure.
 - **Never seen** — Thessun Volkesh, never confirmed sighted. A silhouette in
   the accent colour with the anchor detail alone picked out is more honest than
@@ -263,7 +312,7 @@ file with no alpha channel at all, which looks transparent and is not. If that
 happens, use `--checker`:
 
 ```
-python3 tools/key_chibi.py ~/Downloads/zazz.png --checker --uri
+python3 tools/key_chibi.py ~/Downloads/zazz.png --checker --rim 1.4 --uri
 ```
 
 It removes the background by flooding in from the frame edge rather than by
@@ -274,9 +323,11 @@ too. Verified on the reference: the coat came through intact.
 **2. Run it through the shaper anyway:**
 
 ```
-python3 tools/key_chibi.py ~/Downloads/zazz.png --alpha --uri
+python3 tools/key_chibi.py ~/Downloads/zazz.png --alpha --rim 1.4 --uri
 ```
 
+`--rim 1.4` draws the white die-cut border the prompt no longer asks for, at an
+exact even width with a round pen so the cut edge has no square corners.
 `--alpha` skips the keying and does the rest, which is still the part no image
 tool does for you: trim to what is actually drawn (the slot is
 `object-fit: cover` and will happily zoom into an empty margin), re-pad square,

@@ -73,13 +73,15 @@ three bracketed slots filled in.
 > the bandaged eyes, the missing arm]**. Draw it large and in high contrast,
 > and simplify anything else before you simplify that.
 >
-> Line it cleanly in a very dark warm brown, near-black, at one consistent
-> weight everywhere — outline, folds and fingers all on the same line — with a
-> slight taper at the ends of strokes and clean rounded joins, and no
-> crosshatching, sketch lines or stippling. Outside that lineart, put a solid
-> white die-cut sticker border offset evenly all the way around the outer
-> silhouette, following the shape including the hair tips, as a hard unbroken
-> band with nothing outside it.
+> Line it with a fine, thin pen in a very dark warm brown, near-black — on a
+> 1024-pixel image the strokes should be about six pixels wide, roughly half a
+> percent of the width, the weight of a printed manga panel rather than a
+> vinyl decal. Keep that one weight everywhere: the outer contour of the
+> figure is drawn with exactly the same thin line as the folds in the cloth
+> and the gaps between the fingers, so there is no heavy border around the
+> character and no chunky mascot-logo stroke anywhere. Give the strokes a
+> slight taper at their ends and clean rounded joins, and use no
+> crosshatching, sketch lines or stippling.
 >
 > Shade it with exactly two tones per material — a base and one hard-edged
 > shadow that is a darker, slightly desaturated version of the base rather
@@ -105,19 +107,20 @@ three bracketed slots filled in.
 > head is large in the frame: the figure should fill about eighty-four percent
 > of the square, centred, with an even band of background on all four sides
 > rather than tall empty margins at the left and right. Keep the whole
-> silhouette, sticker border included, clear of the four corners, which are cut
-> away when this is displayed.
+> silhouette clear of the four corners, which are cut away when this is
+> displayed.
 >
 > Put them on a completely flat, uniform pure green field, hex #00FF00,
-> filling the entire background edge to edge outside the white sticker border
-> with a single even colour — no scenery, no floor, no horizon, no gradient,
+> filling the entire background edge to edge with a single even colour — no scenery, no floor, no horizon, no gradient,
 > no glow around the figure, no shadow cast on the green, and no checkerboard
 > pattern. The green must be untouched and the same shade in every corner. Do
 > not use any green anywhere on the character themself.
 >
 > The picture will be shown at fifty-six pixels across on a near-black panel,
-> so it has to hold up tiny: the hair silhouette, the accent colour and the
-> white sticker border are what carry it at that size. Keep the surface clean
+> so it has to hold up tiny: the hair silhouette and the accent colour are what
+> carry it at that size. Thin lines survive that downscale; thick ones ruin it
+> by eating the colour area. The white cut edge that separates the figure from
+> the dark panel is added afterwards by a tool and is not your job. Keep the surface clean
 > of any lettering, numbers, logos, signature or watermark. One character only.
 
 ### Fixing it conversationally
@@ -128,7 +131,8 @@ follow-ups rather than rewriting the prompt:
 - *"The outline is too thin — thicken it so it still reads when the image is 56 pixels wide."*
 - *"There's a soft glow bleeding into the green. Make the background one perfectly flat #00FF00 with a hard edge against the character."*
 - *"Their [feature] got lost. Bring it back and simplify the [other thing] to make room."*
-- *"Thicken the white die-cut sticker border evenly all the way around."*
+- *"The lines are far too thick. Redraw with fine lineart, about six pixels on a 1024 canvas, and make the outer contour the same thin weight as the interior lines."*
+- *"Less bold and less graphic — the weight of a printed manga panel, not a vinyl decal."*
 - *"Make the irises two or three concentric rings in [HEX] around a dark pupil."*
 - *"Too many colours. Cut it to five, keeping [HEX] as the loudest."*
 - *"Zoom out slightly — the top of their head is touching the frame."*
@@ -156,7 +160,7 @@ makes a portrait look *seated* rather than pasted on.
 ## Turning what Gemini gives you into the actual PNG
 
 ```
-python3 tools/key_chibi.py ~/Downloads/zazz.png --uri
+python3 tools/key_chibi.py ~/Downloads/zazz.png --rim 1.4 --uri
 ```
 
 It pulls the green, ramps the edge instead of thresholding it — so the outline
