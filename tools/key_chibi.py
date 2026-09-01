@@ -35,9 +35,53 @@ import io
 import os
 import sys
 
+from collections import Counter, deque
+
 from PIL import Image, ImageChops
 
 KEYS = {"green": (0, 255, 0), "magenta": (255, 0, 255), "blue": (0, 0, 255)}
+
+
+def _flood(im, px, w, h, is_bg):
+    """Background is what the frame EDGE can reach, not what matches a colour.
+
+    That distinction is the whole point. A character with green hair on a green
+    field keeps her hair, because her own outline encloses it and the fill
+    cannot get inside; a global colour key would punch holes straight through
+    it. Same reason a white lab coat survives a white checkerboard.
+    """
+    bg = [[False] * w for _ in range(h)]
+    q = deque()
+    for x in range(w):
+        for y in (0, h - 1):
+            if is_bg(px[x, y]) and not bg[y][x]:
+                bg[y][x] = True; q.append((y, x))
+    for y in range(h):
+        for x in (0, w - 1):
+            if is_bg(px[x, y]) and not bg[y][x]:
+                bg[y][x] = True; q.append((y, x))
+    if not q:
+        raise SystemExit("no background touching the frame edge matched — check the "
+                         "colour, or raise the tolerance")
+    while q:
+        y, x = q.popleft()
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            ny, nx = y + dy, x + dx
+            if 0 <= ny < h and 0 <= nx < w and not bg[ny][nx] and is_bg(px[nx, ny]):
+                bg[ny][nx] = True; q.append((ny, nx))
+    out = Image.new("RGBA", (w, h))
+    op = out.load()
+    kept = 0
+    for y in range(h):
+        row = bg[y]
+        for x in range(w):
+            if row[x]:
+                op[x, y] = (0, 0, 0, 0)
+            else:
+                r, g, b = px[x, y]
+                op[x, y] = (r, g, b, 255)
+                kept += 1
+    return out, kept
 
 
 def _disc(r):
@@ -142,6 +186,17 @@ def main():
                          "even, and identical on all 66 portraits")
     ap.add_argument("--rim-color", default="#ffffff", metavar="HEX",
                     help="colour of the die-cut border (default white)")
+    ap.add_argument("--flood", nargs="?", const="auto", metavar="HEX",
+                    help="remove a FLAT background by flooding in from the frame edge, "
+                         "matching a colour rather than requiring it to be pale. Give a "
+                         "hex, or omit the value to take the commonest border colour. "
+                         "This is the safe choice whenever the character shares a colour "
+                         "with the background -- green hair on a green field survives, "
+                         "because the outline encloses it and the fill cannot get in, "
+                         "where a global colour key would punch holes straight through it")
+    ap.add_argument("--flood-tol", type=float, default=42, metavar="D",
+                    help="how far from the background colour still counts as background "
+                         "(default 42; raise it for JPEG, whose flat fields are not flat)")
     ap.add_argument("--checker", action="store_true",
                     help="the background is a PAINTED transparency checkerboard, or any "
                          "flat pale background, with no real alpha — remove it by flooding "
@@ -153,49 +208,41 @@ def main():
                          "only trim, pad, resize and encode")
     args = ap.parse_args()
 
+    if args.flood:
+        im = Image.open(args.src).convert("RGB")
+        w, h = im.size
+        px = im.load()
+        if args.flood == "auto":
+            edge = ([px[x, 0] for x in range(w)] + [px[x, h - 1] for x in range(w)] +
+                    [px[0, y] for y in range(h)] + [px[w - 1, y] for y in range(h)])
+            ref = Counter(edge).most_common(1)[0][0]
+            print(f"  flood  background sampled from the border: "
+                  f"#{ref[0]:02x}{ref[1]:02x}{ref[2]:02x}")
+        else:
+            hx = args.flood.lstrip("#")
+            ref = tuple(int(hx[i:i + 2], 16) for i in (0, 2, 4))
+        tol = args.flood_tol
+        near = lambda c: ((c[0] - ref[0]) ** 2 + (c[1] - ref[1]) ** 2 +
+                          (c[2] - ref[2]) ** 2) ** .5 <= tol
+        out, kept = _flood(im, px, w, h, near)
+        cov = kept / (w * h)
+        print(f"  flood  removed the background, {cov:.1%} of the frame kept")
+        if cov > .97:
+            print("  note   almost nothing was removed — raise --flood-tol, or the "
+                  "character may be touching the frame edge.")
+        return finish(out, args, w, h)
+
     if args.checker:
         # Flood in from the border over pale near-neutral pixels. Matching the
         # checker BY COLOUR would also delete a white lab coat, a bandage or a
         # pale prop; matching by CONNECTION to the frame edge cannot, because
         # the character's own outline encloses everything inside them. That is
         # the whole reason this is a fill and not a threshold.
-        from collections import deque
         im = Image.open(args.src).convert("RGB")
         w, h = im.size
         px = im.load()
         pale = lambda c: (max(c) - min(c) < 16) and (sum(c) / 3 > 196)
-        bg = [[False] * w for _ in range(h)]
-        q = deque()
-        for x in range(w):
-            for y in (0, h - 1):
-                if pale(px[x, y]) and not bg[y][x]:
-                    bg[y][x] = True; q.append((y, x))
-        for y in range(h):
-            for x in (0, w - 1):
-                if pale(px[x, y]) and not bg[y][x]:
-                    bg[y][x] = True; q.append((y, x))
-        if not q:
-            raise SystemExit("no pale background touching the frame edge — --checker is "
-                             "for a painted checkerboard or a flat pale field, and this "
-                             "is neither. Key it by colour instead.")
-        while q:
-            y, x = q.popleft()
-            for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                ny, nx = y + dy, x + dx
-                if 0 <= ny < h and 0 <= nx < w and not bg[ny][nx] and pale(px[nx, ny]):
-                    bg[ny][nx] = True; q.append((ny, nx))
-        out = Image.new("RGBA", (w, h))
-        op = out.load()
-        kept = 0
-        for y in range(h):
-            row = bg[y]
-            for x in range(w):
-                if row[x]:
-                    op[x, y] = (0, 0, 0, 0)
-                else:
-                    r, g, b = px[x, y]
-                    op[x, y] = (r, g, b, 255)
-                    kept += 1
+        out, kept = _flood(im, px, w, h, pale)
         cov = kept / (w * h)
         print(f"  flood  removed the background, {cov:.1%} of the frame kept")
         if cov > .97:
