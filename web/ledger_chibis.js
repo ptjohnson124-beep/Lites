@@ -49,37 +49,39 @@
   return out;
  }
 
- function match(key, conns) {
-  const k = norm(key);
-  const exact = conns.filter(c => norm(c.name) === k);
-  if (exact.length) return exact;
-  return conns.filter(c => norm(c.name).startsWith(k + " "));
+ /* Which key belongs to which connection. Resolved per CONNECTION rather
+    than per key, so precedence is a decision rather than an accident of the
+    order the folder happened to be read in: an exact name always beats a
+    leading-word match, and among leading-word matches the longest key wins.
+    That is what lets "Betanexus and Dotframe.webp" -- one card, two people --
+    sit in the folder beside a "Betanexus.webp" without the shorter name
+    quietly taking the card. */
+ function keyFor(name) {
+  const n = norm(name);
+  let exact = null, prefix = null;
+  KEYS.forEach(k => {
+   const kk = norm(k);
+   if (kk === n) exact = k;
+   else if (n.startsWith(kk + " ") && (!prefix || kk.length > norm(prefix).length)) prefix = k;
+  });
+  return exact || prefix;
  }
 
  let applied = 0, reported = false;
  function apply() {
   const conns = allConnections();
   if (!conns.length) return;
-  const seen = {};
-  KEYS.forEach(key => {
-   const hits = match(key, conns);
-   /* One person can legitimately hold two entries -- Cole's copy and
-      Vergil's. Two DIFFERENT people sharing a prefix cannot, and that is
-      what is refused. */
-   const names = {};
-   hits.forEach(c => { names[norm(c.name)] = 1; });
-   if (Object.keys(names).length > 1) {
-    if (!reported) console.warn("[chibis] '" + key + "' matches more than one person (" +
-      Object.keys(names).join(", ") + ") — skipped. Rename the file to the full name.");
-    return;
-   }
-   hits.forEach(c => { if (c.chibi !== PORTRAITS[key]) { c.chibi = PORTRAITS[key]; applied++; } });
-   seen[key] = hits.length;
+  const used = {};
+  conns.forEach(c => {
+   const key = keyFor(c.name);
+   if (!key) return;
+   used[key] = (used[key] || 0) + 1;
+   if (c.chibi !== PORTRAITS[key]) { c.chibi = PORTRAITS[key]; applied++; }
   });
   if (!reported) {
    reported = true;
-   const got = KEYS.filter(k => seen[k]), missed = KEYS.filter(k => !seen[k]);
-   console.log("[chibis] " + got.length + "/" + KEYS.length + " placed" +
+   const missed = KEYS.filter(k => !used[k]);
+   console.log("[chibis] " + (KEYS.length - missed.length) + "/" + KEYS.length + " placed" +
      (missed.length ? "; no connection named: " + missed.join(", ") : ""));
   }
  }

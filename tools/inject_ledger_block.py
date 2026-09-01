@@ -85,17 +85,44 @@ def main():
 
     html = open(args.ledger, encoding="utf-8").read()
 
-    # Drop earlier copies of THIS block. The span is anchored on the block's own
-    # first line, so a file holding forty blocks loses exactly the one being
-    # replaced -- and a span that somehow covers two starts is refused rather
-    # than cutting a neighbour out with it.
-    pat = re.compile(r"\n*<script>\s*" + re.escape(start) + r".*?" +
-                     re.escape(end) + r"\s*</script>\n?", re.S)
-    for m in pat.finditer(html):
+    # Drop earlier copies of THIS block.
+    #
+    # The first version of this required the span to be START ... END followed
+    # by </script>, on the assumption that every block sits in a <script> of
+    # its own. That assumption is now false: another session's tooling
+    # appended block 42 INSIDE block 41's script tag, so block 41's END is
+    # followed by more code rather than by a closing tag. The removal silently
+    # matched nothing and the injector cheerfully appended a second copy of a
+    # block that was already there -- which is the worst failure this tool has,
+    # because two copies of a block that binds handlers is not obviously broken
+    # on screen.
+    #
+    # So: find the block by its own markers alone, and take the surrounding
+    # <script>/</script> with it only when they really are adjacent.
+    span = re.compile(re.escape(start) + r".*?" + re.escape(end), re.S)
+    removed = 0
+    while True:
+        m = span.search(html)
+        if not m:
+            break
+        a, b = m.start(), m.end()
         if m.group(0).count(start) != 1:
             raise SystemExit("refusing to write: a removal span holds more than one "
                              "start marker")
-    html, removed = pat.subn("", html)
+        # the same file also carries a duplicate of the END marker left behind by
+        # that concatenation; take it too rather than leaving an orphan comment
+        tail = re.compile(r"\A\s*" + re.escape(end)).match(html[b:])
+        if tail:
+            b += tail.end()
+        pre = re.match(r"(?s).*?(\n*<script>\s*)\Z", html[:a])
+        post = re.match(r"\A(\s*</script>\n?)", html[b:])
+        if pre and post:
+            a -= len(pre.group(1))
+            b += len(post.end(1))
+        else:
+            b += len(re.match(r"\A\n*", html[b:]).group(0))
+        html = html[:a] + html[b:]
+        removed += 1
     if removed:
         print(f"  removed {removed} earlier copy/copies")
 

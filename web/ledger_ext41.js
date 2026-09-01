@@ -154,6 +154,23 @@
                       to{transform:translateY(-50%) rotate(360deg)}}
  .apoc-res-value{position:relative;z-index:1}
 
+ /* ---- the wavelength detail header -----------------------------------
+    That header is display:flex with three children -- portrait, the name and
+    relation column, and the Edit button. A later block appends the wave-type
+    panel as a FOURTH child of the same row, and at flex:0 1 auto it takes
+    914px of a 1248px header, crushing the name column to 108 pixels: the
+    relation text wraps one or two words to a line beside a wide empty gap.
+    Measured with the portraits block in and out, so it is not theirs either.
+
+    Left alone rather than reparented, because moving another block's node is
+    how two blocks start fighting over the same element on every re-render.
+    Instead the row is allowed to wrap and the wave panel is given a full-width
+    basis, so it drops to its own line under the identity row where it was
+    always going to look better anyway. */
+ .wl-detail-header{flex-wrap:wrap}
+ .wl-detail-header > .lx-wave{flex:1 1 100% !important;order:9;margin-top:4px}
+ .wl-detail-header > div:not([class]){min-width:220px}
+
  /* ---- the dividers ---------------------------------------------------
     --rules was inlined into this file at build time and then never referenced
     once -- a strip of three tech dividers nobody drew. The two horizontal
