@@ -4,6 +4,13 @@
  * Three figures the Ledger has no file on, added so their art has somewhere
  * to land: Hora on Vergil's list, Mika on Cole's, and Max and Vixen on both.
  *
+ * Dude With Bat is here for the same reason as Max and Vixen, one block
+ * later. Block 39 DELETED him outright -- it spliced vergil_dude_bat out of
+ * the list on the reasoning that "keeping a separate invented entry alongside
+ * the corrected John/Lass pair would just be a duplicate under a different
+ * name". He is not John, he is not Lass, and he has his own face. Restored,
+ * with block 39 otherwise untouched.
+ *
  * Max and Vixen are here because block 36 got it wrong. That block resolved
  * "Max & Vixen" and "Anti-Rover Lieutenants" as two names for one pair --
  * Maxium and Veion -- and folded them together. They are not the same people.
@@ -59,7 +66,13 @@
       "lieutenants' — an earlier pass folded this entry into Maxium and Veion by " +
       "mistake. A pair who turn up together and stay that way, jackets patched with " +
       "the same hand, and at least one of them arrives with somebody's blood on his " +
-      "chin more often than is comfortable." }
+      "chin more often than is comfortable." },
+  { on: ["vergil"], id: "dude_bat", name: "Dude With Bat", color: "#c8a24a",
+    relation: "The one with the bat, and his own file rather than a stray line " +
+      "in someone else's -- an earlier pass deleted this entry as a duplicate of " +
+      "John and Lass, which he is not. Black coat, a crane worked into the sleeve, " +
+      "gold eyes, and a length of pipe carried over one shoulder like it is " +
+      "nothing much. Everything past that is unwritten." }
  ];
 
  T(() => {
