@@ -81,13 +81,20 @@ def finish(out, args, w, h):
     sq = sq.resize((args.size, args.size), Image.LANCZOS)
     print(f"  trim   {w}x{h} -> subject {sub.size[0]}x{sub.size[1]} -> {args.size}x{args.size}")
 
-    dest = args.out or os.path.splitext(args.src)[0] + "_keyed.png"
-    sq.save(dest, optimize=True)
+    webp = args.webp is not None
+    ext = ".webp" if webp else ".png"
+    dest = args.out or os.path.splitext(args.src)[0] + "_keyed" + ext
+    if webp and not dest.endswith(".webp"):
+        dest = os.path.splitext(dest)[0] + ".webp"
+    save = ({"quality": args.webp, "method": 6} if webp else {"optimize": True})
+    fmt = "WEBP" if webp else "PNG"
+    sq.save(dest, fmt, **save)
     print(f"  wrote  {dest} ({os.path.getsize(dest) / 1e3:.1f} KB)")
 
     buf = io.BytesIO()
-    sq.save(buf, "PNG", optimize=True)
-    uri = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+    sq.save(buf, fmt, **save)
+    uri = ("data:image/webp;base64," if webp else "data:image/png;base64,") + \
+        base64.b64encode(buf.getvalue()).decode()
     print(f"  uri    {len(uri) / 1e3:.1f} KB of text for the chibi: field")
     if args.uri:
         open(dest + ".txt", "w").write(uri)
@@ -115,6 +122,11 @@ def main():
     ap.add_argument("-k", "--key", default="green",
                     help="green, magenta, blue, or #rrggbb (default: green)")
     ap.add_argument("-s", "--size", type=int, default=512, help="output square (default 512)")
+    ap.add_argument("--webp", nargs="?", type=int, const=88, metavar="Q",
+                    help="write WebP at this quality instead of PNG (default 88). "
+                         "Sixty-six PNGs at 512 is 19 MB of base64 in a file that is "
+                         "already 6 MB; the same set at 256/q88 is 1.3 MB, and the "
+                         "biggest place it is ever shown is 76 pixels across")
     ap.add_argument("--inner", type=int, default=90,
                     help="distance at or under which a pixel is certainly background")
     ap.add_argument("--outer", type=int, default=190,
