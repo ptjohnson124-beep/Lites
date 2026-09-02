@@ -7,6 +7,13 @@ portrait is dropping a file in the folder and running this again; there is no
 code change and no list to keep in sync, because this is the block that gets
 re-injected sixty-odd times as the art gets drawn.
 
+A name may carry an "@character" suffix -- "Yaviel@vergil.webp" -- for the
+case where one person looks different depending on whose file you are reading.
+Yaviel is on both lists and only Vergil's is a relationship, so Vergil's card
+gets the animation and Cole's keeps the still. Without the suffix a portrait
+goes to everyone of that name, which is the right default and stays the
+common case.
+
 Same rules as every other injector here: the Ledger is never edited in place,
 the block sits between two markers so deleting it restores the file byte for
 byte, and re-running removes the earlier copy first.
@@ -62,7 +69,8 @@ def main():
         b = base64.b64encode(open(path, "rb").read()).decode()
         portraits[stem] = f"data:{MIME[ext.lower()]};base64,{b}"
         total += len(b)
-        print(f"  {stem:<28} {os.path.getsize(path) / 1e3:>7.1f} KB  "
+        label = stem.replace("@", "  →  ") if "@" in stem else stem
+        print(f"  {label:<28} {os.path.getsize(path) / 1e3:>7.1f} KB  "
               f"-> {len(b) / 1e3:>7.1f} KB of base64")
 
     if not portraits:

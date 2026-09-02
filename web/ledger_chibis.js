@@ -19,6 +19,12 @@
  * list and Vergil's both. A key that would match two different people is
  * reported and skipped rather than guessed at, because a portrait on the wrong
  * person is worse than no portrait.
+ *
+ * A key may also carry an "@character" suffix, for the case where one person
+ * looks different depending on whose file you are reading. Yaviel is on both
+ * lists and only Vergil's is a relationship, so "Yaviel@vergil" gets the
+ * animation and "Yaviel@cole" keeps the still. A suffixed key beats a plain
+ * one on that character's list and is invisible on every other.
  */
 (function () {
  "use strict";
@@ -33,38 +39,55 @@
 
  const norm = (s) => String(s == null ? "" : s).trim().toLowerCase();
 
+ /* Split the keys into the ones that apply to everyone and the ones that apply
+    to one character's list only. */
+ const GENERAL = {}, PER = {};
+ KEYS.forEach(k => {
+  const at = k.lastIndexOf("@");
+  if (at > 0) {
+   const who = norm(k.slice(at + 1));
+   (PER[who] = PER[who] || {})[norm(k.slice(0, at))] = k;
+  } else {
+   GENERAL[norm(k)] = k;
+  }
+ });
+
  /* Every connection object the file holds, across both characters and any
-    later block that pushed more in. Collected fresh each pass, because the
-    wavelength blocks add to these arrays long after this one runs.
-    The store is WAVELENGTHS; every block that touches it aliases it to a local
-    `WL`, which is a good way to look up the wrong name and silently find
-    nothing -- as this block did on its first run. */
+    later block that pushed more in, tagged with whose list it came from.
+    Collected fresh each pass, because the wavelength blocks add to these
+    arrays long after this one runs. The store is WAVELENGTHS; every block that
+    touches it aliases it to a local `WL`, which is a good way to look up the
+    wrong name and silently find nothing -- as this block did on its first run. */
  function allConnections() {
   const WL = G("WAVELENGTHS") || G("WL") || {};
   const out = [];
   Object.keys(WL).forEach(who => {
    const list = WL[who];
-   if (Array.isArray(list)) list.forEach(c => { if (c && typeof c === "object") out.push(c); });
+   if (Array.isArray(list)) list.forEach(c => {
+    if (c && typeof c === "object") out.push({ c: c, who: norm(who) });
+   });
   });
   return out;
  }
 
- /* Which key belongs to which connection. Resolved per CONNECTION rather
-    than per key, so precedence is a decision rather than an accident of the
-    order the folder happened to be read in: an exact name always beats a
-    leading-word match, and among leading-word matches the longest key wins.
-    That is what lets "Betanexus and Dotframe.webp" -- one card, two people --
-    sit in the folder beside a "Betanexus.webp" without the shorter name
-    quietly taking the card. */
- function keyFor(name) {
+ /* Which key belongs to which connection. Resolved per CONNECTION rather than
+    per key, so precedence is a decision rather than an accident of the order
+    the folder happened to be read in: a key aimed at this character's list
+    beats a general one, an exact name beats a leading-word match, and among
+    leading-word matches the longest key wins. That last rule is what lets
+    "Betanexus and Dotframe.webp" -- one card, two people -- sit in the folder
+    beside a "Betanexus.webp" without the shorter name quietly taking the card. */
+ function pick(pool, name) {
   const n = norm(name);
-  let exact = null, prefix = null;
-  KEYS.forEach(k => {
-   const kk = norm(k);
-   if (kk === n) exact = k;
-   else if (n.startsWith(kk + " ") && (!prefix || kk.length > norm(prefix).length)) prefix = k;
+  if (pool[n]) return pool[n];
+  let best = null;
+  Object.keys(pool).forEach(k => {
+   if (n.startsWith(k + " ") && (!best || k.length > best.length)) best = k;
   });
-  return exact || prefix;
+  return best ? pool[best] : null;
+ }
+ function keyFor(name, who) {
+  return (PER[who] && pick(PER[who], name)) || pick(GENERAL, name);
  }
 
  let applied = 0, reported = false;
@@ -72,17 +95,17 @@
   const conns = allConnections();
   if (!conns.length) return;
   const used = {};
-  conns.forEach(c => {
-   const key = keyFor(c.name);
+  conns.forEach(e => {
+   const key = keyFor(e.c.name, e.who);
    if (!key) return;
    used[key] = (used[key] || 0) + 1;
-   if (c.chibi !== PORTRAITS[key]) { c.chibi = PORTRAITS[key]; applied++; }
+   if (e.c.chibi !== PORTRAITS[key]) { e.c.chibi = PORTRAITS[key]; applied++; }
   });
   if (!reported) {
    reported = true;
    const missed = KEYS.filter(k => !used[k]);
    console.log("[chibis] " + (KEYS.length - missed.length) + "/" + KEYS.length + " placed" +
-     (missed.length ? "; no connection named: " + missed.join(", ") : ""));
+     (missed.length ? "; nothing matched: " + missed.join(", ") : ""));
   }
  }
 
@@ -95,8 +118,7 @@
   const P = G("PLAYERS") || {}, who = G("currentUser");
   const nm = (P[who] || {}).name;
   if (!nm) return;
-  const key = KEYS.find(k => norm(k) === norm(nm)) ||
-              KEYS.find(k => norm(nm).startsWith(norm(k) + " "));
+  const key = keyFor(nm, norm(who));
   if (!key) return;
   if (el.firstElementChild && el.firstElementChild.getAttribute("src") === PORTRAITS[key]) return;
   el.textContent = "";
