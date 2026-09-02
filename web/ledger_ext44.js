@@ -75,6 +75,26 @@
       "nothing much. Everything past that is unwritten." }
  ];
 
+ /* Chi-Mika's card carries the art of the pair, because that is the art there
+    is. Her entry now says so in as many words, so nobody reads a second face
+    on the card as a second connection: the wavelength on this card is with
+    her, and Dau-Lu is standing in the picture, not in the file. */
+ const CHIMIKA_NOTE = " The card shows her with Mr. Dau-Lu because that is the " +
+   "portrait that exists, but the wavelength here is with Chi-Mika alone — " +
+   "Cole has no separate standing with him yet.";
+
+ T(() => {
+  const WL = G("WAVELENGTHS");
+  if (!WL) return;
+  Object.keys(WL).forEach(who => {
+   if (!Array.isArray(WL[who])) return;
+   WL[who].forEach(c => {
+    if (c && c.name === "Chi-Mika" && c.relation && c.relation.indexOf(CHIMIKA_NOTE) < 0)
+     c.relation += CHIMIKA_NOTE;
+   });
+  });
+ });
+
  T(() => {
   const WL = G("WAVELENGTHS");
   if (!WL) return;

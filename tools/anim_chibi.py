@@ -31,6 +31,17 @@ from PIL import Image
 
 
 def frames_of(path, stride):
+    # GIF and animated WebP go through Pillow: cv2.VideoCapture will open a GIF
+    # and then hand back nonsense or nothing, because it is a video decoder and
+    # a GIF is a stack of palette images.
+    if os.path.splitext(path)[1].lower() in (".gif", ".webp", ".png"):
+        from PIL import ImageSequence
+        im = Image.open(path)
+        dur = im.info.get("duration") or 100
+        out = [np.array(f.convert("RGB")) for i, f in enumerate(ImageSequence.Iterator(im))
+               if i % stride == 0]
+        return out, 1000.0 / dur
+
     cap = cv2.VideoCapture(path)
     if not cap.isOpened():
         raise SystemExit(f"could not open {path}")
@@ -48,29 +59,32 @@ def frames_of(path, stride):
 
 
 def alpha_of(rgb, pale_only, tol):
-    """Background is what the frame EDGE reaches, never what merely matches a
-    colour -- the rule the whole pipeline runs on."""
+    """Background is what the frame EDGE reaches, each seed judged against ITS
+    OWN colour.
+
+    An earlier version pre-masked everything that did not match the corner
+    pixel, so the fill could never enter it. That is fatal the moment a
+    background changes during the animation -- six frames of one clip flash a
+    different shade behind the character, and on exactly those frames nothing
+    was removed at all. Seeding per pixel with a fixed range has no opinion
+    about what the background is supposed to look like, so it survives a
+    background that moves, a split frame, and a painted checkerboard alike.
+    """
     h, w, _ = rgb.shape
-    if pale_only:
-        seed_ok = ((rgb.max(2).astype(int) - rgb.min(2).astype(int) < 16) &
-                   (rgb.mean(2) > 196))
-    else:
-        ref = rgb[0, 0].astype(int)
-        seed_ok = np.sqrt(((rgb.astype(int) - ref) ** 2).sum(2)) <= tol
-    # floodFill needs a mask 2px larger, and only fills where mask is 0
+    bgr = np.ascontiguousarray(rgb[:, :, ::-1])
     mask = np.zeros((h + 2, w + 2), np.uint8)
-    mask[1:-1, 1:-1] = (~seed_ok).astype(np.uint8)
-    work = rgb.copy()
-    filled = np.zeros((h, w), bool)
-    for (y, x) in ([(0, c) for c in range(0, w, 8)] + [(h - 1, c) for c in range(0, w, 8)] +
-                   [(r, 0) for r in range(0, h, 8)] + [(r, w - 1) for r in range(0, h, 8)]):
+    t = int(round(tol))
+    step = max(1, min(w, h) // 256)
+    seeds = ([(x, 0) for x in range(0, w, step)] + [(x, h - 1) for x in range(0, w, step)] +
+             [(0, y) for y in range(0, h, step)] + [(w - 1, y) for y in range(0, h, step)])
+    work = bgr.copy()
+    for (x, y) in seeds:
         if mask[y + 1, x + 1]:
             continue
-        cv2.floodFill(work, mask, (x, y), (0, 0, 0), (tol,) * 3, (tol,) * 3,
-                      4 | cv2.FLOODFILL_FIXED_RANGE | (255 << 8))
-    filled = mask[1:-1, 1:-1] == 255
-    a = np.where(filled, 0, 255).astype(np.uint8)
-    return a
+        cv2.floodFill(work, mask, (x, y), (0, 0, 0), (t,) * 3, (t,) * 3,
+                      4 | cv2.FLOODFILL_FIXED_RANGE | cv2.FLOODFILL_MASK_ONLY | (255 << 8))
+    bg = mask[1:-1, 1:-1] == 255
+    return np.where(bg, 0, 255).astype(np.uint8)
 
 
 def main():
@@ -94,9 +108,12 @@ def main():
                          "straight loop snaps back. Costs roughly double the frames.")
     args = ap.parse_args()
 
-    cap = cv2.VideoCapture(args.video)
-    src_fps = cap.get(cv2.CAP_PROP_FPS) or 24.0
-    cap.release()
+    if os.path.splitext(args.video)[1].lower() in (".gif", ".webp", ".png"):
+        src_fps = 1000.0 / (Image.open(args.video).info.get("duration") or 100)
+    else:
+        cap = cv2.VideoCapture(args.video)
+        src_fps = cap.get(cv2.CAP_PROP_FPS) or 24.0
+        cap.release()
     stride = max(1, int(round(src_fps / args.fps)))
     fr, _ = frames_of(args.video, stride)
     if not fr:
@@ -110,13 +127,42 @@ def main():
     if kept > .95:
         print("  note   almost nothing was removed — check --tol, or pass --colour-bg")
 
-    # ONE box for every frame, so the figure does not drift or breathe
-    union = np.zeros_like(alphas[0], bool)
+    # ONE box for every frame, so the figure does not drift or breathe -- and
+    # built from each frame's LARGEST CONNECTED PIECE rather than from every
+    # pixel that survived. A plain union is hostage to a single stray speck in
+    # a corner: one leaked pixel in one frame of twenty-one and the shared box
+    # is the whole canvas, which silently shrinks the character inside it.
+    # And taken as a TRIMMED UNION of the per-frame boxes.
+    #
+    # Neither extreme works alone. A plain union is hostage to the worst single
+    # frame: a clip that flashes a full-frame transformation burst partway
+    # through has seventeen frames agreeing the character is 1132x1301 and one
+    # insisting on 1408x1408, and the union believes the one. But the median
+    # fails the opposite case -- a character who really does move that much,
+    # rearing a horse across half the frame, gets his head cropped off, because
+    # there is no outlier to reject and the middle of his range is not his
+    # range.
+    #
+    # So: throw away the largest tenth of the boxes by area, then union what is
+    # left. The burst frame goes; the big honest poses stay.
+    boxes = []
     for a in alphas:
-        union |= a > 40
-    ys, xs = np.where(union)
-    y0, y1, x0, x1 = ys.min(), ys.max(), xs.min(), xs.max()
-    print(f"  shared crop {x1 - x0 + 1}x{y1 - y0 + 1} across all frames")
+        n, lab, st, _ = cv2.connectedComponentsWithStats((a > 40).astype(np.uint8), 8)
+        if n < 2:
+            continue
+        i = 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA]))
+        bx, by = st[i, cv2.CC_STAT_LEFT], st[i, cv2.CC_STAT_TOP]
+        boxes.append((bx, by, bx + st[i, cv2.CC_STAT_WIDTH] - 1,
+                      by + st[i, cv2.CC_STAT_HEIGHT] - 1))
+    if not boxes:
+        raise SystemExit("nothing left after keying")
+    boxes.sort(key=lambda b: (b[2] - b[0]) * (b[3] - b[1]))
+    keep = boxes[:max(1, int(round(len(boxes) * .9)))]
+    bb = np.array(keep)
+    x0, y0 = int(bb[:, 0].min()), int(bb[:, 1].min())
+    x1, y1 = int(bb[:, 2].max()), int(bb[:, 3].max())
+    print(f"  shared crop {x1 - x0 + 1}x{y1 - y0 + 1}, union of {len(keep)} of "
+          f"{len(boxes)} frames (largest tenth dropped)")
 
     S = args.size
     r = max(1, int(round(args.rim / 100 * S))) if args.rim > 0 else 0
