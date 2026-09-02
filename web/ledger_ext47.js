@@ -72,7 +72,12 @@
  }
 
  /* ---- reading view ---------------------------------------------------- */
- function paint(c, row, i, reached) {
+ /* One rung, one editor. A rung being EDITED must not also show the reading
+    view underneath it: the first pass drew both, so an open rung listed its
+    buff three times over -- the Ledger's own single Buff field, this block's
+    read-only list, and this block's editable list -- and its unlock methods
+    twice. The reading half is skipped while the editor is up. */
+ function paint(c, row, i, reached, editing) {
   const r = seed(c, i, row);
   const box = row.querySelector(".wl-rung-box");
   if (!box) return;
@@ -83,6 +88,12 @@
   if (old) old.remove();
   const buffBlock = row.querySelector(".wl-rung-buff");
   if (buffBlock) buffBlock.style.display = "none";
+  if (editing && reached) {
+   T(() => { const u = row.querySelector(".lx47-unlocks"); if (u) u.remove(); });
+   const t = row.querySelector(".lx-task");
+   if (t) t.style.display = "none";
+   return;
+  }
   const wrap = document.createElement("div");
   wrap.className = "lx47-buffs";
   wrap.innerHTML = reached
@@ -137,6 +148,15 @@
    if (lab && lab.classList.contains("wl-form-label")) lab.remove();
    ta.remove();
   });
+  /* The single Buff field is HIDDEN rather than removed. It is a third copy of
+     the same line, and editing it would write to r.buff, which nothing draws
+     any more -- but saveWLEdits still reads it, so taking it out of the page
+     entirely would drop that value on the next save. */
+  box.querySelectorAll(".wl-edit-buff").forEach(ta => {
+   const lab = ta.previousElementSibling;
+   if (lab && lab.classList.contains("wl-form-label")) lab.style.display = "none";
+   ta.style.display = "none";
+  });
 
   const ed = document.createElement("div");
   ed.className = "lx47-edit";
@@ -186,7 +206,7 @@
   const editing = !!G("wlEditMode");
   [...ladder.querySelectorAll(".wl-rung")].forEach((row, i) => {
    const reached = (i + 1) <= c.level;
-   T(() => paint(c, row, i, reached));
+   T(() => paint(c, row, i, reached, editing));
    if (editing && reached) T(() => editor(c, row, i));
   });
  }

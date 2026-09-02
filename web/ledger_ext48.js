@@ -21,11 +21,17 @@
  * lifted verbatim rather than reinvented; it had already decided what each
  * character's hand should be and it was right.
  *
- * One consequence worth naming: that table gives Kevanna and Dahlia the same
- * red, Vergil and Angi the same cyan, Zalir and Xaim the same amber. Each
- * pair is told apart by a genuinely different typeface, which was block 20's
- * design. If you would rather they differed by colour too, that is a one-line
- * change per person.
+ * One change from block 20's table, asked for directly: KEVANNA AND DAHLIA NO
+ * LONGER SHARE A RED. Both were #ff3b3b, told apart only by typeface. Kevanna
+ * keeps that one -- the bright scarlet suits a hand that is fast and too big
+ * for the line -- and Dahlia moves to #c8102e, a deeper carmine that is both
+ * darker and cooler. Picked by measuring rather than by eye: it sits 71 points
+ * of RGB distance from Kevanna's (the shared value was 0), it is further from
+ * every other ink in this table than it is from hers, and it still clears 3:1
+ * against the page, which is the threshold that matters for text this size.
+ *
+ * Vergil and Angi still share a cyan and Zalir and Xaim still share an amber.
+ * Those were not asked about and are left as block 20 designed them.
  */
 (function () {
  "use strict";
@@ -40,7 +46,7 @@
   felana:  { font: "'Trebuchet MS',sans-serif",      size: 22, slant: 3,   ink: "#ff2f92", weight: 700, sp: ".04em" },
   yaviel:  { font: "'Syncopate',sans-serif",         size: 19, slant: -2,  ink: "#b83fff", weight: 700, sp: ".10em" },
   zalir:   { font: "'Courier New',monospace",        size: 22, slant: 0,   ink: "#ff9b1f", weight: 700, sp: ".04em" },
-  dahlia:  { font: "'Chakra Petch',sans-serif",      size: 25, slant: -8,  ink: "#ff3b3b", weight: 600, sp: ".01em" },
+  dahlia:  { font: "'Chakra Petch',sans-serif",      size: 25, slant: -8,  ink: "#c8102e", weight: 600, sp: ".01em" },
   angi:    { font: "'Audiowide',cursive",            size: 21, slant: 4,   ink: "#2fe0ff", weight: 400, sp: ".03em" },
   burham:  { font: "Georgia,serif",                  size: 21, slant: -3,  ink: "#6b6478", weight: 400, sp: ".02em" },
   merov:   { font: "Verdana,sans-serif",             size: 20, slant: 1,   ink: "#8a8394", weight: 400, sp: ".03em" },
