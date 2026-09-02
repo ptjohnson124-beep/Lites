@@ -83,14 +83,23 @@
    "portrait that exists, but the wavelength here is with Chi-Mika alone — " +
    "Cole has no separate standing with him yet.";
 
+ /* Yaviel is on both lists, and only one of the two is a relationship. Said on
+    Vergil's copy alone, because Cole's is a different thing entirely and
+    should not inherit it. */
+ const YAVIEL_NOTE = " They are together — that is the shape of this one, and " +
+   "it is Vergil's alone; Cole's standing with him is a separate file.";
+
  T(() => {
   const WL = G("WAVELENGTHS");
   if (!WL) return;
   Object.keys(WL).forEach(who => {
    if (!Array.isArray(WL[who])) return;
    WL[who].forEach(c => {
-    if (c && c.name === "Chi-Mika" && c.relation && c.relation.indexOf(CHIMIKA_NOTE) < 0)
+    if (!c || !c.relation) return;
+    if (c.name === "Chi-Mika" && c.relation.indexOf(CHIMIKA_NOTE) < 0)
      c.relation += CHIMIKA_NOTE;
+    if (c.name === "Yaviel" && who === "vergil" && c.relation.indexOf(YAVIEL_NOTE) < 0)
+     c.relation += YAVIEL_NOTE;
    });
   });
  });
