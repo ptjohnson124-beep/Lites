@@ -42,6 +42,39 @@ from PIL import Image, ImageChops
 KEYS = {"green": (0, 255, 0), "magenta": (255, 0, 255), "blue": (0, 0, 255)}
 
 
+def _flood_cv(path, tol):
+    """Flood in from every edge pixel, each seed judged against ITS OWN colour.
+
+    The single-reference version could only clear one background. A split frame
+    -- one character on pink, another on purple, down the middle -- kept
+    whichever half was not sampled. Seeding per pixel with a fixed range fixes
+    that for free, and handles a painted checkerboard the same way, since the
+    light and dark squares each get seeded rather than one having to reach the
+    other. It is also perhaps a hundred times faster than the pure-Python fill.
+    """
+    import cv2
+    import numpy as np
+    bgr = cv2.imread(path, cv2.IMREAD_COLOR)
+    if bgr is None:
+        raise SystemExit(f"could not read {path}")
+    h, w = bgr.shape[:2]
+    mask = np.zeros((h + 2, w + 2), np.uint8)
+    t = int(round(tol))
+    step = max(1, min(w, h) // 256)
+    seeds = ([(x, 0) for x in range(0, w, step)] + [(x, h - 1) for x in range(0, w, step)] +
+             [(0, y) for y in range(0, h, step)] + [(w - 1, y) for y in range(0, h, step)])
+    work = bgr.copy()
+    for (x, y) in seeds:
+        if mask[y + 1, x + 1]:
+            continue
+        cv2.floodFill(work, mask, (x, y), (0, 0, 0), (t,) * 3, (t,) * 3,
+                      4 | cv2.FLOODFILL_FIXED_RANGE | cv2.FLOODFILL_MASK_ONLY | (255 << 8))
+    bg = mask[1:-1, 1:-1] == 255
+    rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+    out = Image.fromarray(np.dstack([rgb, np.where(bg, 0, 255).astype(np.uint8)]), "RGBA")
+    return out, int((~bg).sum())
+
+
 def _flood(im, px, w, h, is_bg):
     """Background is what the frame EDGE can reach, not what matches a colour.
 
@@ -92,6 +125,31 @@ def _disc(r):
 
 
 def finish(out, args, w, h):
+    if args.shrink > 0:
+        import cv2
+        import numpy as np
+        k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,
+                                      (2 * args.shrink + 1,) * 2)
+        arr = np.array(out)
+        arr[..., 3] = cv2.erode(arr[..., 3], k)
+        out = Image.fromarray(arr, "RGBA")
+        print(f"  shrink {args.shrink}px off the matte")
+
+    if args.keep > 0:
+        import cv2
+        import numpy as np
+        a = np.array(out.getchannel("A"))
+        n, lab, stats, _ = cv2.connectedComponentsWithStats((a > 96).astype(np.uint8), 8)
+        order = sorted(range(1, n), key=lambda i: stats[i, cv2.CC_STAT_AREA], reverse=True)
+        keep = set(order[:args.keep])
+        dropped = len(order) - len(keep)
+        if dropped:
+            m = np.isin(lab, list(keep))
+            arr = np.array(out)
+            arr[..., 3] = np.where(m, arr[..., 3], 0)
+            out = Image.fromarray(arr, "RGBA")
+            print(f"  keep   {len(keep)} largest piece(s), dropped {dropped}")
+
     box = out.getbbox()
     if not box:
         raise SystemExit("nothing left after keying")
@@ -178,6 +236,17 @@ def main():
     ap.add_argument("--margin", type=float, default=.06,
                     help="fraction of the square left as breathing room (default .06)")
     ap.add_argument("--uri", action="store_true", help="also write <out>.txt holding the data URI")
+    ap.add_argument("--shrink", type=int, default=0, metavar="PX",
+                    help="erode the kept area by this many pixels before anything else. "
+                         "Two is usually enough to sever a one-pixel seam -- the orphan "
+                         "column left between two background colours that is a shade too "
+                         "far from either for its fill to claim it. At source resolution "
+                         "it costs nothing visible once the image is scaled to 256")
+    ap.add_argument("--keep", type=int, default=0, metavar="N",
+                    help="after keying, keep only the N largest connected pieces. Use it "
+                         "when the background leaves a stray: a frame split down the "
+                         "middle into two colours keeps the seam, because neither fill "
+                         "can cross it. --keep 2 for a pair, 1 for one figure")
     ap.add_argument("--rim", type=float, default=0, metavar="PCT",
                     help="draw a white die-cut sticker border of this width, as a "
                          "percentage of the output square (1.2 is a good default). "
@@ -213,6 +282,17 @@ def main():
         w, h = im.size
         px = im.load()
         if args.flood == "auto":
+            try:
+                out, kept = _flood_cv(args.src, args.flood_tol)
+                cov = kept / (w * h)
+                print(f"  flood  per-seed fill from the frame edge, "
+                      f"{cov:.1%} of the frame kept")
+                if cov > .97:
+                    print("  note   almost nothing was removed — raise --flood-tol, or "
+                          "the character may be touching the frame edge.")
+                return finish(out, args, w, h)
+            except ImportError:
+                pass
             edge = ([px[x, 0] for x in range(w)] + [px[x, h - 1] for x in range(w)] +
                     [px[0, y] for y in range(h)] + [px[w - 1, y] for y in range(h)])
             ref = Counter(edge).most_common(1)[0][0]
