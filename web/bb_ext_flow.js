@@ -190,6 +190,10 @@
 
  T(mount);
  setTimeout(() => T(mount), 500);
- window.blackboxFlow = { redraw: mount, rebase: () => { const e = eng(); if (e) rebase(e); } };
+ /* actsThisRound is the one number here nothing else in the file can
+    answer, so it is published rather than kept private — the helm block
+    asks it whether a side has finished moving. */
+ window.blackboxFlow = { redraw: mount, rebase: () => { const e = eng(); if (e) rebase(e); },
+   actedThisRound: (u) => (u ? actsThisRound(u) : 0) };
 })();
 /* ================= END BLACKBOX FLOW ========================= */
