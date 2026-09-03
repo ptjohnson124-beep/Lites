@@ -95,6 +95,43 @@
  * so a table that wants to undo it, or to write what happens if the flower is
  * cut out later, has the person who used to be there written down rather than
  * overwritten. window.blackboxFixes.unpossess(unit) puts them back.
+ *
+ * ---------------------------------------------------------------------------
+ * 4. CALL OFF THE SWARM WAS WIRED TO A DOOR IT NEVER GOES THROUGH
+ *
+ * Ziggy's taming spec has a real, complete implementation -- the roll, the
+ * ally-assist bonus, switchUnitSide, the log lines. It sits in
+ * applyAttackSpecBonus, which resolve() calls only on the ATTACK path, after a
+ * hit lands:
+ *
+ *     else { defeated = applyDamageToTarget(...);
+ *            if (act === "spec" && target) applyAttackSpecBonus(usedSpec, ...); }
+ *
+ * CALL OFF THE SWARM is declared type:"buff". A non-attack spec is routed much
+ * earlier, to applyCustomSpecEffect, and that call is followed by a return --
+ * so the attack path is never reached and the taming code never runs. What
+ * actually happened when Ziggy used it: 22 MF and an action were spent, and
+ * applyCustomSpecEffect fell through its bespoke list to the generic buff
+ * fallback, which sets ADV and logs "channels CALL OFF THE SWARM". No roll, no
+ * side switch, no creature.
+ *
+ * The taming is reimplemented here on the path the spec ACTUALLY takes, and it
+ * keeps the original's rules exactly: the target must genuinely be one of the
+ * nest (g === "Ziggy's Nest" -- Trap-Jaw Ant Drone, Sickle-Ant Drone,
+ * Centipede-Fused Horror), 65% with a standing ally holding the read steady and
+ * 30% alone, and on success the creature switches sides for the rest of the
+ * fight. Two things are added because they were missing rather than decided:
+ * the creature remembers it was nest (.wasNest, .tamedBy) instead of having its
+ * faction quietly deleted, so a GM can see and undo it, and a creature already
+ * tamed is refused rather than silently re-rolled.
+ *
+ * THIS IS ONE OF ABOUT 250. Every spec name handled in applyAttackSpecBonus but
+ * declared buff/debuff/heal/utility/summon/mobility is unreachable the same
+ * way, and the two dispatch tables share NOT ONE name, so nothing is handled in
+ * both. Only the one that was reported is fixed here -- bridging the rest means
+ * firing 250 effects that have never fired, several of which expect the damage
+ * number an attack would have passed them, and that is a decision for the table
+ * rather than a repair.
  */
 (function () {
  "use strict";
@@ -272,8 +309,73 @@
   };
  });
 
+ /* ---- 4. CALL OFF THE SWARM ACTUALLY TAMES --------------------------- */
+ const NEST = "Ziggy's Nest";
+
+ function callOffTheSwarm(actor, target) {
+  const e = T(() => G("S").eng, null);
+  if (!e) return true;
+  if (!target) {
+   log("[CALL OFF THE SWARM] " + actor.name + " reaches out and there is nothing on the other end — pick the creature first.");
+   return true;
+  }
+  if (target.tamedBy) {
+   log("[CALL OFF THE SWARM] " + target.name + " already answers to " + target.tamedBy +
+       ". The antenna has nothing left to say to it.");
+   return true;
+  }
+  if (target.g !== NEST) {
+   log("[CALL OFF THE SWARM] The antenna doesn't get a read on " + target.name +
+       " at all — not one of the nest's own.");
+   return true;
+  }
+  /* "an ally helping him hold the read steady" means somebody actually on the
+     field: benched and downed both fail to hold anything. */
+  const helper = (e.units || []).find(x => x.side === actor.side && x.id !== actor.id &&
+                                           !x.down && !x.dead && !x.benched);
+  const chance = helper ? 0.65 : 0.30;
+  if (Math.random() < chance) {
+   target.wasNest = target.g;
+   target.tamedBy = actor.name;
+   target.g = "";
+   T(() => G("switchUnitSide")(target));
+   log("[CALL OFF THE SWARM] The antenna-bond holds — " + target.name +
+       " comes off the nest's roster and onto " + actor.name + "'s side for the rest of the fight" +
+       (helper ? ", with " + helper.name + " keeping the read steady." :
+                 ". He did that one alone, which is as rare as it sounds."));
+  } else {
+   log("[CALL OFF THE SWARM] The read slips before it settles — " + target.name +
+       " doesn't tame this time." +
+       (helper ? "" : " He really does need someone helping him hold it steady."));
+  }
+  T(() => G("render")());
+  return true;
+ }
+
+ T(() => {
+  const orig = window.applyCustomSpecEffect;
+  if (typeof orig !== "function") return;
+  window.applyCustomSpecEffect = function (s, actor, target, ratio) {
+   if (s && s.n === "CALL OFF THE SWARM" && actor) {
+    /* Handled here and NOT passed on: the original would fall through to the
+       generic buff fallback and hand out ADV on top. */
+    return T(() => callOffTheSwarm(actor, target));
+   }
+   return orig.apply(this, arguments);
+  };
+ });
+
  window.blackboxFixes = {
   takeTheBody: takeTheBody,
+  callOffTheSwarm: callOffTheSwarm,
+  untame: (u) => {
+   if (!u || !u.tamedBy) return false;
+   u.g = u.wasNest || u.g;
+   delete u.wasNest; delete u.tamedBy;
+   T(() => G("switchUnitSide")(u));
+   log("[CALL OFF THE SWARM] the bond breaks — " + u.name + " is the nest's again.");
+   return true;
+  },
   unpossess: (u) => {
    if (!u || !u.flowerHost) return false;
    Object.keys(u.flowerHost.was).forEach(k => { u[k] = u.flowerHost.was[k]; });
