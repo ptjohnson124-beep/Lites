@@ -227,7 +227,103 @@
  T(() => { lastKnown = engJson(); });
  T(paint);
 
+ /* =====================================================================
+    CLOSING A LOG WRITES THE WHOLE THING DOWN
+
+    "New Log" already copies the finished engagement into S.saved and calls
+    save(). That is one localStorage key. Everything a fight is actually made
+    of does not live in it: the nemesis's memory is its own key
+    (wings_nemesis_v1), the saved character builds are theirs
+    (wings_presets_bb5), the auto-react answers are theirs. Clear site data,
+    open the file in another browser, or hit the quota with a few megabytes of
+    engagement, and the archive is gone with them.
+
+    So finishing a log now also commits a full, durable snapshot to a save slot
+    in IndexedDB — the same store the Save Slots panel reads, through the
+    file's own commitSlot(), so it appears there and restores through the path
+    that already exists. The sidecar keys ride along under one extra field;
+    validateSaveShape only inspects .eng, so extra keys pass through untouched
+    rather than needing the validator relaxed.
+
+    It fires on the New Log path only, and only after the confirm: freshEng()
+    is called from inside that callback, so wrapping it and gating on a click
+    of the button means a cancelled dialog writes nothing. Reset System is
+    deliberately NOT covered — it says it permanently clears the archive, and
+    quietly keeping a copy would make that a lie.
+    ================================================================== */
+ /* A MISSING FUNCTION THAT BROKE SAVE SLOTS ENTIRELY.
+
+    fmtSlotTs() is called in four places -- the autosave line at the top of the
+    Save Slots panel, the default name when importing a slot, and the default
+    name when saving one -- and in this build it is defined in none of them.
+    The declaration is present in the earlier file and absent here, so it was
+    lost to an edit rather than never written. The effect is not subtle:
+    renderSaveSlots() throws on its first line, so the panel never draws its
+    list, and "Save New Slot" throws before it can even ask for a name.
+
+    It is restored here rather than in the host file, in the form the earlier
+    build had it, so the panel works whether or not this block is present when
+    somebody eventually puts the line back. */
+ T(() => {
+  if (typeof G("fmtSlotTs") === "function") return;
+  window.fmtSlotTs = function (ts) {
+   try { return new Date(ts).toLocaleString(); } catch (e) { return "—"; }
+  };
+  T(() => G("addLog")("system", "[ARCHIVE] Restored fmtSlotTs() — it is called by Save Slots in four " +
+    "places and was missing from this build, which made the panel throw before drawing and stopped " +
+    "Save New Slot from asking for a name."));
+ });
+
+ const SIDECARS = ["wings_nemesis_v1", "wings_presets_bb5", "bb_autoreact_v1", "bb_cole_seeded"];
+ let closing = 0;
+
+ T(() => {
+  const b = $("btnNewLog");
+  if (b) b.addEventListener("click", () => { closing = Date.now(); }, true);
+ });
+
+ function archiveEverything() {
+  const S_ = G("S");
+  const commit = G("commitSlot");
+  if (!S_ || !S_.eng || typeof commit !== "function") return false;
+  if (!(S_.eng.units || []).length && !(S_.eng.log || []).length) return false;   // nothing happened
+  const side = {};
+  SIDECARS.forEach(k => { const v = T(() => localStorage.getItem(k), null); if (v != null) side[k] = v; });
+  const payload = Object.assign({}, S_, {
+   __sidecars: side,
+   __closedAt: Date.now(),
+   __closedLog: S_.eng.id
+  });
+  const label = "AUTO — log #" + S_.eng.id + " closed " +
+    T(() => new Date().toLocaleString(), "");
+  let ok = false;
+  T(() => {
+   const r = commit(label, payload);
+   ok = true;
+   if (r && r.then) r.then(() => T(() => { const f = G("renderSaveSlots"); if (f) f(); }));
+  });
+  if (ok) {
+   T(() => G("addLog")("system", "[ARCHIVE] Log #" + S_.eng.id + " closed and written to a save slot — " +
+     "the engagement, the whole archive, and the " + Object.keys(side).length + " sidecar store(s) " +
+     "(nemesis memory, saved builds) that live outside it. Find it under Save Slots."));
+   T(() => G("toast")("Everything saved to a slot — " + label.slice(0, 28) + "…"));
+  }
+  return ok;
+ }
+
+ T(() => {
+  const orig = window.freshEng;
+  if (typeof orig !== "function") return;
+  window.freshEng = function () {
+   /* Only on the New Log path, and only within a few seconds of the click, so
+      a stray freshEng() from anywhere else never triggers a write. */
+   if (closing && Date.now() - closing < 20000) { closing = 0; T(archiveEverything); }
+   return orig.apply(this, arguments);
+  };
+ });
+
  window.blackboxUndo = {
+  archiveNow: archiveEverything,
   undo: undo, redo: redo,
   depth: () => past.length,
   list: () => past.map(p => p.label),

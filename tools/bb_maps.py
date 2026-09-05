@@ -78,6 +78,9 @@ def main():
     ap.add_argument("--map", nargs=3, action="append", default=[],
                     metavar=("NAME", "LABEL", "IMAGE"),
                     help="key, the label shown in the picker, and the image file")
+    ap.add_argument("--interior", action="append", default=[], metavar="NAME:x0,y0,x1,y1",
+                    help="grid cells (inclusive, 0-based, 12x8) that are INSIDE on this map. "
+                         "Units spawn only there and cannot be moved or thrown out of it.")
     ap.add_argument("--tolerance", type=float, default=0.005,
                     help="how far from 3:2 a map may be before it is refused (default 0.5%%)")
     a = ap.parse_args()
@@ -142,6 +145,36 @@ def main():
         k = html.rindex("</body>")
         html = (html[:k] + "<script>window.__BB_MAP_LABELS=Object.assign("
                 "window.__BB_MAP_LABELS||{}," + lbl + ");</script>\n" + html[k:])
+
+    # Interior bounds, in the same place and shape as the labels. Kept as data
+    # rather than baked into the CSS because it is a RULE, not a look: the block
+    # that enforces it reads this, and a map with no entry here is unconstrained
+    # exactly as every map was before.
+    if a.interior:
+        box = {}
+        for spec in a.interior:
+            key, _, nums = spec.partition(":")
+            try:
+                x0, y0, x1, y1 = [int(v) for v in nums.split(",")]
+            except ValueError:
+                raise SystemExit("--interior wants NAME:x0,y0,x1,y1 — got %r" % spec)
+            if not (0 <= x0 <= x1 <= 11 and 0 <= y0 <= y1 <= 7):
+                raise SystemExit("--interior %s is outside the 12x8 grid" % spec)
+            box[key] = [x0, y0, x1, y1]
+        prev = re.search(r"window\.__BB_MAP_INTERIOR=Object\.assign\("
+                         r"window\.__BB_MAP_INTERIOR\|\|\{\},(\{.*?\})\);", html, re.S)
+        merged = json.dumps({**(json.loads(prev.group(1)) if prev else {}), **box},
+                            separators=(",", ":"))
+        line = ("window.__BB_MAP_INTERIOR=Object.assign(window.__BB_MAP_INTERIOR||{},"
+                + merged + ");")
+        if prev:
+            html = html[:prev.start()] + line + html[prev.end():]
+        else:
+            k2 = html.rindex("</body>")
+            html = html[:k2] + "<script>" + line + "</script>\n" + html[k2:]
+        for k, v in box.items():
+            print("  inside %-16s cols %d-%d rows %d-%d  (%d cells)"
+                  % (k, v[0], v[2], v[1], v[3], (v[2]-v[0]+1)*(v[3]-v[1]+1)))
 
     html = rewrite_table(html, table)
     out = a.out or a.file
