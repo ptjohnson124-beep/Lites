@@ -1,0 +1,152 @@
+{
+ "head": {
+  "width": 127,
+  "height": 199,
+  "axis": 89.94,
+  "length": 198.0
+ },
+ "hair-fringe": {
+  "width": 164,
+  "height": 161,
+  "axis": 178.66,
+  "length": 163.0
+ },
+ "hair-crown": {
+  "width": 146,
+  "height": 162,
+  "axis": 90.74,
+  "length": 161.2
+ },
+ "hair-tail": {
+  "width": 152,
+  "height": 310,
+  "axis": 90.08,
+  "length": 309.0
+ },
+ "hair-strand-l": {
+  "width": 62,
+  "height": 227,
+  "axis": 99.39,
+  "length": 226.9
+ },
+ "hair-strand-r": {
+  "width": 61,
+  "height": 225,
+  "axis": 80.63,
+  "length": 224.6
+ },
+ "hood": {
+  "width": 147,
+  "height": 82,
+  "axis": 179.94,
+  "length": 146.0
+ },
+ "eye-l": {
+  "width": 55,
+  "height": 60,
+  "axis": 82.05,
+  "length": 63.7
+ },
+ "eye-r": {
+  "width": 55,
+  "height": 59,
+  "axis": 97.95,
+  "length": 62.4
+ },
+ "torso": {
+  "width": 175,
+  "height": 155,
+  "axis": 90.26,
+  "length": 154.2
+ },
+ "hips": {
+  "width": 155,
+  "height": 70,
+  "axis": 179.42,
+  "length": 154.3
+ },
+ "arm-upper": {
+  "width": 55,
+  "height": 110,
+  "axis": 89.61,
+  "length": 109.1
+ },
+ "arm-fore": {
+  "width": 50,
+  "height": 100,
+  "axis": 91.15,
+  "length": 99.3
+ },
+ "hand-fist": {
+  "width": 50,
+  "height": 55,
+  "axis": 125.09,
+  "length": 58.9
+ },
+ "hand-open": {
+  "width": 55,
+  "height": 60,
+  "axis": 80.24,
+  "length": 60.5
+ },
+ "holster": {
+  "width": 100,
+  "height": 85,
+  "axis": 162.24,
+  "length": 112.9
+ },
+ "dagger": {
+  "width": 145,
+  "height": 45,
+  "axis": 179.18,
+  "length": 144.1
+ },
+ "thigh": {
+  "width": 60,
+  "height": 125,
+  "axis": 88.91,
+  "length": 124.3
+ },
+ "shin": {
+  "width": 50,
+  "height": 110,
+  "axis": 88.01,
+  "length": 109.4
+ },
+ "boot": {
+  "width": 70,
+  "height": 90,
+  "axis": 72.11,
+  "length": 98.8
+ },
+ "thigh-far": {
+  "width": 60,
+  "height": 125,
+  "axis": 88.92,
+  "length": 124.3
+ },
+ "shin-far": {
+  "width": 50,
+  "height": 110,
+  "axis": 87.99,
+  "length": 109.4
+ },
+ "boot-far": {
+  "width": 70,
+  "height": 90,
+  "axis": 72.11,
+  "length": 98.8
+ },
+ "arm-upper-far": {
+  "width": 55,
+  "height": 110,
+  "axis": 89.6,
+  "length": 109.1
+ },
+ "arm-fore-far": {
+  "width": 50,
+  "height": 100,
+  "axis": 91.11,
+  "length": 99.3
+ }
+}

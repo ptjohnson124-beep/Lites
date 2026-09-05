@@ -1,1 +1,1382 @@
 # Lites
+
+Animations for **Dahlia**, built from drawn pose sheets: a slicer that finds the
+poses and cleans them up, an assembler that times them into a loop, and a
+browser player for previewing the result.
+
+**`dahlia_idle` is the canonical animation and the canonical style** — crisper
+line work, and a cyber-dagger that deploys into her hand, which retires the
+prop-continuity problem that dogged every earlier sheet. The other animations
+are being redrawn in this style; their builds below stand until each remade
+sheet lands, at which point the same two commands rebuild them.
+
+| animation | source | result |
+| --- | --- | --- |
+| **idle** (canonical) | `assets/dahlia_idle_sheet.png`, 6 drawings | `out/dahlia_idle/` — 61 frames, 3.05 s |
+| **moving** | `assets/dahlia_move_v4_sheet.png`, 12 drawings | `out/dahlia_move/` — 24 frames, 0.8 s |
+| **attack** | `assets/dahlia_attack_b_sheet.png`, 8 drawings | `out/dahlia_attack/` — 33 frames, 1.65 s |
+| **spin combo** | `assets/dahlia_attack_a_sheet.png`, 12 drawings | `out/dahlia_attack_spin/` — 47 frames, 2.35 s |
+| **ranged attack** | `assets/dahlia_ranged_v4_sheet.png`, 12 drawings | `out/dahlia_ranged/` — 56 frames, 2.33 s |
+| **soul attack** | `assets/dahlia_soul_charge_sheet.png` + `..._slash_sheet.png`, 15 drawings | `out/dahlia_soul/` — 92 frames, 3.83 s |
+| **skill / special** | `assets/dahlia_skill_charge_sheet.png` + burst + recover, 22 drawings | `out/dahlia_skill/` — 61 frames, 2.54 s |
+| **block** | `assets/dahlia_block_v2_sheet.png`, 8 drawings | `out/dahlia_block/` — 44 frames, 2.2 s |
+| **counter** | `assets/dahlia_counter_v2_sheet.png`, 10 drawings | `out/dahlia_counter/` — 67 frames, 3.35 s |
+| **evasion** | `assets/dahlia_dodge_a_sheet.png` + b, 15 drawings | `out/dahlia_dodge/` — 56 frames, 2.33 s |
+| **getting hit** | `assets/dahlia_hit_v2_sheet.png`, 8 drawings | `out/dahlia_hit/` — 51 frames, 2.55 s |
+| **grab** | `assets/dahlia_grab_sheet.png`, 6 drawings | `out/dahlia_grab/` — 43 frames, 1.79 s |
+| **throw** | `assets/dahlia_throw_sheet.png`, 8 drawings | `out/dahlia_throw/` — 66 frames, 2.75 s |
+| **stagger** | `assets/dahlia_stagger_sheet.png`, 6 drawings | `out/dahlia_stagger/` — 46 frames, 1.92 s |
+| **ragdoll** | `assets/dahlia_knockdown_sheet.png`, 8 drawings | `out/dahlia_ragdoll/` — 47 frames, 1.96 s |
+| **get-up** | `assets/dahlia_getup_sheet.png`, 8 drawings | `out/dahlia_getup/` — 59 frames, 2.46 s |
+| **taunt** | `assets/dahlia_taunt_v2_sheet.png`, 12 drawings | `out/dahlia_taunt/` — 75 frames, 3.75 s |
+| **going insane** | `assets/dahlia_insane_b_sheet.png`, 16 drawings | `out/dahlia_insane/` — 68 frames, 3.4 s |
+| **insanity transformation** | `assets/dahlia_insanity_sheet.png`, 16 drawings | `out/dahlia_insanity/` — 79 frames, 3.95 s |
+| **insane idle** | `assets/dahlia_insane_idle_v2_sheet.png`, 12 drawings | `out/dahlia_insane_idle/` — 58 frames, 2.9 s |
+| **fully insane idle** | `assets/dahlia_fully_insane_sheet.gif`, 48 frames | `out/dahlia_fully_insane_idle/` — 79 frames, 3.95 s |
+| **cyberpsychosis** | `assets/dahlia_cyber_v2_sheet.png`, 12 drawings | `out/dahlia_cyberpsychosis/` — 55 frames, 2.75 s |
+| **dagger twirl idle** | `assets/twirl_sheet.png`, 12 drawings | `out/dahlia_twirl/` — 150 frames, 7.5 s |
+| **dagger-flip idle** | `assets/dahlia_flip_idle_sheet.png`, 15 drawings | `out/dahlia_flip_idle/` — 59 frames, 2.95 s |
+
+Each output directory holds `NAME.gif`, `NAME.webp`, `NAME_strip.png` (a sprite
+strip for engine use) and `NAME.json` describing it.
+
+Which to use, measured on the skill against its source frames:
+
+| | size | error on opaque pixels | error including soft edges |
+| --- | --- | --- | --- |
+| `.webp` | 2093 KB | **0.00** | **0.00** |
+| `.gif` | 831 KB | 5.43 | 20.35 |
+
+The WebP is lossless — bit-exact, and the one to use. The GIF is a preview:
+255 colours and *one bit* of alpha, and that second number is where the alpha
+shows — the aura is drawn semi-transparent, and GIF can only round it to on
+or off.
+
+```sh
+pip install pillow numpy
+sh build.sh          # rebuild every animation from its sheet
+python3 -m http.server 8000
+# http://localhost:8000/web/index.html?m=../out/dahlia_block/dahlia_block.json
+```
+
+## Attacking
+
+Two attacks arrived on two sheets, and they are different moves rather than two
+takes on one.
+
+**`dahlia_attack`** is the lunging slash — wind up, leap in, one big arc, and
+out. 33 frames, 1.65 s, the shortest animation in the set, which is right for a
+basic attack. She travels 22 px forward across the leap and walks it back over
+the recovery.
+
+**`dahlia_attack_spin`** is a combo: a stationary spin slash into a thrust.
+47 frames, 2.35 s. Travel stays at zero through the spin and only starts at the
+thrust, which is what keeps the two halves reading as separate beats rather than
+one long lurch forward — the spin is a pivot on the spot, the thrust is the part
+that closes distance.
+
+| | pose | time | ground | |
+| --- | --- | --- | --- | --- |
+| ready | 1, 2 | 0.45 s | 0 | wind up |
+| | 3 | 0.10 s | 0 | swing down |
+| **spin** | 4 | 0.25 s | 0 | the teal ring, 5 px jolt |
+| | 5 | 0.15 s | 0 | out of the spin |
+| | 6, 7 | 0.20 s | 4 → 10 | thrust winds out |
+| **thrust** | 8 | 0.30 s | 16 | full extension, gold aura, 4 px jolt |
+| | 9, 10, 11 | 0.50 s | 14 → 3 | pulling back |
+| ready | 12 | 0.40 s | 0 | back to stance |
+
+Both open and close on near-identical ready poses, so both loop without a
+ping-pong: the combo's seam measures 8.3 against a mean step of 19.3, the
+cleanest seam of any animation here.
+
+## Evasion, counter and taunt
+
+Three more remade in the new style, replacing their old builds at the same
+output paths.
+
+All three were re-timed around beats. The first cuts held nearly every pose for
+the same length — the evasion ran five consecutive two-frame holds through its
+whole evade — which reads as a metronome however good the drawings are. Each now
+rests at the ends and passes quickly through the action: the ratio between the
+longest and shortest hold is 10× on the counter, 6× on the evasion and 4× on the
+taunt, where before it was closer to 3×.
+
+**`dahlia_dodge`** — rebuilt from two sheets and fifteen drawings; see *The
+dodge, rebuilt* below. She gives 34 px of ground at the furthest point of the
+evade and walks it back over the recovery.
+
+**`dahlia_counter`** — she closes 29 px, the counter lands with a 6 px jolt, and
+the gold-aura frame holds 0.4 s at the peak. Its sheet needed a new tool: see
+below.
+
+Two things stopped it reading as a phase rather than a movement. Pose 4 is a
+**smear frame** — a third less ink than the solid poses, so she visibly thins
+out — and it was being held two frames. A smear reads as speed when it flashes
+and as teleporting when it is held, so it is down to a single frame, 0.05 s. And
+the travel was overshooting: 10 px, then 20, then back to 14 mid-dash, which is
+a lurch forward and a snap back. It now runs monotonically in to 29 px at the
+counter and monotonically out over the recovery.
+
+**`dahlia_taunt`** — a flame lit in her free hand. Poses 5 and 6 are the same
+flame at two sizes, so alternating them makes it gutter instead of sitting
+still, the same trick the old taunt used. One thing to know: pose 6 is drawn
+with olive trousers where every other frame has black, an inconsistency in the
+sheet rather than the pipeline. It is the peak flame frame, so it is held
+briefly and alternated out of rather than sat on.
+
+## Getting hit## Getting hit
+
+Third animation in the new style, replacing the old-style hit at the same
+output path. This sheet came labelled — a caption under every cell — and the
+captions are ink like anything else, so they segmented as part of her and would
+have ridden into the animation. `--strip-captions` finds the quiet scanline
+between her boots and the text in each row of cells and blanks everything below
+it, which leaves the boots untouched.
+
+| | pose | time | |
+| --- | --- | --- | --- |
+| ready | 1 | 0.40 s | dagger out, normal stance |
+| | 2 | 0.10 s | the twitch before it lands |
+| **impact** | 3 | 0.10 s | smear frame, blood, 9 px jolt |
+| **recoil** | 4 | 0.15 s | second smear, 6 px jolt, 9 px of ground given |
+| stagger | 5 | 0.20 s | driven back to 15 px |
+| | 6 | 0.20 s | wobbling for balance |
+| settle | 7 | 0.30 s | hunching over the wound |
+| **wounded idle** | 8, 7, 8 | 1.10 s | breathing hunched, the two drawings alternating |
+
+It ends in a wounded idle rather than returning to normal, which is what the
+sheet was drawn for. Poses 7 and 8 alternate to give that idle a breath of its
+own — they differ by 14 to 15 against 27 to 37 for every step in the hit
+itself, so the ending settles rather than continuing to lurch.
+
+The dagger is absent from the two smear frames (3 and 4) and present in the
+other six. Those are impact frames on screen for 0.1 s each under a jolt, which
+is exactly the convention smear frames exist for — unlike the old hit sheet,
+where the weapon vanished for the entire recoil.
+
+## The dodge
+
+```sh
+python3 tools/slice_sheet.py assets/dahlia_dodge_sheet.png -o out/dahlia_dodge \
+  --components --tol 18 --glow-tol 0 --fill-holes 3 --despeckle 24 --denoise 5 \
+  --single dahlia_dodge --align silhouette
+python3 tools/assemble.py out/dahlia_dodge/frames -o out/dahlia_dodge -n dahlia_dodge \
+  --poses 1,3,4,7,9,8,10,6,12,11 --holds 12,3,3,2,2,3,5,4,5,10 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 10:3 --travel 1:0,3:0,4:-6,7:-20,9:-30,8:-22,10:-12,6:-6,12:-2,11:0
+```
+
+The drawings turn out to describe a spin, not a sidestep, so that is what this
+plays:
+
+| | pose | time | ground | |
+| --- | --- | --- | --- | --- |
+| ready | 1 | 0.60 s | 0 | knife at her side |
+| | 3 | 0.15 s | 0 | eyes close — she has read it |
+| **push off** | 4 | 0.15 s | −6 | gold flares at her feet |
+| **dash** | 7 | 0.10 s | −20 | drawn motion blur |
+| **spin** | 9 | 0.10 s | −30 | back to the camera, furthest out |
+| | 8 | 0.15 s | −22 | coming back around, knife up |
+| **land** | 10 | 0.25 s | −12 | crouched, small jolt |
+| recovery | 6, 12 | 0.45 s | −6 → −2 | rising, settling |
+| | 11 | 0.50 s | 0 | back to ready |
+
+Half a second from push-off to landing, of which the two blurred drawings hold
+0.1 s each. Poses 9 and 8 are played in that order rather than the order they
+sit on the sheet: 7 faces left, 9 has her back turned, 8 brings her round to
+face the camera again, which is one continuous rotation instead of a spin that
+skips and resets.
+
+This is the first animation where the ground she covers is the whole point, and
+it is also where `--offset` stopped being good enough — see below.
+
+## Getting hit
+
+```sh
+python3 tools/slice_sheet.py assets/dahlia_hit_sheet.png -o out/dahlia_hit \
+  --components --tol 18 --glow-tol 0 --fill-holes 3 --despeckle 24 --denoise 5 \
+  --single dahlia_hit --align silhouette
+python3 tools/assemble.py out/dahlia_hit/frames -o out/dahlia_hit -n dahlia_hit \
+  --poses 19,3,4,5,6,7,8,9,10,13,16 --holds 14,2,2,3,4,2,4,5,5,6,8 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 3:9,4:5,5:3 --offset 5:-6,6:-10,7:-8,8:-5,9:-2
+```
+
+| | pose | time | |
+| --- | --- | --- | --- |
+| ready | 19 | 0.70 s | standing |
+| **impact** | 3 | 0.10 s | gold burst, jolt of 9 px |
+| | 4 | 0.10 s | snapped back, jolt of 5 px |
+| **knocked back** | 5, 6 | 0.35 s | staggering, mouth open, 10 px back |
+| | 7 | 0.10 s | the drawn motion blur, head down |
+| recovery | 8, 9, 10 | 0.70 s | straightening up |
+| | 13, 16 | 0.70 s | settles, back to standing |
+
+A hit is the inverse of a block: no anticipation at all, because being hit is
+not something you prepare for. It opens straight onto the impact frame, and the
+jolt is the largest in any of these animations at 9 px, decaying through the
+recoil. The knockback is `--offset` again, negative — she gives ground and
+walks it back as she recovers.
+
+**The knife is only in her hand on 6 of these 20 drawings**, and none of the
+recoil poses is one of them. Building the reaction around the knife would mean
+dropping the entire recoil, so this runs knife-free: the ready pose, the
+stagger and the recovery are all drawings where her hands are open. The one
+exception is the impact frame itself, which is the only drawing with the burst
+on it. It is on screen for 0.1 s under a 9 px jolt and a screenful of gold,
+which is exactly what an impact frame is for — but it is a compromise, and
+`--poses 19,4,5,6,7,8,9,10,13,16` builds the version without it.
+
+## The block
+
+Second animation in the new style, and it replaces the old-style block at the
+same output path. Eight drawings, every one of them used:
+
+| | pose | time | |
+| --- | --- | --- | --- |
+| **breath** | 8 | 0.50 s | dagger retracted, catching her breath |
+| deploy | 1 | 0.40 s | dagger out, stance set |
+| **guard** | 2 | 0.10 s | snapped up |
+| | 3 | 0.15 s | set across her chest |
+| **impact** | 4 | 0.25 s | hair streaks, 6 px jolt, giving 4 px of ground |
+| **strain** | 5 | 0.35 s | eyes lit, aura at full, 6 px back |
+| release | 6 | 0.15 s | guard drops |
+| | 7 | 0.30 s | exhale, dagger still out |
+
+The loop opens on the retracted breath rather than the ready stance, which is
+worth explaining. The dagger deploying is by far the sheet's largest step — 51
+against 20-ish for the guard and impact frames — so ordering the loop to start
+there puts that jump *inside* the animation as a visible action rather than on
+the seam. The seam becomes the exhale settling back to a retracted breath, at
+33. Same eight drawings, same order in every other respect; only where the
+circle is cut changes.
+
+That retracted breath is also the handoff: it is the same rest state the idle
+opens on, so block-into-idle needs no bridging frame.
+
+## Getting hit
+
+```sh
+python3 tools/slice_sheet.py assets/dahlia_hit_sheet.png -o out/dahlia_hit \
+  --components --tol 18 --glow-tol 0 --fill-holes 3 --despeckle 24 --denoise 5 \
+  --single dahlia_hit --align silhouette
+python3 tools/assemble.py out/dahlia_hit/frames -o out/dahlia_hit -n dahlia_hit \
+  --poses 19,3,4,5,6,7,8,9,10,13,16 --holds 14,2,2,3,4,2,4,5,5,6,8 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 3:9,4:5,5:3 --offset 5:-6,6:-10,7:-8,8:-5,9:-2
+```
+
+| | pose | time | |
+| --- | --- | --- | --- |
+| ready | 19 | 0.70 s | standing |
+| **impact** | 3 | 0.10 s | gold burst, jolt of 9 px |
+| | 4 | 0.10 s | snapped back, jolt of 5 px |
+| **knocked back** | 5, 6 | 0.35 s | staggering, mouth open, 10 px back |
+| | 7 | 0.10 s | the drawn motion blur, head down |
+| recovery | 8, 9, 10 | 0.70 s | straightening up |
+| | 13, 16 | 0.70 s | settles, back to standing |
+
+A hit is the inverse of a block: no anticipation at all, because being hit is
+not something you prepare for. It opens straight onto the impact frame, and the
+jolt is the largest in any of these animations at 9 px, decaying through the
+recoil. The knockback is `--offset` again, negative — she gives ground and
+walks it back as she recovers.
+
+**The knife is only in her hand on 6 of these 20 drawings**, and none of the
+recoil poses is one of them. Building the reaction around the knife would mean
+dropping the entire recoil, so this runs knife-free: the ready pose, the
+stagger and the recovery are all drawings where her hands are open. The one
+exception is the impact frame itself, which is the only drawing with the burst
+on it. It is on screen for 0.1 s under a 9 px jolt and a screenful of gold,
+which is exactly what an impact frame is for — but it is a compromise, and
+`--poses 19,4,5,6,7,8,9,10,13,16` builds the version without it.
+
+## The block
+
+```sh
+python3 tools/slice_sheet.py assets/dahlia_block_sheet.png -o out/dahlia_block \
+  --panels --tol 28 --glow-tol 35 --glow-depth 3 --despeckle 24 --denoise 5 \
+  --single dahlia_block --align silhouette
+python3 tools/assemble.py out/dahlia_block/frames -o out/dahlia_block -n dahlia_block \
+  --poses 1,12,2,3,4,6,5,3,11,12 --holds 16,12,2,2,5,8,3,2,6,14 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 4:5,6:3
+```
+
+A block is reactive, so the timing is the opposite shape to an idle: almost
+nothing, then everything at once, then a long recovery.
+
+| | pose | time | |
+| --- | --- | --- | --- |
+| ready | 1 | 0.80 s | guard stance, knife at hip |
+| | 12 | 0.60 s | weight shifts |
+| **snap** | 2 | 0.10 s | palm up, eyes wide — she sees it coming |
+| | 3 | 0.10 s | guard crossing |
+| **impact** | 4 | 0.25 s | arms crossed, flash, jolt of 5 px |
+| **strain** | 6 | 0.40 s | aura at full, jolt of 3 px |
+| | 5 | 0.15 s | pressure easing |
+| | 3 | 0.10 s | guard lowering |
+| recovery | 11 | 0.30 s | settles, exhales |
+| | 12 | 0.70 s | back to ready, smiling |
+
+Four tenths of a second covers everything from seeing the hit to absorbing it;
+the rest is stance. Pose 3 does double duty as the guard going up and coming
+back down, and the sequence ends on a different ready pose than it starts on, so
+the loop never lands twice on the same drawing.
+
+**Only eight of the twelve drawings are usable.** In poses 7, 8 and 9 her hands
+are open and empty — the knife is gone, then back in her hand in pose 10. Those
+are the drawn recovery, and playing them would make the weapon vanish and
+reappear mid-animation, so recovery runs back through 5 and 3 instead.
+
+**`--shake` is new, and it is what makes the block land.** There is no drawing of
+Dahlia recoiling, so the impact has to come from somewhere: on the impact poses
+the whole sprite is jolted, hard on the first frame and decaying over the run,
+so the hit strikes and settles rather than vibrating for as long as the pose
+holds. Rigid translation, so nothing smears.
+
+## The dagger twirl idle
+
+```sh
+python3 tools/slice_sheet.py assets/twirl_sheet.png -o out/dahlia_twirl \
+  --tol 28 --glow-tol 62 --glow-depth 3 --despeckle 24 --denoise 5 \
+  --single dahlia_twirl --align silhouette
+python3 tools/assemble.py out/dahlia_twirl/frames -o out/dahlia_twirl -n dahlia_twirl \
+  --poses 3,4,3,4,5,6,7,6,5,4 --holds 28,24,32,16,2,2,28,4,4,10 \
+  --fps 20 --breathe 1.2 --breathe-cycles 3 --breathe-levels 12 --sway 2
+```
+
+Same story on that sheet: the dagger is in her hand in poses 3–7 only, so the
+idle is built from those five. It opens with five seconds of standing still —
+poses 3 and 4 alternating, which differ by 5 % below the waist and mostly in the
+hair, so it reads as weight settling rather than an arm move — before the swing
+passes in two frames and lands on the smile, held 1.4 s. That smile is the only
+moment in the loop her expression changes.
+
+## No in-betweens are generated
+
+An earlier version built in-betweens with optical flow, warping each drawing
+toward the next along a motion field. On art like this it looks like melting
+wax, and no tuning fixes it: these poses are independent illustrations whose
+hair, folds and outlines are redrawn every time, so a flow field has no
+correspondence to follow and slides hair across a face. That approach is gone.
+What is left is what traditional animation does anyway, and all of it is
+lossless — every pixel shipped is a pixel that was drawn.
+
+- **Selection.** Only poses holding the same prop belong in one animation.
+- **Holds.** `--holds` sets how long each pose stays on screen, and it carries
+  the performance. Fast through the action and long on the extremes is what
+  makes a handful of poses read as movement rather than as a metronome.
+- **Breathing.** `--breathe` stretches the sprite by a percent or so of its
+  height, planted at the feet. Chest expansion is the one part of breathing a
+  single drawing can fake, and at this size it moves her head three or four
+  pixels while the boots stay put. Scales are quantised to twelve levels and
+  cached, so a pose held for over a second resamples to pixel-identical images
+  at each level instead of shimmering as the scale creeps.
+- **Float.** `--sway` drifts the sprite sideways once per loop. Vertical drift
+  is left to the breathing: `--bob` as well would put two vertical rhythms of
+  different periods on the same body, which reads as nervous rather than calm.
+- **Shake.** `--shake` supplies the impact a still drawing cannot.
+
+### What would make it genuinely fluid
+
+Timing carries this a long way, but five or eight drawings is still five or
+eight drawings. Fluidity is a property of the source: it needs the poses to be
+phases of one continuous action, prop in hand throughout, with hair length, hood
+and proportions consistent between them. Given that, these same commands produce
+a genuinely smooth loop with no other changes.
+
+## Keeping it clean
+
+Five separate things put grain, haze or holes on these animations, and each is
+fixed where it is created rather than filtered out afterwards:
+
+- **A checkerboard for a background.** The counter sheet was exported with
+  transparency and then saved as JPEG, so the editor's checkerboard arrived
+  baked into the pixels — two grey tones, 76 and 116, in an 11 px grid. Against
+  two tones the keying reads half the backdrop as ink. `--checker` takes both
+  tones from the colour histogram and repaints the background flat, but only
+  where it is reachable from the sheet edge through those tones, so a dark boot
+  that happens to sit near one of them is never touched. Repainting rather than
+  masking keeps the sprite's antialiased fringe meaningful: it still shades off
+  toward a background, just a single one now.
+
+  Reachability alone is not quite enough. The squares showing through the gaps
+  in her hair, and the ones behind the ranged sheet's translucent muzzle flash,
+  are walled off from the open backdrop by a film of artwork a pixel or two
+  thick, and they came out as grey confetti over the sprite. Size cannot tell
+  those pockets from a genuinely grey piece of costume — her gun is grey — so
+  the flood is simply run a second time through a slightly widened backdrop,
+  which steps over a film that thin, and the result is intersected back with the
+  real checker so nothing but checker is ever repainted. The second pass is held
+  to a far tighter tone match than the first: `--checker`'s working tolerance is
+  wide enough to swallow the checkerboard's antialiasing, but it is also wide
+  enough to cover a white hoodie, and a flood that can step over an outline will
+  eat one.
+- **A pose that came apart.** On that same sheet the dash frame's motion blur
+  broke the figure into two islands, and her legs arrived as a thirteenth pose.
+  Pieces of one figure sit almost on top of each other horizontally — 0.84
+  overlap — where genuinely neighbouring poses overlap 0.00, so that identifies
+  them. Horizontal overlap alone is not enough to act on, though, since poses
+  stacked in the same column of a grid overlap just as heavily; what separates
+  the cases is the size of the result. Two pieces of one figure union to about
+  one pose, two whole poses to twice that, so the merge is capped at 1.35× the
+  median pose. Verified against every sheet that uses `--components`: all still
+  segment to the same counts.
+- **Captions under the art.** A labelled reference sheet puts a line of text
+  below each pose, which is ink like anything else and rides into the animation.
+  `--strip-captions` finds, within each row of cells, the quietest scanline in
+  the bottom third — the gap between her boots and the text — and paints out
+  everything below it. On a sheet with no captions the quietest line is already
+  below her feet and nothing is lost.
+- **A figure and its own dagger as two islands.** On a soft or low-resolution
+  sheet the outline between a hand and the blade it holds keys away, so one
+  drawing arrives as two islands. Islands within `--cluster-gap` pixels of each
+  other are now grouped before anything decides what counts as a pose, since
+  different drawings sit a cell apart while parts of one drawing touch.
+- **Two poses joined by a wisp.** On the skill sheet the last two drawings' hair
+  touches across the cell border, so they came back as one island twice the
+  width of its neighbours. Width alone cannot judge this — that sheet also has a
+  burst which legitimately overflows its cell and is just as wide. The ink
+  profile across the island separates them: two figures bridged by a wisp show a
+  deep valley between them (29 against a median of 130), where a continuous
+  effect never thins out (76 at its lowest). Splitting on the valley alone
+  over-split working poses, so both halves must also carry a figure's worth of
+  ink, judged against the typical island on the sheet — a raised arm thins the
+  profile inside a single figure too. Verified against the five other sheets
+  that use `--components`: all still segment to the same counts.
+- **Poses that overlap.** Gap splitting fails as soon as two poses overlap once
+  flattened onto an axis — on the attack sheet one pose's hair reaches into the
+  next one's column and a whole row of four collapsed into a single frame.
+  `--components` labels the ink and takes one frame per island, which is exact
+  where a projection is only a guess, and folds detached scraps like the flame
+  wisps into the nearest pose rather than making frames of them. Both 20-pose
+  sheets segment exactly.
+- **Blurred poses hollowed out.** Both action sheets draw one frame with heavy
+  motion blur, which shades large parts of the body toward the background
+  colour and gives the flood a path inward, so it walked in and punched holes
+  through her torso. Tightening the tolerance does not fix it — those pixels
+  really are background-coloured. `--fill-holes` seals the mask shut, treats
+  whatever transparency is then cut off from the outside as a hole, and fills
+  it, adding back only the holes so the outline stays exactly as crisp. The
+  haze pass has to be off entirely on these sheets for the same reason.
+- **Panel borders.** The block sheet boxes every pose in a black frame. The
+  frame is ink, so the segmenter read the whole grid as one connected drawing
+  and found no gaps to split on — and the corner-sampled background colour came
+  back black, so nothing keyed at all. `--panels` finds the border lines, widens
+  them to swallow their antialiased edges (one pixel left standing walls the
+  background flood out of a cell), measures the background with those rows and
+  columns excluded, and paints the grid out in it.
+- **The aura had grey baked into it.** Her glow is painted *over* the sheet's
+  grey at partial opacity, so every pixel of it is a mix of gold and grey. Keyed
+  out faithfully and lifted onto a transparent background, that reads as
+  grey-tan mud rather than as fire — the aura on the taunt sheet averages
+  (178, 137, 104) in the source. `--unmatte` reads each glow pixel as
+  P = a·C + (1−a)·grey, takes the coverage from its distance off the grey, and
+  solves for the colour. The glow comes out genuinely semi-transparent, coloured
+  as painted, and fading out smoothly rather than ending on a keyed edge.
+
+  What gets *stored* is not the true coverage, though. Most of a soft glow sits
+  under half-opacity, and GIF's one-bit alpha throws every such pixel away — the
+  first version of this fix recovered the colour and then lost the whole aura in
+  the GIFs. The colour is solved from the true coverage, then the stored alpha
+  is lifted through a gamma curve, and the GIF export cuts at 64 rather than
+  128, so the glow keeps its full drawn extent in every format while the very
+  fringe still fades.
+
+  Where the solve may reach is the other problem. Her hair sits 54 levels off the
+  background and her skin 74, so a reach that passes either turns the character
+  herself translucent — at 90 the entire figure washed out to a ghost. Two
+  things keep it honest: the band is capped a fixed distance in from the keyed
+  edge, and it is allowed to run further through pixels *brighter* than the
+  background than through darker ones. Glow emits, so it is always brighter than
+  what it was painted over; her hair is darker. That one asymmetry lets the band
+  run through an entire flame — where most of the baked-in grey actually is —
+  while her hair still stops it dead. Verified after every build: hoodie and
+  hair come out at alpha 255 and 250.
+- **The aura is not haze — it is Dahlia.** The warm glow around her is part of
+  her design, so no sheet strips it: `--glow-tol` stays at 0 everywhere. The
+  flag remains for sheets whose background genuinely shades off, along with
+  `--glow-depth` to stop such a flood pouring through a gold trail and hollowing
+  it out, but neither is used here.
+- **Keeping the faint end of it.** The outermost aura pixels shade toward the
+  background, so the keying tolerance decides how much survives. At `--tol 28`
+  a quarter of it was being cut; at 14 almost none is, and the background left
+  behind barely moves — 493 opaque grey pixels against 446. A lower tolerance
+  also makes a stronger barrier against the flood walking into the blurred
+  poses, so it helps twice.
+
+  | `--tol` | aura kept | background left opaque |
+  | --- | --- | --- |
+  | 28 | 75 % | 446 px |
+  | 20 | 85 % | 472 px |
+  | 14 | 95 % | 493 px |
+- **Compression grain.** These sheets arrive as JPEGs, so every flat surface
+  carries mottling that no amount of careful keying removes — it is in the
+  paint. `--denoise 12` clears it with a bilateral filter: each pixel is
+  averaged only with neighbours of similar brightness, so mottling a few levels
+  deep is smoothed while anything differing by more than the given strength — a
+  mouth line against skin, an outline against a hoodie — is left alone. Three
+  passes of a moderate window clear far more than one wide pass at almost no
+  cost to the drawing.
+
+  This replaced a median filter, which could not tell a speck from a small drawn
+  feature. On a sprite this size it was quietly erasing the things that carry
+  the performance — her mouth first, then the eyes and hood strings — and a grin
+  came out as a smear.
+
+  Strength is deliberately low, because softness is far more noticeable on a
+  sprite than speckle is. Measured inside the character, against the raw sheet:
+
+  | | grain removed | line work kept |
+  | --- | --- | --- |
+  | median, gated by gradient | 48 % | 80 % |
+  | bilateral, 3 passes at 12 | 62 % | 90 % |
+  | **bilateral, 1 pass at 8** | **30 %** | **98 %** |
+
+  The last is what ships. It leaves some grain, and that is the right trade: the
+  art stays sharp. Line work measures above 100 % of the raw on every sheet in
+  the end, because clearing the noise haze around an edge sharpens it, and
+  because frames whose breath is at rest now skip the resample entirely instead
+  of being resampled to the size they already are.
+- **Specks.** Keying left hundreds of stray islands of a dozen pixels each.
+  `--despeckle` drops any island too small to be drawn detail.
+- **Resampling ringing.** Lanczos undershoots around a hard silhouette and
+  leaves a dusting of alpha-3-to-8 pixels in what was clean transparency. Alpha
+  below 12 is cleared straight after the resize, and the resize runs in
+  premultiplied form so transparent pixels are not blended into the edges.
+  Whatever survives that is caught by a final speck pass over the finished
+  frames — the poses are despeckled when sliced, but the breath resamples them
+  afterwards and makes new specks of its own, so the guarantee has to be made
+  last, on the images actually written out.
+- **Semi-transparency where it does not belong.** `--unmatte` used to be
+  restricted to warm haze, because the dagger's cool teal is a hard-edged solid
+  shape: made half transparent (603 partial pixels against 566 opaque in the
+  blade region) GIF's one-bit alpha chewed its edge into a stair-stepped crunch.
+  But the soul attack's fire is cyan, painted over the same grey as her gold,
+  and skipping it left that whole animation reading washed-out beside the
+  original. Colour recovery and alpha are now separated: cool ink is unmatted
+  for colour like anything else, then stored through a far steeper gamma
+  (`cool_solidity` 0.12 against 0.45), which puts it back at effectively the
+  opacity it had before the pass ran. The cyan comes back saturated and the
+  blade stays solid.
+- **Palette starvation on small bright things.** The GIF palette is built from
+  *distinct* frames only — a pose held ten frames used to contribute ten
+  identical copies, so the quantiser spent its entries on whatever was most
+  common rather than on what was hardest to represent — and by octree rather
+  than median cut. On the counter's blade that is 78 colours against 45, for a
+  cost of 0.7/255 mean error elsewhere, which does not show where the banding
+  did.
+- **GIF encoding.** Handing RGBA to the encoder loses transparency altogether
+  and puts the character on a black card; dithering stipples every flat surface;
+  and a palette rebuilt per frame makes those surfaces crawl between frames. One
+  shared palette per loop, no dithering, one index reserved for transparency.
+
+Frames are also cropped with a small margin rather than flush to the union of
+the loop, so no pixel sits on the canvas edge where a renderer that scales or
+offsets the sprite would shave it off.
+
+Every animation is audited frame by frame — 821 frames in total, not samples.
+
+Across all eight: no frame touches a canvas edge, no island under 24 px
+anywhere, 94–98 % of the aura survives, and line work measures 106–131 % of the
+raw sheet — sharper than the source, because clearing the noise haze around an
+edge sharpens it.
+
+`build.sh` rebuilds all five from their sheets; the per-sheet flags differ
+because the sheets differ, and its comments say how.
+
+The two action sheets read higher because they are grainier JPEGs to begin with,
+and what is left is drawn texture: a stronger median takes the figure from 4.98
+to 4.80 while costing 4 % of the line work, which is not a trade worth making.
+
+The only detached shapes left in either loop are the drawn gold flame wisps,
+52 px and larger.
+
+## Bringing in a finished animation
+
+Everything else here starts from a sheet of drawings and gets its timing from
+`--holds`. The fully insane idle arrived as an animated GIF instead, with the
+timing already baked into per-frame durations that are not uniform — 50 ms up to
+300 ms.
+
+`tools/import_gif.py` turns each source frame into a pose and each duration into
+a hold count at the target rate, so the animation keeps exactly the timing it was
+authored with and still gets the same cleanup, sprite strip, manifest and exports
+as everything else. `--mirror` flips it to face the other way. Breathing and sway
+are off for it: the motion is already drawn, and adding more would fight it.
+
+Its despeckle threshold is worth a note. That animation *draws* disintegration
+debris, so a speck pass could plausibly eat real art — but the strays it removes
+are one to three 15-20 px islands in frames where her body is fully intact, not
+in the burst frames. Raising the threshold to the same 24 the rest of the set
+uses costs 0.41 % of the most disintegrated frame, so the drawn debris survives
+and the artefacts do not.
+
+## Ownership when boxes overlap
+
+A frame is cropped from a rect, but a rect is only a bounding box, so a crop can
+pick up whatever else falls inside it. Each island is therefore assigned to one
+pose and everything else masked out — and *how* that assignment is made turned
+out to matter twice.
+
+Assigning by rect order let whichever rect was listed first claim shared ink,
+leaving a neighbour visible in about half the overlaps. Assigning by "the rect
+containing the island's centre" fixed that and broke something subtler: where a
+wide pose's box overlaps a neighbour's, the neighbour's figure sits inside both,
+the wide one swallowed it, and one frame came out empty while another held two
+characters. The rule is now the *smallest* containing rect, which is always the
+one the figure belongs to.
+
+There is a third failure, and the dodge sheet found it. When two poses are
+bridged — her hair reaches from one into the next — they arrive as one island,
+and the valley split gives them a rect each. Ownership was still decided per
+*island*, by its centre, so both figures went to whichever rect the centre
+happened to land in and the other frame came out with **four pixels** in it. The
+frame was not empty because of overlap; it was empty because the split that
+separated the boxes never separated the ink.
+
+An island is now divided along the rects, but only when there is a second
+figure's worth of ink to divide. That qualifier is the whole rule: an effect
+spilling into a neighbour's cell overlaps exactly the same way, and dividing on
+overlap alone would hand a pose's own glow to the pose next door. The test is
+mass, not geometry — a spilled effect is a small share of its island, a fused
+figure is half of it — so the threshold is the same one the valley split uses,
+half a typical island. Every one of the fourteen sheets already in the project
+re-slices to byte-identical frames under the new rule.
+
+Where two poses genuinely fuse into one island — the ranged sheet's lunge and
+its muzzle blast — no ownership rule helps, because there is only one island.
+That sheet is cut on a forced 3x4 grid instead, verified to clip nothing.
+
+A forced grid brings its own problem back, though: a cell is a rectangle, and a
+pose that reaches a prop past its own cell leaves it lying in the neighbour's.
+On the v2 ranged sheet pose 2 put its gun barrel across the line, which is why a
+disembodied muzzle floated behind Dahlia at the exact moment she fires, and pose
+3's blast reached the same way into pose 4. Nothing distinguishes those pixels
+from artwork — they *are* artwork, just the pose next door's — so `--erase` takes
+sheet coordinates and paints the overspill out before anything is keyed.
+
+The later ranged sheets fix most of it at source: flat grey instead of a
+checkerboard, so the `--checker` flatten is gone. `dahlia_ranged_v4_sheet.png`
+is the build — twelve drawings rather than v3's 22, and because a sheet is
+exported at roughly one size whatever it holds, spending its area on twelve
+poses puts Dahlia at 265 px tall against v3's 169. That is the single biggest
+quality gain available on this animation, and it comes from drawing fewer poses
+larger, not from anything the tools do.
+
+It still needs one `--erase`, seven pixels wide. Pose 2's gun barrel and pose
+3's hair are drawn overlapping — solidly, across six scanlines — so there is no
+gap for the segmenter to find and the two poses arrive as a single island: one
+frame came out empty and the other held two figures. Cutting on a forced 3x4
+grid separates them, but then the muzzle blast is sliced off at the cell edge,
+and that is the one drawing on the sheet worth keeping whole. Severing the join
+instead costs the outer rim of pose 2's muzzle on a motion-blurred frame and
+nothing else.
+
+## The dodge, rebuilt
+
+The v2 dodge drew Dahlia 219 px tall — the smallest sprite in the set and the
+last item on the redo list. Its replacement is two sheets and fifteen drawings.
+
+Sheet A is the spin, and it carries the clip: front, weight shift, push-off with
+smear streaks through her hair and legs, profile away, full back, profile
+returning, turning through her hair, front again. Eight drawings is what a 360
+costs. The two sheets came back 317 px and 309 px for the same stance, 2.6%
+apart — the closest any pair has landed, and close enough that no `--scale` is
+needed at all.
+
+Sheet B is thin, and it is worth being precise about why. Its poses 3 to 7
+measure 281x319, 299x326, 299x323, 305x323 and 309x323: one stance with the face
+changing. So a whole sheet buys four things — the landing, the rise, the wink,
+the drop of the guard — and the wink is the one that matters. It is built in
+whole anyway, because the near-copies still give the wink a beat of settle on
+either side, and the cost of keeping them is 0.3 s.
+
+Two faults are in the drawings and nothing in the pipeline can reach them. The
+landing crouch and the final pose come back with **zero** teal pixels where
+every neighbour carries about 2000 — her hand is simply empty, which is the
+prop-continuity failure the sheet prompt exists to prevent. And the landing
+crouch is pose 2 of sheet B, so it plays after she has already stood up out of
+the spin: she lands twice. At 24 fps the second reads as an absorb rather than
+an error, but the spin should have ended low.
+
+## A prop that reaches into the next cell
+
+Two animations in this set shipped with a second dagger in a frame that should
+have held one, and the cause is the same in both: a prop drawn reaching out of
+its own cell and into the neighbour's. It is not the overlap problem the
+ownership rules solve — those decide *which* pose a piece of ink belongs to, and
+here the answer is unambiguous. The ink belongs to the pose next door, and the
+pose next door cannot have it, because its own crop starts at the cell edge.
+Whatever is left over is stranded, and it is stranded inside a frame that has no
+use for it.
+
+On the skill's burst sheet, pose 8's dagger crosses behind pose 7's shockwave
+crescent. There is no density minimum between them to cut on — the two drawings
+genuinely overlap — so the existing cell-edge strip severed the blade and left
+its tip floating point-first out of the crescent for the whole beat. On the
+dodge's sheet A, pose 8's dagger points down-left far enough to touch pose 7's
+trouser leg, so a disembodied blade hung off her hip through the turn.
+
+The fix in both cases is an `--erase` fitted to the stranded piece rather than
+to a gap, and the useful detail is where its far edge goes. Take it to the
+neighbour's own boundary and no further: every pixel past that line is ink the
+neighbour still has, and cutting there costs the neighbour a tip it was keeping.
+The dodge strip stops at x=784 and pose 8 loses 27 pixels to rounding; an
+earlier one that ran 8 px past took 499.
+
+Neither is visible on the sheet it came from — a teal blade against a dark navy
+backdrop next to another teal blade reads as one drawing. Both were found by
+counting **teal islands per frame**: a frame with two daggers in it has two, and
+that is a one-line check worth running on any sheet where she is holding
+something.
+
+## When a sheet is drawn at two sizes
+
+The v3 ranged sheet's last row was about 65% larger than its first, and cutting
+between them made Dahlia balloon mid-action. This cannot be normalised
+automatically: the obvious measure, silhouette height, is exactly what the
+animation is *supposed* to vary — a crouch is genuinely shorter than a stance,
+and flattening that would turn the clip into a mannequin. So `--scale` takes the
+factor per pose. It resizes about the pose's own centre and keeps the canvas, so
+alignment and travel downstream are unaffected. The v4 sheet is drawn at one
+scale throughout and does not need it; the flag stays for the next one that does.
+
+## Which ragdoll
+
+Three ragdoll sheets arrived together, and only one of them contains the whole
+action. `dahlia_ragdoll_c_sheet.png` has the most drawings (28) and the cleanest
+background — it comes on a transparency checkerboard rather than flat grey — but
+it opens with Dahlia already airborne and closes on standing, so the blow that
+knocks her down and the stance she recovers into are both missing.
+`dahlia_ragdoll_a_sheet.png` is the same shape at 12 drawings, sparser through
+the fall. `dahlia_ragdoll_b_sheet.png` is the build: 27 drawings running stance,
+hit, tumble, an airborne beat, the dust of the landing, face down, crawl,
+push-up, kneel, stand, ready. It is the only one that starts and ends where a
+knockdown should.
+
+It is also the sheet that forced the grid detector to grow up, twice. Its cells
+are ruled in a grey *lighter* than the backdrop, which an absolute darkness test
+cannot see at all, and its first row holds six wide cells where the other three
+hold seven narrow ones — so the dividers in row one exist nowhere else on the
+sheet and score barely a quarter of the image height when the column profile is
+taken over the whole thing. They are now measured band by band, inside each row
+of cells, where they are as solid as any other line.
+
+That alone cut a stripe of transparency straight through her: a column of hair
+can cover a cell as completely as a divider does. What separates them is that a
+ruled line is drawn in one flat tone and a sprite is shaded, so a candidate line
+is only accepted if the spread of its ink is small — and lines are looked for in
+one direction at a time, lighter-than-background or darker, never both at once,
+because a figure is both and scores like a divider when they are mixed.
+
+## The run cycle
+
+`dahlia_move_v4_sheet.png` replaces the 36-drawing v3 at the same output path.
+Fewer drawings, better cycle: v3 spent most of its length on stances and read as
+a shuffle, where these twelve are all stride. Uniform two-frame holds at 24fps,
+no breathing and no sway — the drawings carry every bit of the motion, and a
+cycle wants even spacing where an action wants beats. Built in place with no
+`--travel`, because whatever plays a locomotion clip supplies the ground speed;
+baking it in would have her dash out and slide back once per cycle.
+
+The cycle runs at 30fps rather than 24. With a fixed number of drawings the only
+thing that changes how a run *reads* is how long each drawing is on screen, and
+at 24fps these twelve took a full second for two strides — slow enough that she
+looked like she was wading. Twelve drawings at about 60 ms each is a normal run
+tempo, and the whole cycle now closes in 0.8 s.
+
+*(The older note here recorded that `dahlia_move_v2_sheet.png` would not build —
+seventeen sprites exported at 800x422, small enough that the anti-aliased
+outlines keyed away and each drawing arrived as two or three islands. The
+diagnosis still holds for any future export: at roughly 200x105 per sprite,
+component segmentation cannot find the drawings. Every other new-style sheet
+gives about 350x370.)*
+
+## Why some animations look softer than others
+
+Nothing in the pipeline downsamples. The difference is in the sheets, and it is
+large: measuring Dahlia's own height in the finished frames,
+
+| sheet | drawings | her height |
+| --- | --- | --- |
+| `dahlia_idle_sheet.png` | 6 | 354 px |
+| `dahlia_block_v2_sheet.png` | 8 | 343 px |
+| `dahlia_attack_b_sheet.png` | 8 | 342 px |
+| … | | |
+| `dahlia_skill_charge_sheet.png` + 2 | 22 | 332 px |
+| `dahlia_soul_charge_sheet.png` + slash | 15 | 363 px |
+| `dahlia_dodge_a_sheet.png` + b | 15 | 317 px |
+| `dahlia_dodge_v2_sheet.png` | 13 | 219 px *(retired)* |
+| `dahlia_ragdoll_b_sheet.png` | 27 | 154 px *(retired)* |
+
+A sheet is exported at roughly one size whatever it holds, so the more poses it
+packs in, the fewer pixels each drawing gets. The idle has 2.3× the linear
+resolution of the ragdoll — 5× the pixels — and drawn at the same size on screen
+that gap is exactly what reads as a quality drop. Denser sheets also arrive as
+JPEG more often, which adds mottling on top.
+
+There is no recovering it after the fact; upscaling would only make the softness
+smoother. Two things help. Exporting a dense sheet larger — a 25-pose sheet needs
+about 2.3× the width and height of an 8-pose one to hold the same detail. And
+drawing fewer poses on the same sheet, which is the same trade seen from the
+other side: the ranged animation went from 22 drawings to 12 and Dahlia grew
+from 169 px to 265, and the skill went 25 → 14 → 9 → 10 → 11 drawings while
+she went 157 → 175 → 209 → 207 → 209 px. Both read better for it, so the extra drawings were not
+buying much.
+
+In the meantime the sheets whose sprites come out under 200 px get a stronger
+grain filter (`CLEAN_SMALL` in `build.sh`, `--denoise 14` against 8), because
+the same amount of grain covers proportionally more of a small character.
+
+### Tune the grain filter per sheet, by sweeping it
+
+The right strength is a property of the sheet, not a constant. Sweeping the v6
+skill sheet — the cleanest in the set, its background measuring a standard
+deviation of 0.6 levels where the JPEG-era sheets mottled — gives a clear
+optimum and a clear cliff:
+
+| `--denoise` | grain removed | line work kept |
+| --- | --- | --- |
+| 6 | 10% | 106% |
+| **10** | **19%** | **101%** |
+| 14 | 27% | 92% |
+| 24 | 42% | 71% |
+
+Above 100% is not a measurement error: flattening the noise *around* an edge
+raises that edge's measured contrast against its surroundings, so a correctly
+tuned bilateral filter leaves the drawing crisper rather than softer. The cliff
+is where it starts eating the drawing instead — everything past 10 on this
+sheet and on v7, where the earlier grainier sheets take 14.
+
+### `--denoise` was doing nothing at all
+
+Worth recording, because it hid the problem above for the whole project. The
+filter ran on a copy of the sheet, but `--unmatte` — which every build uses —
+solves the aura's colour from the *working* pixel array and then rebuilds the
+sheet wholesale from the result, so every denoised pixel was thrown away
+immediately afterwards. Both flags reported success and the output was identical
+with `--denoise 0`. The filter now writes back into the array unmatte reads, and
+on the ragdoll sheet 14 takes 18% of the grain for 8% of the line work, with her
+eyes, mouth and hood strings intact.
+
+### The rest of what quality costs
+
+Three smaller losses sit on top of the source resolution, and all three are now
+measured rather than guessed.
+
+- **The GIF palette.** 255 colours and one bit of alpha is the format. It used
+  to be *one* palette stretched over every drawing in the animation, which
+  posterised the aura and the hair gradients; it is now one palette per distinct
+  drawing, which measures 5.4/255 mean error against the source rather than 6.5.
+  That is safe because the GIF writer collapses runs of identical frames into
+  one frame with a longer delay — a held pose is a single GIF frame and cannot
+  crawl within its hold. Drift on unchanged pixels went down, not up: 0.90/255
+  against 1.08.
+
+  Measure this on the written file, never on the frames in memory. The
+  collapsing means GIF frame *i* is not source frame *i*, and comparing them by
+  index reports errors of 70 or 100/255 that are pure misalignment — which is
+  exactly the mistake that nearly got per-frame palettes discarded as broken.
+
+- **The WebP was lossy.** Saved at quality 92 with a second lossy pass over
+  artwork that had already been keyed and cleaned. It is lossless now. This is
+  the reference deliverable; the GIF is a preview.
+
+- **AVIF was tried and dropped.** Nothing beats the lossless WebP on fidelity —
+  there is no "better than bit-exact" — and AVIF only trades: 0.76/255 of mean
+  error for a quarter of the size. Two things worth keeping from the attempt.
+  Left at AVIF's default 4:2:0 the encoder averages the chroma of every second
+  pixel together and the cyan aura against her red hair goes to 120/255 of
+  error, worse than the GIF; `4:4:4` with full range is the only setting worth
+  writing. And truly lossless AVIF is not available in this environment at all —
+  it needs identity matrix coefficients, and libavif fails to encode the alpha
+  plane with them set, on every codec and premultiplication setting tried.
+
+- **`--breathe` resamples.** The breath is a sub-percent vertical stretch, so
+  every frame it touches goes through Lanczos and comes back slightly softer —
+  about 4% of edge energy. The idles keep it, because that is the whole
+  performance there. Action clips do not: the drawings carry the motion, and
+  `--bob`/`--sway` shift by whole pixels without resampling anything.
+
+## An effect that blinks off for a beat
+
+Three skill sheets in a row had a pose carrying no effect at all sitting in the
+middle of the effect's run — on v6, pose 4 fell between the thrust and the
+vortex, so the energy switched off for a beat and back on, which reads as a
+dropped frame rather than as an attack. Each was fixed by moving that pose into
+the cooldown, where it becomes part of the fade.
+
+`dahlia_skill_v7_sheet.png` is the first that needs no reordering: its effect
+runs none, glitch, orb, vortex, peak, wake, trail, none, none, straight down the
+reading order. Worth checking on any sheet where the effect is drawn as a layer
+over the pose — reading order is where the drawings sit, not necessarily the
+order they play in.
+
+## The throw was briefly built from the grab sheet
+
+Worth recording, because the observation holds even though the build moved on.
+Nothing about a pose fixes what it means: the grab sheet's pose 3 is a full
+forward extension with her hair streaming behind, and that is the *reach* when
+the arm is opening and the *release* when it is closing. Played 1-2-3-4-5-6
+those six drawings are a grab; played 5-4-3-2-6-1 the same six are a throw, and
+for a while that was what shipped.
+
+`dahlia_throw_sheet.png` replaced it because a reordering cannot invent what was
+missing: a drawn motion-blur frame at the hurl, and a separate arm-cocked-back
+pose to coil on. Reordering gets you a second animation for free; drawing gets
+you a better one.
+
+What both versions share is where the time goes. The grab spends everything on
+the snatch — reach 0.13s, seize 0.17s, then a 0.58s hold. The throw spends it on
+the coil: the wind-up holds 0.38s and the hurl is over in 0.13s. Travel does the
+same, going 8px *backwards* on the coil before 32px forward on the release. A
+small move against the throw is what makes the throw look like it cost
+something.
+
+## `--unmatte` is for grey sheets, not white ones
+
+The flag recovers an aura's real colour by treating each glow pixel as a mix of
+paint and backdrop, and it decides what counts as glow by one rule: glow emits,
+so it is brighter than what it was painted over. On the mid-grey sheets that is
+what separates the aura from her hair.
+
+Against a white sheet nothing is brighter than the background, and the rule
+inverts into a trap — the pixels nearest white are no longer the glow, they are
+her hoodie. Left at 45 on the stagger sheet it removed 8631 near-white pixels
+outright and turned 976 more half-transparent. It is off on every white-backdrop
+sheet here, and the daggers lose nothing by it: their teal is drawn in real
+colour rather than blended over the paper.
+
+Three backdrops now, three different keys. Mid-grey takes `--tol 14` and
+`--unmatte 45`; dark takes `--tol 3` and `--glow-tol 20` to clean the rim it
+leaves; white takes `--tol 12` and no unmatte at all.
+
+## Three sheets, and what it buys
+
+The skill is the densest animation in the set: 22 drawings across three sheets.
+83 ms a drawing is the number the third sheet exists to buy — the run cycle
+reads smooth at 67 ms and the 11-drawing skill it replaces sat at 333 ms, and
+two sheets would have been 16 drawings at 125 ms, which reads as a series of
+poses rather than a movement.
+
+Emphasis is then layered on top without spending that. Fluidity and emphasis
+only conflict if you slow the wrong poses: what reads as choppy is a pose caught
+*mid-movement* and held, while a pose already at rest can be held as long as the
+beat wants. So the moving transitions were never touched, and all the extra time
+went into poses that are already at rest — 0.42 s each on the opening idle, the
+peak of the charge and the impact, 0.38 s on the widest shockwave, 0.50 s on the
+settle. The smear goes the other way, down to a single frame.
+
+Then four passes of retiming took it to 8.50 s, and the fifth undid all four.
+Each pass had added weight somewhere and every addition was individually
+defensible, but the sum was a special in which the rate the sheets were drawn
+for never appeared once. Three of those eight seconds were three drawings of a
+ring gathering on the dagger, held a second each — and nothing moves in those
+three except the ring, so most of that was a still image with a countdown on it.
+A beat held past the point where the eye leaves it does not read as emphasis; it
+reads as a pause.
+
+The build is 61 frames, 2.54 s, 116 ms a drawing. The floor is two frames — the
+83 ms these sheets were drawn for, near the run cycle's 67 ms — and only four
+poses rise off it: the ring closing at 208 ms, the peak of the charge at 167 ms,
+the impact at 208 ms, the settle at 208 ms. Four beats is what two and a half
+seconds has room for, and emphasis now comes out of the running rate rather than
+being stacked on top of it.
+
+Readability was never a function of duration. All 22 drawings differ, so at
+83 ms each every one of them registers — which is the whole reason the third
+sheet exists. The three pulses after the impact stay even at 125 ms apiece
+because evenness is what makes them read as pulses at all, and the smear stays
+at a single frame.
+
+Every rule the earlier sheets forced was in the prompt for this one, and it
+shows. The three sheets came back within a pixel of each other — her effect-free
+stance measures 332 px on the charge sheet and 332 px on the recovery sheet — so
+no `--scale` was needed at all, where the soul attack's two sheets were 6% apart
+and the one before that 9%. All 22 poses land with her boots on the same line.
+
+What the rules did not prevent was contact between poses at the ends of a row,
+which needed two `--erase` strips, both placed where the ink density between two
+poses bottoms out. One of them is worth recording: a narrow strip severed the
+poses but left a sliver of one standing, which then counted as a ninth pose of
+four pixels. The cut has to be wide enough to take the whole overlap, not just
+enough to break the connection.
+
+## Joining two sheets into one clip
+
+The knockdown and the get-up build as two clips because there is a state between
+them — the character stays down for as long as the game says. The soul attack
+has no such gap: the charge runs straight into the slash, so its two sheets
+build as one fifteen-drawing animation, and that needs both slices on a single
+canvas.
+
+Padding to the larger of the two is not enough. Each slice is centred on its own
+bounding box, and that box is dominated by whatever the effects are doing — a
+fire disc reaches a long way right, a slash crescent a long way left — so
+box-centred poses drag the character sideways at the seam. `tools/merge_sheets.py`
+anchors on her *body* instead: the horizontal mean and the lowest row of the
+pixels that are neither fire nor teal. All fifteen poses then land on the same
+anchor to the pixel.
+
+The residual scale difference is handled separately. Measured by body pixel
+count with the effects masked out, the two sheets are drawn 6% apart, so the
+charge — the larger — is scaled to 94%. Downscaling is the right direction: it
+sharpens where upscaling would soften.
+
+## Finding a ground line the sprites are standing on
+
+The knockdown and get-up sheets are ruled with a full-width line under each row
+of poses. It is useful to the artist — it is what keeps the footing consistent —
+and fatal to the segmenter, because it joins all four poses in a row into one
+component. `--panels` erases it, but two things in the detector had to change
+before it could see it at all.
+
+**An absolute darkness threshold means nothing on a dark sheet.** The first pass
+looks for ink below level 90, which works on every mid-grey sheet here. This
+backdrop is navy at (30, 40, 67) — its own brightest channel is *below* the
+threshold — so the test called 623 of 768 rows a grid line, and because it
+returned something, the relative fallback never ran. The background is now
+measured first, and a backdrop darker than the threshold skips the absolute test
+entirely.
+
+**Line uniformity has to be measured against the median.** A ruled line is one
+flat tone, which is what separates it from a column of shaded sprite, and that
+was tested by standard deviation. But the lines that matter most are exactly the
+ones sprites stand on: this ground line is uniform along nearly all its length
+and wild where eight pairs of boots cross it, which puts its deviation at 35–50
+— indistinguishable from a character. The share of ink sitting close to the
+line's *own median* ignores the crossings, and separates cleanly: 0.53–0.80 for
+the ground lines against 0.07–0.32 for rows of pure sprite.
+
+## Reading order is not play order
+
+The knockdown sheet draws the airborne tumble fifth and the skid third, so read
+straight through, Dahlia lands before she is thrown. The prop settles it without
+guesswork: counting teal pixels per pose, she holds the dagger in poses 1, 2, 5,
+4 and 3 and never again — so those five are the flight and the impact, in that
+order, and the three empty-handed poses are the aftermath.
+
+Worth doing on any sheet where the character carries something. A prop that
+appears, disappears and reappears is the cheapest possible check that the order
+is wrong, and it is a single measurement.
+
+## Keying a sheet drawn on a dark background
+
+Every other sheet here sits on mid-grey, comfortably far from anything Dahlia
+wears. The grab sheet does not: its backdrop is (49, 54, 60), her trousers
+average (37, 37, 42) and her boots (39, 42, 47). At the usual `--tol 14` the
+flood walks down her dark outline and hollows out both legs — the first slice
+came back with her wearing nothing below the waist.
+
+What saves it is that the backdrop is a flat fill rather than a photographed or
+gradient one: 99% of the sheet's edge strip sits within 2 levels of a single
+colour. So `--tol 3` is enough, and at 3 the trousers — 17 levels off — are
+never candidates.
+
+That leaves the antialiased rim standing as a dark speckled fringe. It is
+invisible against the sheet it came from and obvious against anything lighter,
+which is the trap: check a dark-background key composited onto white, never onto
+the background it was cut from. `--glow-tol 20 --glow-depth 3` clears the rim
+while staying three pixels out from the silhouette, so the trousers never come
+into range of it.
+
+The two flags pull in opposite directions here and that is the point: `--tol`
+decides what the flood may take, `--glow-tol` cleans up what it had to leave.
+
+## What actually makes a clip smooth
+
+Not the number of drawings — the *evenness* of the step between them. Measured
+as the mean pixel change from each drawing to the next:
+
+| | drawings | mean step | large steps |
+| --- | --- | --- | --- |
+| v6 | 10 | 93 | 4 of 9 |
+| v7 | 11 | 82 | 2 of 10 |
+
+One extra drawing, but a 12% smaller average step and half as many big jumps.
+The difference is where the drawings were spent: v6 crossed its whole vortex
+section in a run of four large steps, where v7 spends four drawings climbing
+into the peak and six coming down. A sheet with more poses concentrated in the
+part that moves fastest will always read smoother than one that spreads them
+evenly, and this is the measurement that shows it before anything is built.
+
+## A sheet that carries its own alpha
+
+Everything in this file about backgrounds — the flat navy, `--tol`, `--glow-tol`,
+`--unmatte`, three different keys for three different backdrops — is
+*reconstruction*. It exists because a sheet arrives as flat pixels with the
+transparency already flattened out of it, and the silhouette has to be worked
+out again from colour. A sheet exported with a real alpha channel has answered
+that question exactly, and `--keyed` takes the answer instead of recomputing it.
+
+The first such sheet came through with **32,699 soft-edge pixels across 66 alpha
+levels**, all of which survive the slice. That is the part worth having.
+`--unmatte` exists to solve an aura's true colour back out of the grey it was
+painted over, and it gets close — but close is its ceiling, and here there is
+nothing to solve. A teal aura or a shockwave ring keeps the edge it was drawn
+with rather than one inferred from it. There is no JPEG speckle to remove
+either, so `--denoise` has nothing to do.
+
+`--keyed` refuses `--unmatte`, `--glow-tol` and `--checker` rather than let them
+quietly rebuild what is already present, and refuses a fully opaque sheet rather
+than silently keying nothing out of it. `alpha` is still a hard mask deciding
+which pixels are kept — the despeckle and hole-filling stages want one — but the
+pixels that survive take their opacity from the sheet's own channel, so the
+antialiasing is passed through rather than re-derived.
+
+## A near-white checkerboard is not recoverable
+
+`--checker` exists because an editor draws "empty" as a grey chequer and some
+exports bake it into the pixels. It works when the chequer is mid-grey. It
+cannot work when the chequer is nearly white and the character is wearing
+white.
+
+Two A-pose exports arrived flattened onto a chequer of 239 and 255. Her hoodie
+is 245 to 255. There is no tolerance that separates those: keyed back, the
+result keeps **0 near-white pixels** — the hoodie and the trousers go with the
+background and what survives is her hair, her skin and a few outlines. The
+flood fill is not at fault. The two things are genuinely the same colour, and
+the information that told them apart was the alpha channel that the export
+discarded.
+
+So the rule in the sheet spec is not a preference. On a light chequer against
+light clothing, a flattened export is lost work, and the only fix is to export
+it again with the transparency intact.
+
+## Bigger source, smaller display
+
+A small sprite does animate more smoothly, and the reason matters because the
+obvious conclusion from it is wrong.
+
+Choppiness is how far an edge jumps between two frames, in *screen* pixels, and
+perception has an absolute threshold there — about 4 px reads as continuous,
+past roughly 9 px reads as a step. Scaling the sprite down scales every jump
+with it, which can carry a clip across that threshold with no drawing changed:
+
+| skill, 22 drawings | mean edge move | worst step |
+| --- | --- | --- |
+| as built (330 px tall) | 3.46 px | 14.02 px |
+| shown at 50% | 1.98 px | 8.26 px |
+| shown at 44% (146 px) | 1.75 px | 7.27 px |
+
+But this is *display* size, not source size. The 330 px build shown at 44% gives
+the same figures as art drawn at 146 px natively, so the smoothness comes from
+the scaling and not from the sheet. Generate large and display small: the detail
+is kept and the steps still shrink. Generating small buys the same smoothness
+and throws away resolution that cannot be recovered.
+
+## The rig, which is not the animation pipeline
+
+`build_rig.sh` slices the three parts sheets, packs the pieces into one texture,
+and writes a Spine skeleton. It shares the slicer with everything else and
+nothing after it, because a rig piece wants the opposite of what an animation
+frame wants: its own tight crop and its own offset, not a shared canvas
+registered on her feet. So there is no `--align`, and `--component-min` drops
+from 20000 to a few thousand — a forearm is a fraction of a pose's ink. The head
+sheet needs it lower again, at 1200, because her eyes are two islands of about
+5000 pixels each and the threshold that stops a boot splitting drops them
+entirely.
+
+### The sheets that finally worked
+
+Third set of parts sheets, drawn from an A-pose rather than from a stance, and
+the difference is in the numbers rather than in anyone's opinion:
+
+| | first attempt | second | this one |
+| --- | --- | --- | --- |
+| upper arm, sheet to sheet | 124% | 106% | **100.0%** |
+| forearm, sheet to sheet | 84% | — | **100.0%** |
+| assembled proportion | — | — | **4.3 heads** (reference 4.1) |
+| legs as separate thigh and shin | no | yes | yes |
+| far-side set a true shading pair | no | yes | yes |
+| joints carry overlap | no | yes | yes |
+
+The calibration pieces are drawn on two different sheets and came back
+*pixel-identical* — 55×110 and 50×100 on both. That is the check paying for
+itself: the same measurement caught a 24% drift on the first set and now
+certifies there is none.
+
+She assembles to 589 px at the crown, which is smaller than the previous
+1450 px rig. That is the one thing worth knowing about these sheets: the pieces
+are drawn at roughly 40% of the A-pose's own resolution, so the rig is about
+twice the size of a pose-sheet sprite rather than four times.
+
+It also caught a scaling bug in the generated idle. The dagger toss had a
+700 px apex, tuned by eye against the tall rig; the same constant against a
+620 px one threw the dagger clean off the top of her. It is measured from her
+hand to the top of her head now, so a throw is proportional to the thrower.
+
+### The bind pose is authored as angles
+
+The first layout gave every joint a world coordinate, and what came out was a
+mannequin standing to attention with its feet 76 px apart — nothing like her
+idle, which is a wide low guard with the dagger out front. Typing world
+coordinates cannot produce a stance: the numbers say nothing a person can
+picture, and any one of them being slightly off shows up as a limb detached
+from its own joint.
+
+So the pose is angles. `pose` gives each bone a world direction, `joint` says
+where it starts — `"at": "tip"` for a limb that continues its parent, or an
+offset in the parent's own frame for a shoulder that has to stay on the shoulder
+when she leans — and the joints then fall exactly where the bone lengths put
+them. A chain cannot come apart however she is posed, and the stance is now
+543 px wide at the ankles instead of 76.
+
+Two smaller things the reference forced. The bald head is drawn **with her eyes
+on it**, so the separate eye pieces were a second pair painted over the first;
+they stay in the atlas for expression work and are out of the draw order. And
+the far arm ended in a bare wrist, because the sheets have no far-side hand — so
+it shows the same fist on its own bone with the slot tinted a step darker, which
+is exactly what the sheets do for the far thigh, shin and boot. Spine tints per
+slot, so that costs no drawing at all.
+
+### Three coordinate systems, flipped in one place
+
+The pieces are described in image space, x right and **y down**, each anchor a
+fraction of that piece's own box. The layout in `rig/dahlia.json` is world
+space, x right and **y up**, origin on the ground between her boots — because
+that is the only frame a person can check. *Her knee is 504 pixels up* is
+verifiable; *her knee is 295 pixels along a bone rotated -90°* is not. Spine
+wants parent-relative, and a bone points along its own +X.
+
+Every flip happens in `attach()`. A limb gives two anchors — the joint it hangs
+from and the joint that hangs off it — and both the bone's length and the
+attachment's rotation fall out of them exactly: the proximal anchor must land on
+the bone's origin and the distal on its tip, which is one rotation and one
+translation with a closed-form solution. That is what lets a forearm drawn
+diagonally across its cell sit on a bone pointing straight down. The drawing's
+own angle is measured and then cancelled, and it is worth being clear that this
+rotation says nothing about which way the limb hangs — that is the bone's
+rotation, set separately from the layout, and confusing the two is what produced
+a first attempt with every limb lying horizontal.
+
+### The hierarchy has to be real
+
+The first version parented all 24 bones to root. It rendered a perfect bind
+pose and was not a skeleton: rotating the torso moved a rectangle of hoodie and
+left the head, the hair and both arms behind. Parent-relative transforms are a
+subtraction away from the world layout, so there is no reason to skip them:
+
+| turning the torso 20° moves | |
+| --- | --- |
+| head | 98.6 px |
+| hair tail | 195.2 px |
+| upper arm | 88.9 px |
+| hand | 87.6 px |
+| dagger | 112.3 px |
+| thigh, boot, hips | 0.0 px |
+
+The chain closes on itself as a check, too — `shin.x` is 295.0 against
+`thigh.length` 295.2, `boot.x` is 274.0 against `shin.length` 273.6. A child
+bone landing on its parent's tip is the arithmetic agreeing with itself.
+
+### Rendering the bind pose is the only real check
+
+A skeleton that is wrong by one rotation is perfectly plausible JSON. So
+`--preview` draws the bind pose with the same maths a runtime uses, and
+`--preview-anim` plays the generated idle through forward kinematics. Both
+caught real faults here that reading the file would not have.
+
+### The idle: a dagger toss, and why the dagger had to leave the hand
+
+The idle is a standing flourish — she dips, flicks the dagger up past her head,
+watches it turn over, and catches it. It is generated, not keyed, and it forced
+one structural change.
+
+**A child bone inherits its parent's transform, so a dagger parented to the hand
+can never leave it.** No amount of animation fixes that; it is what parenting
+means. So the dagger hangs off the hip instead, and its timeline is *baked*:
+while she is holding it, every key is written from wherever the hand actually is
+that frame, and while it is in the air it follows a parabola between the release
+and the catch. Baking is the only way to hold a prop that is not parented to the
+hand holding it, and not parenting it is the only way to let go. Doing that by
+hand is 33 keyframes of hand-matching; here it is a function call, because the
+same forward kinematics that renders the preview can be asked where the hand
+will be.
+
+Three things fall out of generating it that are worth having:
+
+- **The loop closes exactly.** Measured at both ends: 0.000 px of gap between
+  hand and dagger, 0.000 px of height, 0.000° of rotation. An idle that does not
+  close pops every 2.5 seconds forever.
+- **The spin is unwrapped.** A runtime lerps whatever number it is given, so a
+  rotation crossing 360° has to keep counting rather than wrap, or the dagger
+  snaps backwards mid-flight. The generator carries the accumulated angle.
+- **Her hand opens.** The parts sheet drew an open hand as well as a fist, so a
+  slot timeline swaps them one frame after the release and back on the catch.
+
+The body underneath is the same sine-per-bone settle at different phase offsets,
+so the hair lags the shoulders and the shoulders lag the chest — the one kind of
+animation code is genuinely better at than a person.
+
+### Which Spine version
+
+Both. `dahlia.json` claims 4.2 and `dahlia-3.8.json` claims 3.8.75, and they are
+otherwise the same file. What this emits — bones, slots, an array of skins,
+rotate timelines keyed on `angle` — is unchanged across those versions, so the
+version string is the only thing that decides which editors accept it without
+argument. A 4.x editor reads 3.8 data and a 3.8 editor cannot read 4.x, so
+between the two one always imports.
+
+### What comes out
+
+| file | for |
+| --- | --- |
+| `out/rig/dahlia.json` | Spine skeleton, 4.2 — File → Import Data in the editor |
+| `out/rig/dahlia-3.8.json` | the same skeleton claiming 3.8, for an older editor |
+| `out/rig/images/` | 25 loose PNGs; Spine's JSON import resolves attachments against these |
+| `out/rig/dahlia.png` + `.atlas` | packed texture and libGDX atlas, for a runtime |
+| `out/rig/dahlia_bindpose.png` | the pose the numbers describe |
+| `out/rig/dahlia_idle.webp` | the generated idle, played through the hierarchy |
+
+What is *not* here is mesh deformation and weighting, which is what makes a
+Project Moon rig look like one, and which is hand work in the editor on a
+Professional licence. This gets the boring half done — 25 attachments placed,
+a hierarchy that carries, a bind pose that stands up — and leaves the half that
+needs judgement.
+
+## Slicing a sheet
+
+`tools/slice_sheet.py` does not assume a uniform grid — these sheets have uneven
+spacing and rows with different frame counts — so it keys out the flat
+background and segments the leftover ink: horizontal gaps split rows, vertical
+gaps split frames within a row. Cutting the background out needs more than a
+colour test, since mid-grey shading on the face and hoodie falls within
+tolerance of the grey backdrop and keying by colour alone punches holes straight
+through the character; only background that connects to the sheet edge is really
+background, so the alpha comes from a flood fill inward from the edges.
+
+| flag | why |
+| --- | --- |
+| `--components` | split poses by connected ink instead of by gaps; use when poses overlap |
+| `--checker` | the background is a transparency checkerboard baked into the image |
+| `--strip-captions` | blank the text written under each pose on a labelled sheet |
+| `--component-min N` | smallest island counted as a pose rather than a stray scrap |
+| `--panels` | the sheet boxes each pose in a drawn frame; paint the grid out first |
+| `--fill-holes N` | seal and fill holes the flood punched through blurred poses |
+| `--single NAME` | treat every frame on the sheet as one sequence, in reading order |
+| `--align silhouette` | fine-register frames to each other instead of anchoring on the feet |
+| `--keyed` | the sheet already carries its own alpha; use it instead of keying a backdrop |
+| `--rows N` / `--cols N` | force a uniform grid instead of detecting one |
+| `--erase X0,Y0,X1,Y1` | paint a rectangle of the sheet out before keying; for a prop one pose has lent across a cell boundary. Repeatable |
+| `--scale P:PCT` | resize given poses (assembler); for a sheet whose rows are drawn at different sizes |
+| `--tol N` | background colour tolerance; raise it on a noisy or JPEG-compressed sheet |
+| `--glow-tol N` | strip soft painted haze, up to this distance from the background |
+| `--glow-depth N` | how many pixels in from the silhouette `--glow-tol` may reach |
+| `--denoise N` | clear JPEG grain: differences under N levels are noise, above are drawing |
+| `--despeckle N` | drop opaque islands smaller than this many pixels |
+| `--min-gap N` | smallest background gap that counts as a frame boundary |
+| `--min-size N` | drop specks smaller than this |
+| `--pad N` | transparent margin around each frame |
+| `--names a,b,c` | name each row instead of `row1`, `row2`, … |
+| `--opaque` | keep the sheet background instead of cutting it out |
+
+GIF stores frame delays in hundredths of a second, so a rate that does not
+divide into 10 ms gets rounded. 20 fps is exact; the WebP is exact at any rate.
+
+`assets/spritesheet.png` is an earlier sheet of four separate animations, sliced
+into `out/`: fight_stance (5 poses), knife_spin (6), low_slash (6),
+guard_idle (6). `tools/make_test_sheet.py` generates a stand-in sheet for
+exercising the slicer without real art.

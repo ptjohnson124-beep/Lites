@@ -1,0 +1,180 @@
+dahlia.png
+size: 1024,1024
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+head
+  rotate: false
+  xy: 289, 2
+  size: 127, 199
+  orig: 127, 199
+  offset: 0, 0
+  index: -1
+hair-fringe
+  rotate: false
+  xy: 570, 2
+  size: 164, 161
+  orig: 164, 161
+  offset: 0, 0
+  index: -1
+hair-crown
+  rotate: false
+  xy: 420, 2
+  size: 146, 162
+  orig: 146, 162
+  offset: 0, 0
+  index: -1
+hair-tail
+  rotate: false
+  xy: 2, 2
+  size: 152, 310
+  orig: 152, 310
+  offset: 0, 0
+  index: -1
+hair-strand-l
+  rotate: false
+  xy: 158, 2
+  size: 62, 227
+  orig: 62, 227
+  offset: 0, 0
+  index: -1
+hair-strand-r
+  rotate: false
+  xy: 224, 2
+  size: 61, 225
+  orig: 61, 225
+  offset: 0, 0
+  index: -1
+hood
+  rotate: false
+  xy: 652, 316
+  size: 147, 82
+  orig: 147, 82
+  offset: 0, 0
+  index: -1
+eye-l
+  rotate: false
+  xy: 962, 316
+  size: 55, 60
+  orig: 55, 60
+  offset: 0, 0
+  index: -1
+eye-r
+  rotate: false
+  xy: 61, 445
+  size: 55, 59
+  orig: 55, 59
+  offset: 0, 0
+  index: -1
+torso
+  rotate: false
+  xy: 738, 2
+  size: 175, 155
+  orig: 175, 155
+  offset: 0, 0
+  index: -1
+hips
+  rotate: false
+  xy: 803, 316
+  size: 155, 70
+  orig: 155, 70
+  offset: 0, 0
+  index: -1
+arm-upper
+  rotate: false
+  xy: 66, 316
+  size: 55, 110
+  orig: 55, 110
+  offset: 0, 0
+  index: -1
+arm-fore
+  rotate: false
+  xy: 292, 316
+  size: 50, 100
+  orig: 50, 100
+  offset: 0, 0
+  index: -1
+hand-fist
+  rotate: false
+  xy: 120, 445
+  size: 50, 55
+  orig: 50, 55
+  offset: 0, 0
+  index: -1
+hand-open
+  rotate: false
+  xy: 2, 445
+  size: 55, 60
+  orig: 55, 60
+  offset: 0, 0
+  index: -1
+holster
+  rotate: false
+  xy: 548, 316
+  size: 100, 85
+  orig: 100, 85
+  offset: 0, 0
+  index: -1
+dagger
+  rotate: false
+  xy: 174, 445
+  size: 145, 45
+  orig: 145, 45
+  offset: 0, 0
+  index: -1
+thigh
+  rotate: false
+  xy: 917, 2
+  size: 60, 125
+  orig: 60, 125
+  offset: 0, 0
+  index: -1
+shin
+  rotate: false
+  xy: 125, 316
+  size: 50, 110
+  orig: 50, 110
+  offset: 0, 0
+  index: -1
+boot
+  rotate: false
+  xy: 400, 316
+  size: 70, 90
+  orig: 70, 90
+  offset: 0, 0
+  index: -1
+thigh-far
+  rotate: false
+  xy: 2, 316
+  size: 60, 125
+  orig: 60, 125
+  offset: 0, 0
+  index: -1
+shin-far
+  rotate: false
+  xy: 179, 316
+  size: 50, 110
+  orig: 50, 110
+  offset: 0, 0
+  index: -1
+boot-far
+  rotate: false
+  xy: 474, 316
+  size: 70, 90
+  orig: 70, 90
+  offset: 0, 0
+  index: -1
+arm-upper-far
+  rotate: false
+  xy: 233, 316
+  size: 55, 110
+  orig: 55, 110
+  offset: 0, 0
+  index: -1
+arm-fore-far
+  rotate: false
+  xy: 346, 316
+  size: 50, 100
+  orig: 50, 100
+  offset: 0, 0
+  index: -1

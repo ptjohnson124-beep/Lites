@@ -1,0 +1,1717 @@
+#!/bin/sh
+# Rebuild every animation from its sheet. Run from the repo root.
+#
+# Per-sheet differences are not arbitrary — each one is a property of how that
+# sheet was drawn, and the comments say which.
+set -e
+
+SLICE="python3 tools/slice_sheet.py"
+BUILD="python3 tools/assemble.py"
+CLEAN="--despeckle 24 --denoise 8 --unmatte 45 --align silhouette"
+# Grain is a fraction of the character, not of the sheet, so a sheet that packs
+# 25 poses into the space another gives 8 carries the same mottling over a third
+# of the pixels and it shows three times as much. Those sheets get a stronger
+# filter: at 14 it takes 18% of the grain for 8% of the line work, and her eyes,
+# mouth and hood strings all survive it — checked frame by frame.
+CLEAN_SMALL="--despeckle 24 --denoise 14 --unmatte 45 --align silhouette"
+
+# The warm aura around Dahlia is part of her design, so no sheet strips it:
+# --glow-tol stays at 0 everywhere. --unmatte goes further and recovers the
+# colour it was painted in: the glow is laid over the sheet's grey at partial
+# opacity, so grey is baked into it, and lifted off as-is it reads tan.
+$SLICE assets/twirl_sheet.png -o out/dahlia_twirl \
+  --tol 14 --glow-tol 0 $CLEAN --single dahlia_twirl
+$BUILD out/dahlia_twirl/frames -o out/dahlia_twirl -n dahlia_twirl \
+  --poses 3,4,3,4,5,6,7,6,5,4 --holds 28,24,32,16,2,2,28,4,4,10 \
+  --fps 20 --breathe 1.2 --breathe-cycles 3 --breathe-levels 12 --sway 2
+
+# Going insane. Sheet A is panelled and holds her corrupted idle, the aura
+# guttering between gold and red; sheet B is the transformation itself.
+$SLICE assets/dahlia_insane_b_sheet.png -o out/dahlia_insane \
+  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_insane
+$BUILD out/dahlia_insane/frames -o out/dahlia_insane -n dahlia_insane \
+  --poses 2,1,3,4,5,6,7,8,9,10,11,12,13,15,16 \
+  --holds 8,3,6,3,3,2,8,3,4,4,3,5,4,4,8 \
+  --fps 20 --breathe 1.5 --breathe-cycles 3 --breathe-levels 12 --sway 2 \
+  --shake 3:5,5:3,7:10,8:5 --travel 6:10,7:2,8:-4
+
+# The full insanity transformation: head grab, escalating glitch, two corruption
+# bursts, then she comes down bloodied and sparking. The sheet also draws a
+# corrupted lunge (poses 6-8) — a different action, left out of this clip.
+$SLICE assets/dahlia_insanity_sheet.png -o out/dahlia_insanity \
+  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_insanity
+$BUILD out/dahlia_insanity/frames -o out/dahlia_insanity -n dahlia_insanity \
+  --poses 13,1,2,3,4,12,10,11,9,14,15,16 --holds 10,6,5,4,7,4,6,5,8,6,8,10 \
+  --fps 20 --breathe 1.5 --breathe-cycles 3 --breathe-levels 12 --sway 2 \
+  --shake 3:3,4:8,10:6
+
+# Cyberpsychosis. The episode arc: eyes go red, an afterimage splits off, static
+# in the chest, she tears into two (poses 6 and 7 flickered against each other),
+# peaks grinning in the full aura, one dark flash, then a red-eyed comedown back
+# to herself. The tear poses stay single components because the drawn glitch
+# streaks connect the halves.
+$SLICE assets/dahlia_flip_idle_sheet.png -o out/dahlia_flip_idle \
+  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_flip_idle
+$BUILD out/dahlia_flip_idle/frames -o out/dahlia_flip_idle -n dahlia_flip_idle \
+  --poses 1,2,3,4,5,6,7,8,9,10,11 --holds 14,4,2,3,6,4,3,2,6,5,10 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 7:2
+
+# THE idle, in the new art style (crisper line work, the cyber-dagger that
+# deploys into her hand — which retires the prop-continuity problem by design).
+# Earlier sheets are being redrawn in this style; this is the template build.
+# Loop: empty-handed breath, dagger deploys, spin flourish, held level while
+# breathing (poses 5 and 6 alternating as the micro-variation), retract, back
+# to the breath. The seam is the retract, and it measures smaller than the
+# deploy, so the loop has no pop.
+$SLICE assets/dahlia_idle_sheet.png -o out/dahlia_idle \
+  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_idle
+$BUILD out/dahlia_idle/frames -o out/dahlia_idle -n dahlia_idle \
+  --poses 1,2,3,4,5,6,5,2 --holds 18,3,3,7,10,10,8,2 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2
+
+# Block, in the new style, replacing the old-style build. The loop opens on the
+# retracted breath rather than the ready stance: the dagger deploying is the
+# sheet's largest step by far, and starting there puts it inside the loop as a
+# visible action instead of on the seam. Seam 33 against 51 for the deploy.
+$SLICE assets/dahlia_block_v2_sheet.png -o out/dahlia_block \
+  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_block
+$BUILD out/dahlia_block/frames -o out/dahlia_block -n dahlia_block \
+  --poses 8,1,2,3,4,5,6,7 --holds 10,8,2,3,5,7,3,6 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 4:6,5:3 --travel 8:0,1:0,2:0,3:0,4:-4,5:-6,6:-3,7:-1
+
+# Taking a hit, in the new style. The sheet is a labelled reference --- a
+# caption under every cell --- so --strip-captions blanks the text before
+# anything segments it as part of her. Ends in a wounded idle rather than
+# returning to normal, and poses 7 and 8 alternate to give that idle a breath.
+$SLICE assets/dahlia_hit_v2_sheet.png -o out/dahlia_hit \
+  --panels --strip-captions --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN \
+  --single dahlia_hit
+$BUILD out/dahlia_hit/frames -o out/dahlia_hit -n dahlia_hit \
+  --poses 1,2,3,4,5,6,7,8,7,8 --holds 8,2,2,3,4,4,6,8,6,8 \
+  --fps 20 --breathe 1.3 --breathe-cycles 3 --breathe-levels 12 --sway 2 \
+  --shake 3:9,4:6,5:3 --travel 1:0,2:0,3:-3,4:-9,5:-15,6:-11,7:-7,8:-6
+
+# Attacking, in the new style: two of them.
+#
+# The lunging slash is the primary attack --- wind up, leap in, one big arc,
+# recover --- and travels 22px forward across the leap. Replaces the old-style
+# attack at the same output path.
+$SLICE assets/dahlia_attack_b_sheet.png -o out/dahlia_attack \
+  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_attack
+$BUILD out/dahlia_attack/frames -o out/dahlia_attack -n dahlia_attack \
+  --poses 1,2,3,4,5,6,7,8 --holds 6,3,2,4,3,3,4,8 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 4:5 --travel 1:0,2:0,3:12,4:22,5:18,6:12,7:6,8:0
+
+# The spin combo is two attacks in one sheet: a stationary spin slash, then a
+# thrust that carries her 16px forward. Travel stays at zero through the spin
+# and only starts at the thrust, so the two halves read as separate beats.
+$SLICE assets/dahlia_attack_a_sheet.png -o out/dahlia_attack_spin \
+  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_attack_spin
+$BUILD out/dahlia_attack_spin/frames -o out/dahlia_attack_spin -n dahlia_attack_spin \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12 --holds 6,3,2,5,3,2,2,6,3,3,4,8 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 4:5,8:4 --travel 1:0,2:0,3:0,4:0,5:0,6:4,7:10,8:16,9:14,10:8,11:3,12:0
+
+# Evasion, counter and taunt in the new style, replacing their old-style builds
+# at the same output paths.
+#
+# Evasion is rebuilt from two sheets and 15 drawings. The v2 sheet it replaces
+# drew her 219px tall, the smallest in the set; these two are 317px and 309px
+# for the same stance, 2.6% apart, so no --scale is needed — the closest two
+# sheets have ever landed.
+#
+# Sheet A is the spin and carries the whole animation: front, weight shift,
+# push-off with smear streaks, profile away, full back, profile returning,
+# turning through her hair, front. Eight drawings is what a 360 costs; at seven
+# it snaps.
+#
+# Sheet B is thin. Its poses 3 to 7 measure 281x319, 299x326, 299x323, 305x323
+# and 309x323 — one stance with the face changing — so all it really adds is
+# the landing, the rise, the wink and the drop of the guard. It is built in
+# whole rather than trimmed because the near-copies still buy a half-frame of
+# settle either side of the wink, and the wink is the point of the clip.
+#
+# Two drawings are missing the dagger: the landing crouch and the last pose
+# come back with zero teal pixels where their neighbours carry about 2000. That
+# is the art, not the key, and there is nothing the pipeline can do about it.
+#
+# One --erase, 758,780 to 784,860. Pose 8's dagger points down-left and its tip
+# crosses into pose 7's cell, close enough to touch her trouser leg — so it
+# arrives as part of pose 7 and a disembodied blade hangs off her hip through
+# the turn. The strip stops at x=784, pose 8's own edge, so pose 8 keeps every
+# pixel it already had; only the 26 columns that were never going to reach it
+# are cleared.
+#
+# Her hair bridges the last two poses of sheet A into one island. The valley
+# split separates them; before the ownership fix in slice_sheet.py the whole
+# island went to the rect its centre fell in and pose 7 came out with four
+# pixels in it.
+$SLICE assets/dahlia_dodge_a_sheet.png -o out/dahlia_dodge_a \
+  --erase 758,780,784,860 \
+  --components --component-min 8000 --cluster-gap 14 --tol 3 --glow-tol 20 --glow-depth 3 \
+  --fill-holes 4 --despeckle 24 --denoise 10 --unmatte 0 --align silhouette \
+  --single dahlia_dodge_a
+$SLICE assets/dahlia_dodge_b_sheet.png -o out/dahlia_dodge_b \
+  --components --component-min 8000 --cluster-gap 14 --tol 3 --glow-tol 20 --glow-depth 3 \
+  --fill-holes 4 --despeckle 24 --denoise 10 --unmatte 0 --align silhouette \
+  --single dahlia_dodge_b
+python3 tools/merge_sheets.py out/dahlia_dodge_a/frames out/dahlia_dodge_b/frames \
+  --skip-first out/dahlia_dodge_b/frames -o out/dahlia_dodge -n dahlia_dodge
+$BUILD out/dahlia_dodge/frames -o out/dahlia_dodge -n dahlia_dodge \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 \
+  --holds 8,2,2,2,2,2,2,3,4,2,2,3,9,3,10 \
+  --fps 24 --breathe 0 --bob 2 --sway 2 --stabilize none \
+  --travel 1:0,2:-4,3:-16,4:-28,5:-34,6:-30,7:-22,8:-14,9:-8,10:-4,11:-2,12:0,13:0,14:0,15:0
+
+# Counter: exported with transparency and saved as JPEG, so the editor's
+# checkerboard is baked into the pixels — --checker flattens it back to one
+# background. She closes 20px, then the counter lands with a 6px jolt.
+$SLICE assets/dahlia_counter_v2_sheet.png -o out/dahlia_counter \
+  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_counter
+# Pose 3 is the slash smear --- 76% less edge detail than the others, which is
+# how a smear shows up when the arc it carries makes it the densest frame on the
+# sheet --- so it gets two frames and no more. The loop opens on pose 7, the one
+# with the dagger retracted, so the deploy lands mid-loop rather than on the
+# seam, the same reason the block opens where it does.
+$BUILD out/dahlia_counter/frames -o out/dahlia_counter -n dahlia_counter \
+  --poses 7,8,1,2,3,4,5,6,9,10 --holds 12,6,6,4,2,12,5,7,5,8 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 4:5 --travel 7:0,8:0,1:0,2:-4,3:14,4:20,5:16,6:10,9:4,10:0
+
+# Taunt: a flame lit in her free hand. Poses 5 and 6 are the same flame at two
+# sizes, so they alternate to make it gutter rather than sit still.
+$SLICE assets/dahlia_taunt_v2_sheet.png -o out/dahlia_taunt \
+  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_taunt
+$BUILD out/dahlia_taunt/frames -o out/dahlia_taunt -n dahlia_taunt \
+  --poses 1,2,3,4,5,6,5,6,7,8,9,10,11,12 --holds 12,4,3,3,5,4,4,7,4,4,4,4,5,12 \
+  --fps 20 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 4:2
+
+# Insane idle, new style. A corruption cycle rather than a steady state: she
+# starts normal, her face shadows over, red glitch and text artefacts build,
+# stutter at the peak (poses 9-11 played out and back), then snap clean again.
+$SLICE assets/dahlia_insane_idle_v2_sheet.png -o out/dahlia_insane_idle \
+  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_insane_idle
+$BUILD out/dahlia_insane_idle/frames -o out/dahlia_insane_idle -n dahlia_insane_idle \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,10,9,12 --holds 10,5,4,4,7,4,4,3,2,2,2,2,2,7 \
+  --fps 20 --breathe 1.3 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 10:3,11:3
+
+# Fully insane idle. This one arrived as a finished animation rather than a
+# sheet, so import_gif turns its frames into poses and its per-frame durations
+# into holds --- it keeps exactly the timing it was authored with, and still
+# gets the same cleanup, strip, manifest and exports as everything else.
+# Mirrored to face the other way. No breathing or sway: the motion is drawn.
+python3 tools/import_gif.py assets/dahlia_fully_insane_sheet.gif \
+  -o out/dahlia_fully_insane_idle -n dahlia_fully_insane_idle --fps 20 --mirror
+$BUILD out/dahlia_fully_insane_idle/frames -o out/dahlia_fully_insane_idle -n dahlia_fully_insane_idle \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48 \
+  --holds 1,2,1,6,1,2,2,1,1,4,1,1,1,1,1,1,1,1,1,1,1,4,1,1,1,1,1,1,1,4,2,1,1,1,2,1,1,1,4,2,1,2,2,1,1,6,2,1 \
+  --fps 20 --breathe 0 --sway 0 --despeckle 24
+
+# Special / skill: a frequency-wave dagger burst across three sheets and 22
+# drawings — the charge, the burst, the recovery. Replaces the 11-drawing v7
+# build. 7.42s.
+#
+# Emphasis and fluidity are not in tension, as long as the right poses take the
+# extra time. What reads as choppy is a pose caught mid-movement and held; a
+# pose that is already at rest can be held as long as the beat needs. So every
+# transition here stays at two frames — 83ms, the fluid number the three sheets
+# were spent to buy — and the time goes entirely into the extremes: 0.42s each on
+# the opening idle, the peak of the charge and the impact, 0.38s on the face
+# going into shadow and on the widest shockwave, 0.46s on the settle, and 1.21s
+# spread across the nine poses of the rings dissipating. The smear at pose 9 goes
+# the other way, down to a single frame, because a smear reads as speed when it
+# flashes and as a pose when it is held.
+#
+# Three --erase strips now. Two are placed where the ink density between two
+# poses bottoms out; the third is different, and worth the note. The burst sheet's last two poses
+# touch through their shockwave rings, and the recovery sheet's first two touch
+# through the wave arcs — one fused component each, so seven poses out of eight
+# without the cut. The recovery strip has to be the wider of the two: a narrower
+# one severed the poses but left a sliver standing, which then counted as a
+# ninth pose of four pixels.
+#
+# The third strip, 1039,586 to 1090,660, is not on a gap at all. Burst pose 8's
+# dagger is drawn reaching left out of its own cell and into pose 7's, where it
+# crosses behind the shockwave crescent — there is no density minimum between
+# them because the two drawings genuinely overlap. Cutting at the cell edge, as
+# the first strip does, only severed the blade and left its tip stranded in
+# pose 7, floating point-first out of the crescent for the whole beat. The
+# strip has to take the stranded piece itself, so it is fitted to the tip
+# rather than to a gap: it costs about 1500 pixels, nearly all of them the tip,
+# and the crescent's outline is unchanged either side of it.
+#
+# --component-min 20000, an order of magnitude above the usual: every real pose
+# here is over 33000 body pixels, so the threshold can sit high enough to ignore
+# anything an --erase leaves behind.
+#
+# The beats, fifth pass, and it undoes the four before it. Every earlier pass
+# added weight somewhere; what came out was an 8.5s special in which the rate
+# the sheets were actually drawn for never appeared once. This one runs at that
+# rate and buys its emphasis out of it rather than on top of it.
+#
+# 22 drawings, 2.54s, 116ms a drawing on average. The floor is two frames —
+# 83ms, what these sheets were drawn for, near the run cycle's 67ms — and only
+# four poses rise off it: the ring closing at 208ms, the peak at 167ms, the
+# impact at 208ms, the settle at 208ms. Four beats is what two and a half
+# seconds has room for. The three pulses stay even at 125ms each, because
+# evenness is what makes them read as pulses, and the smear stays at one frame.
+#
+# Readability was never a function of duration here. All 22 drawings differ, so
+# at 83ms each they all register; what stopped registering was a beat held long
+# enough for the eye to leave it. The three seconds spent on three drawings of
+# a ring gathering was the clearest case — nothing in those three moves except
+# the ring itself, so most of it was a still image with a countdown on it.
+#
+# No --scale. The three sheets came back within a pixel of each other — her
+# effect-free stance measures 332px on the charge sheet and 332px on the
+# recovery sheet, which is the two-attachment continuity rule working as well as
+# it ever has.
+$SLICE assets/dahlia_skill_charge_sheet.png -o out/dahlia_skill_charge \
+  --components --component-min 20000 --cluster-gap 14 --tol 8 --glow-tol 0 --fill-holes 4 \
+  --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_skill_charge
+$SLICE assets/dahlia_skill_burst_sheet.png -o out/dahlia_skill_burst \
+  --erase 1070,390,1088,768 --erase 1039,586,1090,660 \
+  --components --component-min 20000 --cluster-gap 14 --tol 8 --glow-tol 0 --fill-holes 4 \
+  --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_skill_burst
+$SLICE assets/dahlia_skill_recover_sheet.png -o out/dahlia_skill_recover \
+  --erase 375,40,415,375 \
+  --components --component-min 20000 --cluster-gap 14 --tol 8 --glow-tol 0 --fill-holes 4 \
+  --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_skill_recover
+python3 tools/merge_sheets.py out/dahlia_skill_charge/frames out/dahlia_skill_burst/frames \
+  out/dahlia_skill_recover/frames \
+  --skip-first out/dahlia_skill_burst/frames --skip-first out/dahlia_skill_recover/frames \
+  -o out/dahlia_skill -n dahlia_skill
+$BUILD out/dahlia_skill/frames -o out/dahlia_skill -n dahlia_skill \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22 \
+  --holds 3,2,2,2,2,2,5,4,1,5,3,3,3,2,2,2,2,2,2,3,4,5 \
+  --fps 24 --breathe 0 --bob 2 --sway 2 --stabilize none \
+  --shake 10:6,11:8,12:5 \
+  --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:6,10:14,11:18,12:16,13:12,14:8,15:4,16:2,17:0,18:0,19:0,20:0,21:0,22:0
+
+# Moving. Built in place, with no --travel: a locomotion clip is translated by
+# whatever plays it, and baking the ground into the loop would have her dash out
+# and slide back every cycle. The sheet gives one leap, one stride and one dash
+# smear; the rest are stances, so two of those close the loop.
+# Ranged attack, from the v4 sheet: twelve drawings instead of v3's 22, and
+# nearly twice Dahlia's height in pixels because the sheet spends its area on
+# fewer poses. Rest, the gun summons out of her hand, two beats of aim, a dash,
+# the shot, the recoil, a grin, and back to rest. She carries 20px forward on
+# the dash and walks it back.
+#
+# One --erase, seven pixels wide. Pose 2's gun barrel and pose 3's hair are
+# drawn overlapping — solidly, across six scanlines, so there is no gap for the
+# segmenter to find and the two poses arrive as a single island: one frame came
+# out empty and the other held two figures. Cutting the sheet on a forced 3x4
+# grid separates them but slices the muzzle blast off at the cell edge, which
+# is the one drawing on the sheet worth keeping whole. Severing the join
+# instead costs the outer rim of pose 2's muzzle on a motion-blurred frame and
+# nothing else: pose 3 keeps its hair, its blast, and no stray gun behind her.
+$SLICE assets/dahlia_ranged_v4_sheet.png -o out/dahlia_ranged \
+  --erase 571,110,578,170 \
+  --components --tol 18 --glow-tol 0 --fill-holes 3 $CLEAN_SMALL --single dahlia_ranged
+$BUILD out/dahlia_ranged/frames -o out/dahlia_ranged -n dahlia_ranged \
+  --poses 9,7,1,5,2,3,4,8,6,10,11 \
+  --holds 8,5,4,4,2,7,4,5,4,5,8 \
+  --fps 24 --breathe 1.2 --breathe-cycles 2 --breathe-levels 12 --sway 2 \
+  --shake 3:8,4:4 \
+  --travel 9:0,7:0,1:0,5:0,2:14,3:20,4:12,8:6,6:2,10:0,11:0
+
+# Cyberpsychosis, new style, replacing the old-style build: eyes go, the face
+# corrupts, one flash of the double-headed glitch, a scream, then the gold surge
+# before she settles.
+$SLICE assets/dahlia_cyber_v2_sheet.png -o out/dahlia_cyberpsychosis \
+  --panels --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_cyberpsychosis
+$BUILD out/dahlia_cyberpsychosis/frames -o out/dahlia_cyberpsychosis -n dahlia_cyberpsychosis \
+  --poses 1,2,3,4,5,6,7,8,9,12,10,11 --holds 8,4,4,3,5,4,4,4,4,5,4,6 \
+  --fps 20 --breathe 1.3 --breathe-cycles 2 --breathe-levels 12 --sway 2 --shake 4:6,5:4,12:5
+
+# Soul attack: one continuous action across two sheets and fifteen drawings —
+# the charge, then the slash. Unlike the knockdown and the get-up, there is no
+# state to hold between the halves, so this builds as one clip rather than two.
+# Replaces the 16-pose soul sheet, on which Dahlia measured 167px; here she is
+# 363px, and the effect goes from a single spark to a fire disc taller than she
+# is and out again.
+#
+# Two --erase strips on the charge sheet. Its last three poses have flames wider
+# than she is and they touch, fusing into one 795px component — seven poses and
+# a fragment out of a straight slice. The cuts are twelve pixels wide and land
+# where the flame density between poses bottoms out, so nothing of either pose
+# is lost. The slash sheet needs none: it was regenerated in landscape with the
+# spacing rule stated effect-to-effect rather than body-to-body.
+#
+# merge_sheets puts both slices on one canvas, anchored on her feet and her
+# body's centre line rather than on the bounding box — the effects reach much
+# further on some poses than others, so a box centre would drag her sideways at
+# the seam. All fifteen poses land on the same anchor. --skip-first drops the
+# slash sheet's opening pose, which repeats the charge sheet's last.
+#
+# --scale 94 on the charge poses. The two sheets are drawn 6% apart, measured by
+# body pixel count with the fire and teal masked out; the charge is the larger,
+# so it scales down, which sharpens rather than softens.
+$SLICE assets/dahlia_soul_charge_sheet.png -o out/dahlia_soul_charge \
+  --erase 516,500,527,976 --erase 796,500,807,976 \
+  --components --component-min 3000 --tol 8 --glow-tol 0 --fill-holes 4 \
+  --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_soul_charge
+$SLICE assets/dahlia_soul_slash_sheet.png -o out/dahlia_soul_slash \
+  --components --component-min 3000 --tol 8 --glow-tol 0 --fill-holes 4 \
+  --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_soul_slash
+python3 tools/merge_sheets.py out/dahlia_soul_charge/frames out/dahlia_soul_slash/frames \
+  --skip-first out/dahlia_soul_slash/frames -o out/dahlia_soul -n dahlia_soul
+$BUILD out/dahlia_soul/frames -o out/dahlia_soul -n dahlia_soul \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 \
+  --holds 8,5,5,5,6,5,5,10,3,8,5,5,5,5,12 \
+  --fps 24 --breathe 0 --bob 2 --sway 2 --stabilize none \
+  --scale 1:94,2:94,3:94,4:94,5:94,6:94,7:94,8:94 \
+  --shake 8:4,9:6,10:9 \
+  --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:10,10:24,11:20,12:14,13:8,14:3,15:0
+
+# Moving: a 12-drawing run cycle, replacing the 36-frame v3. Fewer drawings but
+# a much better cycle — v3 spent most of its length on stances and read as a
+# shuffle. These twelve are all stride. Uniform two-frame holds and no breathing
+# or sway: the drawings already carry every bit of the motion, and a cycle wants
+# even spacing where an action wants beats. Built in place with no --travel; a
+# locomotion clip is translated by whatever plays it, and baking the ground into
+# the loop would have her dash out and slide back every cycle.
+$SLICE assets/dahlia_move_v4_sheet.png -o out/dahlia_move \
+  --components --tol 14 --glow-tol 0 --fill-holes 3 $CLEAN --single dahlia_move
+$BUILD out/dahlia_move/frames -o out/dahlia_move -n dahlia_move \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12 \
+  --holds 2,2,2,2,2,2,2,2,2,2,2,2 \
+  --fps 30 --breathe 0 --sway 0
+
+# Ragdoll and get-up: one action across two sheets, generated in two turns and
+# built as two clips, which is also how an engine wants them — play the
+# knockdown, hold the downed pose for as long as the character stays down, then
+# play the get-up. Replaces the 27-pose ragdoll sheet, on which Dahlia measured
+# 153px tall, the smallest in the project. On these she is 303px.
+#
+# Both sheets were redrawn without the ground line the first versions carried,
+# so neither needs --panels — eight poses straight out of component
+# segmentation. The two detector fixes that line forced are worth keeping for
+# the next sheet that has one, and are in the README: an
+# absolute darkness threshold means nothing on a navy backdrop darker than the
+# threshold itself, and line uniformity has to be measured against the median,
+# because a ground line is uniform along its length and wild where eight pairs
+# of boots cross it.
+#
+# --tol 8: the backdrop is dark and her boots and trousers are darker still, so
+# the flood needs a tight leash, and the sheet is flat enough to give it one —
+# 99% of the edge strip sits within 7 levels. --unmatte 0, as on every sheet
+# that is not mid-grey.
+#
+# Pose order is not reading order. As drawn, the airborne tumble sits fifth and
+# the skid third, so read straight through she lands before she is thrown. The
+# dagger settles it: she holds it in 1, 2, 5, 4 and 3 and never again, so those
+# five are the flight and the impact in that order. Pose 7 is dropped — it is
+# the only frame where the fallen dagger lies inside her crop, so playing it
+# flashes the prop on for a quarter second and off again.
+$SLICE assets/dahlia_knockdown_sheet.png -o out/dahlia_ragdoll \
+  --components --component-min 3000 --tol 8 --glow-tol 0 --fill-holes 4 \
+  --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_ragdoll
+$BUILD out/dahlia_ragdoll/frames -o out/dahlia_ragdoll -n dahlia_ragdoll \
+  --poses 1,2,5,4,3,6,8 \
+  --holds 6,3,4,5,4,7,18 \
+  --fps 24 --breathe 0 --bob 2 --sway 2 \
+  --shake 4:9,3:5 \
+  --travel 1:0,2:6,5:-26,4:-48,3:-66,6:-72,8:-76
+
+# The get-up needs no reordering — its eight drawings run in sequence, and the
+# stance it ends on measures 296px against the knockdown's 303, a 2% drift
+# across two separately generated sheets. That is what attaching the last pose
+# of sheet one as the reference for sheet two buys.
+#
+# Slow at the bottom and quickening as she rises: 0.42s face down, holds
+# shortening all the way up to the stance, then 0.5s to settle.
+$SLICE assets/dahlia_getup_sheet.png -o out/dahlia_getup \
+  --components --component-min 3000 --tol 8 --glow-tol 0 --fill-holes 4 \
+  --despeckle 24 --denoise 10 --unmatte 0 --align silhouette --single dahlia_getup
+$BUILD out/dahlia_getup/frames -o out/dahlia_getup -n dahlia_getup \
+  --poses 1,2,3,4,5,6,7,8 \
+  --holds 10,7,7,6,6,5,6,12 \
+  --fps 24 --breathe 0 --bob 2 --sway 2 \
+  --shake 6:3 \
+  --travel 1:0,2:0,3:4,4:8,5:10,6:8,7:4,8:0
+
+
+# Twirl idle, the first animation of the new design. Two sheets, both with a
+# real alpha channel -- around 200 levels and 57 to 79 thousand soft-edge
+# pixels apiece -- so --keyed takes each sheet's own mask and there is nothing
+# to un-matte, no grain to denoise and no backdrop to guess.
+#
+# The sheets are played in the reverse of the order they were labelled. The
+# spin sheet's faces are neutral all the way across and the grin sheet runs
+# neutral, grin, grin, grin, grin, neutral -- a complete arc that returns --
+# so the twirl is the first half whatever the prompt called them. It is also
+# the tighter join: spin-to-grin measures 35 of 255 where grin-to-spin is 65,
+# and both are smaller than the largest step inside either sheet.
+#
+# --match-scale rather than a hand-computed --scale. The duplicated attachment
+# pose is the only thing carrying scale between two sheets and it is the
+# instruction the generator ignores most often -- twice in a row the second
+# sheet came back with a pose that was similar rather than copied, and 6 to 9
+# per cent larger with it. Her standing height is measurable on both sheets,
+# so the correction is too.
+$SLICE assets/dahlia_twirl_spin_sheet.png -o out/twirl_spin \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single spin
+$SLICE assets/dahlia_twirl_grin_sheet.png -o out/twirl_grin \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single grin
+python3 tools/merge_sheets.py out/twirl_spin/frames out/twirl_grin/frames \
+  --skip-first out/twirl_grin/frames --match-scale \
+  -o out/dahlia_twirl -n dahlia_twirl
+$BUILD out/dahlia_twirl/frames -o out/dahlia_twirl -n dahlia_twirl \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 \
+  --holds 10,3,3,3,2,1,2,4,4,5,4,4,10,5,12 \
+  --fps 24 --breathe 0 --bob 2 --sway 2
+
+# Taking a hit. Three sheets, 24 drawings, 22 played -- two of the 24 are the
+# duplicated attachment poses and --skip-first drops both.
+#
+# --match-scale measures the overlap pose here, not the sheet median, and this
+# is the animation that forced the distinction. Her height genuinely changes
+# inside a sheet: the stagger runs 374px at the top and 223px at the bottom,
+# because she is crouching. A median across that measures the crouch and not
+# the drift, and normalising on it would have shrunk the standing sheets to
+# match a crouch. The last drawing of one sheet and the first of the next are
+# meant to be the same drawing, so their heights are directly comparable
+# whatever she is doing -- 342 against 374, then 223 against 227.
+#
+# --travel carries the knockback, which the sheets deliberately do not draw:
+# every pose is re-registered on her body at the merge, so a slide drawn into
+# a cell is taken straight back off it. She gives 64px of ground and recovers
+# it as she stands, so the last frame sits where the idle does and the two cut
+# together without a snap.
+$SLICE assets/dahlia_hit_impact_sheet.png -o out/hit_impact \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single impact
+$SLICE assets/dahlia_hit_stagger_sheet.png -o out/hit_stagger \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single stagger
+$SLICE assets/dahlia_hit_recover_sheet.png -o out/hit_recover \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single recover
+python3 tools/merge_sheets.py out/hit_impact/frames out/hit_stagger/frames \
+  out/hit_recover/frames \
+  --skip-first out/hit_stagger/frames --skip-first out/hit_recover/frames \
+  --match-scale -o out/dahlia_hit -n dahlia_hit
+$BUILD out/dahlia_hit/frames -o out/dahlia_hit -n dahlia_hit \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22 \
+  --holds 8,1,6,2,2,2,2,4,3,3,3,3,3,4,8,4,3,3,3,6,4,10 \
+  --travel 1:0,2:0,3:6,4:22,5:40,6:52,7:58,8:60,9:62,10:64,11:64,12:64,13:64,14:64,15:64,16:60,17:52,18:40,19:26,20:14,21:6,22:0 \
+  --fps 24 --breathe 0 --bob 0 --sway 0 --shake 2:8,3:5
+
+# The cocky attack. Three sheets, 24 drawings, 23 played -- only one of the 24
+# is a duplicated attachment pose, because the flourish sheet came back without
+# one. The overlap is measurable: the strike sheet opens on a copy of the
+# beckon sheet's last drawing and scores 20 against a silhouette that is a
+# different drawing at 70 or more. Nothing on the flourish sheet is within 67
+# of anything on the strike sheet, so there is no copy there to drop and
+# --skip-first names only the strike.
+#
+# Which is why --match-scale takes the flourish's median against the first
+# sheet rather than the one before it. She spends all eight of the strike
+# sheet's drawings lunging, so its median measures the lunge -- 328px against
+# the beckon sheet's 360 -- and sizing the flourish off that shrinks it to 90%
+# when the answer is 95.4%. Measured against the beckon sheet the tool lands on
+# 95.4%, and the same figure taken by hand, the flourish's nearest standing
+# pose against the beckon's guard, is 95.8%.
+#
+# The swagger goes either side of the strike and not during it: she beckons on
+# 6 and grins on 21, both held a third of a second, and the two cuts cross in
+# sixteen frames between them. Pose 9 is the launch smear and is held for one
+# frame -- the whole point of a smear is that it is never seen twice.
+$SLICE assets/dahlia_attack_beckon_sheet.png -o out/atk_beckon \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single beckon
+$SLICE assets/dahlia_attack_strike_sheet.png -o out/atk_strike \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single strike
+$SLICE assets/dahlia_attack_flourish_sheet.png -o out/atk_flourish \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single flourish
+python3 tools/merge_sheets.py out/atk_beckon/frames out/atk_strike/frames \
+  out/atk_flourish/frames \
+  --skip-first out/atk_strike/frames --match-scale \
+  -o out/dahlia_attack -n dahlia_attack
+# Pose 9, the launch smear, is drawn and not played. It is the one drawing on
+# all three sheets that is genuinely blurred -- its sharp-edge fraction is 2.4%
+# against 11 to 15% everywhere else, where the soft alpha on 10 to 16 is the
+# glow arcs and their line work stays crisp. A smear reads as motion at speed
+# and as a smudge at rest, and this one sat between a held anticipation and a
+# held cut, so it read as the smudge. Cutting straight from the coil to the
+# landed arc is the older trick and the surer one.
+#
+# The frame it gave up goes to pose 8, the coil, because a cut that hard wants
+# a longer wind-up behind it: the whole 66px of the lunge now crosses on that
+# one cut, with nothing drawn in between to carry it.
+#
+# --travel carries the lunge. She faces left, so forward is negative: 12px of
+# lean as she coils, 66 more across the cut, then the ground given back over
+# the recovery, where she is visibly rising out of the lean and the motion
+# reads as her stepping out of it. It is all returned by pose 20 so the grin
+# plays still and the last drawing sits where the first one does. The travel
+# and shake maps are keyed by drawing, not by playing order, so dropping a
+# pose from --poses leaves the rest of their numbering alone.
+$BUILD out/dahlia_attack/frames -o out/dahlia_attack -n dahlia_attack \
+  --poses 1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,19,20,21,22,23 \
+  --holds 5,3,3,3,4,8,3,6,2,3,2,2,3,3,3,4,3,3,5,7,3,9 \
+  --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:-6,8:-12,10:-78,11:-86,12:-88,13:-88,14:-90,15:-88,16:-70,17:-50,18:-26,19:-8,20:0,21:0,22:0,23:0 \
+  --fps 24 --breathe 0 --bob 0 --sway 0 --shake 11:7,14:5
+
+# The slipping idle -- the one that runs when PMF drops. Three sheets, 24
+# drawings, all 22 kept after the two copies are folded out.
+#
+# It is an idle, so it is built by the opposite rules to everything above. The
+# other clips are one movement sampled evenly and every step matters; this one
+# is a person failing to hold still. Step evenness comes out 1.6x, 3.7x and
+# 5.8x per sheet, which would be a defect in the attack and is not one here:
+# the biggest step on any of the three is 45 where the attack's smallest was
+# larger than that. All the motion is small. Unevenness inside small motion is
+# what shaking looks like.
+#
+# Both copies came back and both are real: 16.4 and 31.6, against a threshold
+# of 35 for "the same drawing". That is the best pair of joins any clip here
+# has had.
+#
+# And the scale needed almost nothing -- sheet 2 at 100.8%, sheet 3 at 95.1%,
+# and after that her height runs 596 to 607px across all 22 poses with the loop
+# closing at +0.8%. First clip in the set that did not need a --scale ramp to
+# shut the loop.
+#
+# The loop WRAP is the one flaw and it is in the drawings, not the timing.
+# Sheet 3's last pose and sheet 1's first come back 45.6 apart where a genuine
+# copy scores under 35 -- the generator drew the return-to-start rather than
+# repeating the start. That lands as a 21.0% change across the wrap. Worth
+# writing down what does NOT fix it, because I tried all of it: shortening the
+# holds on either side changes how long she dwells there, not how far she
+# travels between the two drawings, so the number does not move. Nor does
+# reseating the seam -- 22->1 is 45.6, 21->1 is 45.3, 20->1 is 44.3, 22->2 is
+# 46.8, 21->2 is 48.9, against a biggest-internal-step of 47.2. There is no
+# cheaper cut anywhere in the clip, and the wrap is not even an outlier against
+# that internal maximum. Fixing it needs sheet 3 redrawn with a true copy of
+# sheet 1's opening pose. At idle speed, under a shadow, it reads as one more
+# tremor.
+#
+# --bob 2 --sway 2 and nothing else. The twirl idle gets breathe; this one does
+# not, because steady breathing is exactly what she has lost.
+$SLICE assets/dahlia_slip_lose_sheet.png -o out/sl_lose \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single lose
+$SLICE assets/dahlia_slip_worst_sheet.png -o out/sl_worst \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single worst
+$SLICE assets/dahlia_slip_back_sheet.png -o out/sl_back \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single back
+python3 tools/merge_sheets.py out/sl_lose/frames out/sl_worst/frames out/sl_back/frames \
+  --skip-first out/sl_worst/frames --skip-first out/sl_back/frames \
+  --match-scale -o out/dahlia_slip -n dahlia_slip
+$BUILD out/dahlia_slip/frames -o out/dahlia_slip -n dahlia_slip \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22 \
+  --holds 4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,3,4,4,4,4,4 \
+  --fps 24 --breathe 0 --bob 2 --sway 2
+
+# The block: panicked, played off cool. Three sheets, 24 drawings, 22 played --
+# both duplicated attachment poses came back this time, scoring 34 and 17
+# against a silhouette where a different drawing scores 45 or more, and the
+# second is the closest copy any sheet has returned.
+#
+# Which is just as well, because the playoff sheet is drawn 11% smaller than
+# the impact sheet and only the overlap pose could have measured that. The
+# correction cross-checks: at 109.5% her standing height on that sheet lands
+# within a few per cent of her standing height on the flinch sheet, which is
+# the one drawing the two sheets do not share.
+#
+# Timing is the inverse of the attack -- fast at the front, slow at the back.
+# Being caught out is quick; pretending it did not happen takes its time.
+#
+# Pose 20 is held for three frames where 19 and 21 get seven and six. The
+# playoff sheet compressed the rise and the hair flick into single drawings, so
+# 18->19 and 19->20 are both hard cuts with nothing drawn in between. A pose
+# held as long as its neighbours reads as a third pose and the cut looks like a
+# dropped frame; held short it reads as the movement between two, which is what
+# it has to carry. The real fix is four more drawings on the rise, not timing.
+$SLICE assets/dahlia_block_flinch_sheet.png -o out/blk_flinch \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single flinch
+$SLICE assets/dahlia_block_impact_sheet.png -o out/blk_impact \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single impact
+$SLICE assets/dahlia_block_playoff_sheet.png -o out/blk_playoff \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single playoff
+python3 tools/merge_sheets.py out/blk_flinch/frames out/blk_impact/frames \
+  out/blk_playoff/frames \
+  --skip-first out/blk_impact/frames --skip-first out/blk_playoff/frames \
+  --match-scale -o out/dahlia_block -n dahlia_block
+$BUILD out/dahlia_block/frames -o out/dahlia_block -n dahlia_block \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22 \
+  --holds 6,3,2,2,2,2,2,3,3,2,2,3,2,2,4,5,4,6,7,3,6,10 \
+  --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:10,10:26,11:38,12:44,13:46,14:46,15:46,16:44,17:40,18:34,19:18,20:8,21:3,22:0 \
+  --shake 9:9,10:5 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
+# The evade, second attempt. The first asked for the turn in degrees and the
+# middle sheet came back at one angle throughout -- good blur, no rotation, she
+# was dashing. Rewritten to name what can be SEEN of her on every drawing
+# ("facing us straight on", "the back of her head, no face at all") with the
+# degrees kept only as order labels. That fix is now in the standing format
+# block, so every future prompt carries it.
+#
+# It worked, and it is measurable. Silhouette left-right symmetry is a rotation
+# signature: a front view and a back view are both near-symmetric, a profile is
+# not, so a full turn peaks twice. These sheets run 22 -> 80 (square to the
+# viewer) -> 44 -> 74 (back turned) -> 27, crossing the midline 8 times. The
+# first attempt peaked once at 80 and then sat flat between 30 and 38 for all
+# eight drawings of its middle sheet: it never reached the back.
+#
+# Step evenness came in at 2.4x, 2.8x and 1.4x against a 3.4x median across
+# every earlier sheet -- the first set where all three beat it.
+#
+# Again only one of the two copied poses was drawn. Sheet 2 does not open on a
+# copy of sheet 1's last drawing (48, where the copy sheet 3 does carry scores
+# 25) and it is drawn 26% larger, the worst drift yet, so its scale falls back
+# to the median against the first sheet.
+#
+# Every drawing from the pivot through to the recovery gets exactly ONE frame.
+# The first cut held the nerve pose for three frames in the middle of a run of
+# one-frame drawings, which put five frozen frames inside the fastest part of
+# the clip and read as the animation hitching. The timing rule for this was
+# already written down and I broke it: a hold only works on a pose that is
+# already at rest, and holding one caught mid-movement reads as a stutter. The
+# nerve is caught mid-spin, so it is drawn and passed through rather than held.
+# The turn now runs 12 drawings in 12 frames, half a second, with no frame
+# repeated anywhere inside it.
+#
+# --scale 23:115 is the loop closing. Pose 23 and pose 1 are the same guard
+# drawing, and pose 23 came back 15% smaller: same stance, 224px between the
+# boots against 220, just drawn small. Everything else on that sheet measures
+# right, so one pose is corrected rather than the sheet. First and last frames
+# are now the same height to the pixel.
+$SLICE assets/dahlia_evade2_pivot_sheet.png -o out/ev2_pivot \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single pivot
+$SLICE assets/dahlia_evade2_back_sheet.png -o out/ev2_back \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single back
+$SLICE assets/dahlia_evade2_land_sheet.png -o out/ev2_land \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single land
+python3 tools/merge_sheets.py out/ev2_pivot/frames out/ev2_back/frames \
+  out/ev2_land/frames \
+  --skip-first out/ev2_land/frames --match-scale -o out/dahlia_evade -n dahlia_evade
+$BUILD out/dahlia_evade/frames -o out/dahlia_evade -n dahlia_evade \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23 \
+  --holds 5,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,2,4,3,5,10 \
+  --scale 23:115 \
+  --travel 1:0,2:0,3:4,4:10,5:18,6:26,7:34,8:42,9:48,10:52,11:56,12:58,13:58,14:56,15:54,16:50,17:44,18:36,19:26,20:18,21:10,22:4,23:0 \
+  --shake 20:5 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
+# The dodge: weave, duck, back dash. Four sheets, 32 drawings, 31 played --
+# this replaces the spin, which turned her back on a live attack and needed a
+# nerve beat to apologise for doing it. It is also the easier thing to draw: no
+# rotation, no back views, and the blur sits on a straight-line dash rather
+# than a turn.
+#
+# The weave instruction held, which is the first time a named risk did not
+# happen. Her boots were to stay planted through all eight of sheet 1 and they
+# do: the right edge moves 1px across the sheet and the centre 11px, where the
+# 28px on the left edge is her front foot drawing in as she leans, not a step.
+#
+# Only ONE of the three copied poses came back -- four sheets means three
+# chances to lose it -- and the two that did not are exactly where --match-scale
+# has nothing to work with. Her height genuinely collapses through the duck and
+# the dash, so a median comparison would measure the crouch, and the one real
+# copy (duck 8 against dash 1, scoring 28) says the dash sheet is drawn 36%
+# larger than the duck sheet while the reset sheet's standing poses say it is
+# drawn 45% larger than that. Those two constraints disagree and no measurement
+# resolves them: the sheets are inconsistent with each other.
+#
+# So --sheet-scale sets them by hand, which is what that flag is for. Anchored
+# on her standing height where a sheet has one -- weave 100%, duck 91%, reset
+# 97% -- the loop closes exactly. The dash has no standing pose at all, so 80%
+# splits the difference between the two constraints and leaves every join at 11
+# to 19% instead of one at 42%. Re-rolling the dash sheet alone would fix it
+# properly; it is the outlier, not the others.
+#
+# EVERY drawing gets one frame from the lean-back through to the landing, and
+# the held time is all in the settle at the end. The first cut doubled each
+# drawing of the lean, which put 11 repeated frames into an 18-frame section --
+# move, freeze, move, freeze -- and that strobe is what read as strange. It was
+# also 750ms for a slip, where a real one is nearer 250. It now runs 292ms with
+# nothing repeated, and the same applies to the duck and the dash: no frame is
+# shown twice anywhere she is still moving. Only the settle holds, because that
+# is the one part where she is genuinely coming to rest.
+$SLICE assets/dahlia_dodge_weave_sheet.png -o out/dg_weave \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single weave
+$SLICE assets/dahlia_dodge_duck_sheet.png -o out/dg_duck \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single duck
+$SLICE assets/dahlia_dodge_dash_sheet.png -o out/dg_dash \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single dash
+$SLICE assets/dahlia_dodge_reset_sheet.png -o out/dg_reset \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single reset
+python3 tools/merge_sheets.py out/dg_weave/frames out/dg_duck/frames \
+  out/dg_dash/frames out/dg_reset/frames \
+  --skip-first out/dg_dash/frames \
+  --sheet-scale out/dg_duck/frames=91 --sheet-scale out/dg_dash/frames=80 \
+  --sheet-scale out/dg_reset/frames=97 \
+  -o out/dahlia_dodge -n dahlia_dodge
+$BUILD out/dahlia_dodge/frames -o out/dahlia_dodge -n dahlia_dodge \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31 \
+  --holds 3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,3,4,5,11 \
+  --travel 1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0,10:2,11:4,12:6,13:8,14:9,15:10,16:10,17:30,18:60,19:95,20:125,21:145,22:158,23:165,24:160,25:150,26:135,27:115,28:85,29:55,30:25,31:0 \
+  --shake 25:6 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
+# The counter. Four sheets, 32 drawings, 29 played -- and the first set where
+# ALL THREE copied poses came back: 37, 39 and 57, against a body silhouette
+# where a genuinely different drawing scores 70 or more. Scale drift across the
+# four is +16%, +3% and -6%, which is the tightest set so far and the reason
+# --match-scale needed no help here.
+#
+# The named risk did not happen either. A deflection is a two-body idea drawn
+# on a one-character sheet, so the obvious way to draw it is to draw the thing
+# being turned aside. The enemy appears nowhere on any of the 32 drawings; the
+# incoming attack is only ever the flare on her blade.
+#
+# --scale ramps the last seven poses from 100 to 117%. Pose 29 and pose 1 are
+# the same guard drawing and 29 came back 15% smaller: same stance, 263px
+# between the boots against 277, just drawn small. Spread across the settle it
+# is 2 to 3% a drawing, and the first and last frames now match to the pixel.
+#
+# NOTHING IS HELD INSIDE THE SWEEP. Sheets 2 and 3 are one continuous movement
+# -- the arc that turns the attack aside is the arc that lands -- so all 14 of
+# their frames run at one drawing each with no frame repeated. The recovery is
+# the same until she actually stops.
+#
+# The read is the exception and it is deliberate. Its drawings change 7% each,
+# a third of what made the dodge's lean strobe, and she is decelerating into
+# stillness rather than moving through it, so the holds read as her taking her
+# time rather than as dropped frames. It is the one place in the set where
+# holding mid-movement is the right call, and it is only right because the
+# steps are small.
+$SLICE assets/dahlia_counter_read_sheet.png -o out/ct_read \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single read
+$SLICE assets/dahlia_counter_deflect_sheet.png -o out/ct_deflect \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single deflect
+$SLICE assets/dahlia_counter_punish_sheet.png -o out/ct_punish \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single punish
+$SLICE assets/dahlia_counter_reset_sheet.png -o out/ct_reset \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single reset
+python3 tools/merge_sheets.py out/ct_read/frames out/ct_deflect/frames \
+  out/ct_punish/frames out/ct_reset/frames \
+  --skip-first out/ct_deflect/frames --skip-first out/ct_punish/frames \
+  --skip-first out/ct_reset/frames \
+  --match-scale -o out/dahlia_counter -n dahlia_counter
+$BUILD out/dahlia_counter/frames -o out/dahlia_counter -n dahlia_counter \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29 \
+  --holds 5,3,3,3,3,3,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,4,6,12 \
+  --scale 23:100,24:103,25:106,26:109,27:112,28:115,29:117 \
+  --travel 1:0,2:0,3:0,4:0,5:-2,6:-4,7:-6,8:-8,9:-14,10:-22,11:-30,12:-36,13:-40,14:-42,15:-44,16:-46,17:-48,18:-50,19:-52,20:-52,21:-50,22:-48,23:-44,24:-38,25:-30,26:-22,27:-14,28:-6,29:0 \
+  --shake 9:6,19:8 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
+# The taunt. Three sheets, 24 drawings, 21 played -- and it is the inverse of
+# everything else here: she LOWERS her guard. The flex is foreknowledge rather
+# than strength, so the payload is two fingers to her own temple, held.
+#
+# Both copied poses came back, 31 and 17, and the drift is +14% and 0%.
+#
+# Pose 14 is drawn and not played. It sits 7 away from pose 13 where the rest
+# of that sheet steps 19 to 52 -- the same drawing twice, in the middle of the
+# temple hold. Dropped, and the hold given to its neighbours instead: 13 and 15
+# together carry a full second on the gesture.
+#
+# This is the ONE clip where long holds are unambiguously right, and it is
+# worth saying why given how often the opposite has needed fixing. Everywhere
+# else a doubled drawing is a freeze frame inside motion. Here she has actually
+# stopped -- the whole taunt is that she is taking her time -- and a hold only
+# ever works on a pose already at rest. Mean change across the clip is 4.2%.
+#
+# --scale on the last three poses closes the loop on HEIGHT, which is what
+# pack_clips registers clips on. Her stance also comes back 17% wider than the
+# opening guard, and that is the drawing rather than the scale: correcting it
+# would need the width, and scaling for height makes the width worse. It is
+# left as drawn, because stance width already runs 207 to 297px across the six
+# clips that shipped before this one -- the variation is in the family.
+#
+# No --travel at all. Not a little: none. She never moves her feet, and that is
+# part of the gesture -- she is not coming any closer because she does not have
+# to.
+$SLICE assets/dahlia_taunt_drop_sheet.png -o out/tn_drop \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single drop
+$SLICE assets/dahlia_taunt_read_sheet.png -o out/tn_read \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single read
+$SLICE assets/dahlia_taunt_flick_sheet.png -o out/tn_flick \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single flick
+python3 tools/merge_sheets.py out/tn_drop/frames out/tn_read/frames out/tn_flick/frames \
+  --skip-first out/tn_read/frames --skip-first out/tn_flick/frames \
+  --match-scale -o out/dahlia_taunt -n dahlia_taunt
+$BUILD out/dahlia_taunt/frames -o out/dahlia_taunt -n dahlia_taunt \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,15,16,17,18,19,20,21,22 \
+  --holds 8,4,3,3,3,3,3,4,3,3,3,3,10,14,2,2,4,4,4,5,12 \
+  --scale 20:102,21:104,22:107 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
+
+# The fractured idle -- the one that runs after the Soul Engine has split.
+# Three sheets, 24 drawings, 22 played, and it is the cleanest set of sheets
+# this project has had.
+#
+# BOTH copied poses came back real, at 12.7 and 7.6 against a threshold of 35,
+# and the scale correction was 100.0% and 99.8%. The overlap-pose instruction
+# is the one the generator ignores most often -- roughly six times in ten --
+# and here it landed twice, exactly.
+#
+# And the LOOP CLOSES. 26.3 across the wrap, under the same threshold, with the
+# last pose the same height as the first to within a pixel. Every other loop in
+# this set wraps at 45 or worse because the generator drew a return-to-start
+# instead of repeating the start. This one repeated the start.
+#
+# Step evenness is 5.2x and mean change is 47.6%, which anywhere else in this
+# project is a defect and here is the animation. The rule exists to stop ONE
+# movement being sampled unevenly. There is no one movement here -- her weight
+# throws forward, then hard back, then sideways, and none of it goes anywhere.
+# Large steps at high speed read as snapping, which is what a convulsion is.
+#
+# Three holds and every one of them is on a pose that has actually stopped,
+# which is the only condition under which a hold works: pose 5 is the jam,
+# where she locks rigid; pose 11 is the brace, the first drawing where she is
+# standing on something; pose 15 is the closest she gets, hand at her temple,
+# and the step INTO it is 14.6 where the clip averages 47.6 -- the movement has
+# already stopped by the time she arrives. Everything else gets two frames.
+#
+# --bob 0 --sway 0, reversing the slipping idle. Pipeline drift is smooth and
+# sinusoidal, and under violent drawn motion that reads as floaty rather than
+# unsteady. The instability is in the drawings. --shake takes its place, on the
+# two drawings where it takes her.
+#
+# --travel lurches and returns to zero. Her feet are planted in all 22 drawings
+# -- the foot row varies by 2px across the whole clip -- so a few pixels of
+# whole-body shove reads as her being moved rather than as her walking.
+$SLICE assets/dahlia_fracture_taken_sheet.png -o out/fr_taken \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single taken
+$SLICE assets/dahlia_fracture_fight_sheet.png -o out/fr_fight \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single fight
+$SLICE assets/dahlia_fracture_lose_sheet.png -o out/fr_lose \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single lose
+python3 tools/merge_sheets.py out/fr_taken/frames out/fr_fight/frames out/fr_lose/frames \
+  --skip-first out/fr_fight/frames --skip-first out/fr_lose/frames \
+  --match-scale -o out/dahlia_fracture -n dahlia_fracture
+#
+# POSE 5 IS DRAWN AND NOT PLAYED, and dropping it was the right call rather
+# than a shortening. It is the only drawing in the clip square-on to the
+# camera -- arms down, feet planted, facing the viewer -- where every other
+# drawing faces left. I had read it as "the jam, where she locks rigid" and
+# given it a SIX FRAME HOLD, which made the flattest drawing in a convulsion
+# the longest thing on screen. Dropping it costs nothing measurable: 4->6 is
+# 66.4 against a biggest-step of 76.7 that the clip already contains.
+#
+# The fight-back is held nearly three times as long as it was. Poses 10 to 13
+# are where she clamps her own arm and forces it down, and they now carry 6, 8,
+# 5 and 4 frames against 2 before. Those poses are NOT at rest -- the steps
+# into them run 25 to 47 -- so holding them alone would freeze-frame, which is
+# the fault this project keeps having to correct. --shake is what makes it
+# legitimate: a held strain pose with a tremor under it reads as effort against
+# a load, which is what it is.
+$BUILD out/dahlia_fracture/frames -o out/dahlia_fracture -n dahlia_fracture \
+  --poses 1,2,3,4,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22 \
+  --holds 3,2,2,2,2,2,2,3,6,8,5,4,3,8,2,2,2,2,2,2,3 \
+  --travel 1:0,2:-8,3:6,4:-4,6:5,7:-6,8:0,9:0,10:0,11:0,12:0,13:0,14:0,15:0,16:0,17:-5,18:0,19:6,20:-3,21:-4,22:0 \
+  --shake 10:3,11:5,12:4,13:3,19:6 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
+# Her baseline frequency spec -- the clip that plays for EVERY MF spec she has,
+# which is why nothing leaves her body on it. Two sheets, 16 drawings, 15
+# played, and it is the first action written from her unit block in the tracker
+# rather than from a description: her signature reads "micro-cinders below the
+# visible spectrum, a Pyrelite still waiting to fully light", and the animation
+# is that sentence drawn.
+#
+# The join is 11.8 and THE WRAP IS 2.8 -- the tightest match this project has
+# measured, by a factor of four. The clip ends on her reference guard and hands
+# back to the idle with nothing to see at the seam.
+#
+# --scale 15:108 and nothing else. The last drawing came back 11% smaller than
+# its neighbour: body height runs 545, 567..583, 572, 572, 506, so the guard she
+# ends on was drawn small. Body PIXEL COUNT confirms it is scale and not pose --
+# 104,971 against 90,975, a 13% area difference, which is 7% linear. Corrected,
+# the loop closes at +0.0%.
+#
+# Step evenness reads 4.8x and 5.8x and is not a fault here: the largest step on
+# either sheet is 33 and 61, where the attack's SMALLEST was larger. She barely
+# moves in this clip, which is the whole design -- her strength is 3 and her
+# soul is 8, and the movement is small on purpose.
+$SLICE assets/dahlia_spec_read_sheet.png -o out/sp_read \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single read
+$SLICE assets/dahlia_spec_call_sheet.png -o out/sp_call \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single call
+python3 tools/merge_sheets.py out/sp_read/frames out/sp_call/frames \
+  --skip-first out/sp_call/frames \
+  --match-scale -o out/dahlia_spec -n dahlia_spec
+$BUILD out/dahlia_spec/frames -o out/dahlia_spec -n dahlia_spec \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 \
+  --holds 6,4,4,4,4,4,4,8,2,2,3,3,4,5,10 \
+  --scale 15:108 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
+# The cyberpsychosis idle. Two sheets, 16 drawings, 13 played -- and it is the
+# first clip here that is not really hers. The tracker holds Cyberpsychosis as
+# a SUBTYPE any character can carry, so this one is named for what it is and
+# the whole cast can use it.
+#
+# Both seams close: the join is 20.6 and the wrap is 22.4, and the body height
+# runs 530 to 552 across all 15 drawings with the loop closing at -1.9%. No
+# scale correction needed anywhere.
+#
+# THREE DRAWINGS ARE DROPPED, and measuring by colour rather than by silhouette
+# is what found them. The ghosting is a colour effect on an almost stationary
+# body, so a silhouette diff barely sees it. On RGB the build steps 11.7 to
+# 13.8 all the way up -- even, exactly as asked -- and then sheet 2 dumps the
+# entire collapse into its FIRST step at 28.8 and coasts: 6.3, 2.2, 2.9, 2.7,
+# 1.5, 1.4. The last five drawings are one drawing. Poses 13 and 14 are cut and
+# pose 15 carries the end state on a 14-frame hold, which is right rather than
+# a compromise -- the brief is that the copies close to a hairline AND STOP
+# THERE, so she is meant to sit at not-quite-registered.
+#
+# The 28.8 cliff cannot be fixed downstream, so it is played into instead: pose
+# 8 is maximum separation and gets 9 frames, the longest hold in the clip, and
+# then it snaps. A sudden collapse after a held peak reads as the glitch doing
+# something; the same step arriving mid-cadence would read as a cut.
+$SLICE assets/dahlia_cyber_settle_sheet.png -o out/cy_settle \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single settle
+$SLICE assets/dahlia_cyber_close_sheet.png -o out/cy_close \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single close
+python3 tools/merge_sheets.py out/cy_settle/frames out/cy_close/frames \
+  --skip-first out/cy_close/frames \
+  --match-scale -o out/dahlia_cyber -n dahlia_cyber
+$BUILD out/dahlia_cyber/frames -o out/dahlia_cyber -n dahlia_cyber \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,15 \
+  --holds 6,5,5,5,5,5,5,9,4,5,5,6,14 \
+  --fps 24 --breathe 0 --bob 1 --sway 1
+
+# The idle. Two sheets, 16 drawings, 15 played -- a knife flourish and a
+# settle, replacing the twirl that opened this project. out/dahlia_twirl is
+# still built above and still in the repo; it is simply no longer packed.
+#
+# The seams are the best pair so far: the join is 12.2 and THE WRAP IS 3.1,
+# with body height running 460 to 473 across all 15 drawings and the loop
+# closing at -1.5%. No scale correction anywhere. That matters more on this
+# clip than on any other, because the idle is what every other clip hands back
+# to -- a bad wrap here would show every time anything finished.
+#
+# The shape is one event and a long rest, which is what an idle should be. The
+# flourish is poses 2 to 7 and gets 2 and 3 frames a drawing; the settle is 8
+# to 14 at 5; and poses 15 and 1 are the same drawing either side of the loop,
+# holding 10 and 14 frames, so she spends a full second at guard between
+# flourishes. Steps back that up: the spin runs 25 to 59 and the settle runs 9
+# to 21.
+#
+# SWAPPING THE IDLE MOVES EVERY OTHER CLIP. --match-scale normalises everything
+# down to the smallest clip, and the twirl WAS that clip at sqrt(area) 203.
+# This one is drawn at 274, 35% larger. The new floor is the hit at 206, so the
+# atlas barely moves -- but if a future idle came in smaller than the hit, the
+# whole set would shrink to it.
+$SLICE assets/dahlia_flourish_spin_sheet.png -o out/fl_spin \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single spin
+$SLICE assets/dahlia_flourish_settle_sheet.png -o out/fl_settle \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single settle
+python3 tools/merge_sheets.py out/fl_spin/frames out/fl_settle/frames \
+  --skip-first out/fl_settle/frames \
+  --match-scale -o out/dahlia_flourish -n dahlia_flourish
+#
+# POSES 1, 14 AND 15 ARE DRAWN AND NOT PLAYED, and 1 and 15 are the interesting
+# pair. They are the reference guard, drawn faithfully at both ends of the
+# animation -- and the blade in the reference is far brighter than the blade the
+# generator drew for everything in between. Measured: 7233 and 7469 teal pixels
+# with 1434 and 1514 of them above luminance 150, against 1400 to 2300 teal and
+# 110 to 500 bright for poses 2 to 14. They also sat either side of the loop
+# seam with long holds, so the bright blade was on screen for a FULL SECOND
+# every cycle. That is what stood out.
+#
+# Dropping only the last one would have halved it and kept the fault. Dropping
+# both removes it, and the hand-back gets better rather than worse: the other
+# clips end at 1073 to 4109 teal, which matches poses 2 to 14 and not 1 and 15.
+# The only clip that still ends bright is the spec, at 9053 -- its closing guard
+# came from the same reference drawing, so there is a one-frame blade drop when
+# it hands back. One frame at a transition is a different order of problem from
+# a second of it every loop, and it is left alone for now.
+#
+# The seam costs something and there was no cheaper one. Every candidate loop
+# that excludes 1 and 15 wraps between 30.6 and 34.4, against 3.1 for the old
+# 15->1. 2..13 is the best of them at 30.6, still under the 35 that separates a
+# copy from a resemblance, and it drops pose 14 which was a near-duplicate
+# anyway -- 13->14 measured 10 where the flourish steps 25 to 59.
+#
+# The long guard rest went with pose 1, so the settle absorbs it: poses 10 to 13
+# now hold 8 and 9 frames each. With --bob and --sway underneath, a near-still
+# stretch reads as her standing and breathing, which is what an idle is.
+$BUILD out/dahlia_flourish/frames -o out/dahlia_flourish -n dahlia_flourish \
+  --poses 2,3,4,5,6,7,8,9,10,11,12,13 \
+  --holds 7,3,3,2,3,2,5,6,8,9,9,9 \
+  --fps 24 --breathe 0 --bob 2 --sway 1
+
+# Going down -- and the tracker holds "down" and "dead" as two separate states,
+# so this is the first of two. She is alive at the end of it: no fire, no ash,
+# no Kindle-Shell, and she never lets go of the dagger.
+#
+# ONE SHEET, and it is the first clip built from one. The action is one
+# movement -- her legs fail, she reaches, the arm gives, she lands -- and eight
+# drawings covers it. Step evenness comes out 2.0x, exactly on the rule, with
+# steps of 42, 21, 33, 31, 29, 43, 27.
+#
+# The loop wrap measures 54.7 and does not matter, because THIS CLIP DOES NOT
+# LOOP. It plays through once and then stays on its last drawing for as long as
+# the tracker says she is down, which is a thing the panel could not previously
+# express -- every other resting clip repeats.
+#
+# Her ground line holds across all eight drawings: the lowest opaque pixel sits
+# at y 547 to 550 the whole way down, so she collapses onto the floor she was
+# standing on rather than sinking through it or hovering above it.
+#
+# Body area runs 274, 295, 290, 277, 286, 285, 261, 250 -- a 1.18x spread, and
+# the small end is the last two drawings where she is lying on her side and
+# overlapping herself. That is foreshortening rather than scale drift, and the
+# clip's median lands at 281 against the idle's 274, so --match-scale leaves it
+# essentially alone.
+#
+# --holds gives the catch five frames: her arm locks and takes her weight for
+# exactly one drawing, which is the one moment in the fall that is genuinely
+# still. The give after it gets two. --shake 2:6 on the buckle and nothing
+# else. No travel: she goes down where she stood.
+$SLICE assets/dahlia_down_sheet.png -o out/dahlia_down_src \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single down
+python3 tools/merge_sheets.py out/dahlia_down_src/frames -o out/dahlia_down -n dahlia_down
+$BUILD out/dahlia_down/frames -o out/dahlia_down -n dahlia_down \
+  --poses 1,2,3,4,5,6,7,8 \
+  --holds 3,2,2,3,5,2,3,12 \
+  --shake 2:6 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
+# Her death, and the tracker decides what it is rather than the brief: her Soul
+# Engine is a hereditary trait with no housing, "Form: none installed", running
+# ASH -> FIRE -> REVIVE. So this is not a corpse. Two sheets, because being
+# killed and being burned are two different events.
+#
+# THE JOIN IS 5.9 -- the tightest copy this project has measured, by half. The
+# ground line holds at y 567 to 572 across all fifteen drawings, so she falls
+# onto the floor she stood on and the ash sits on it.
+#
+# Both sheets break the evenness rule and both are right. Sheet 1 decelerates,
+# 65 down to 14: a body being thrown and coming to rest. Sheet 2 accelerates,
+# 11 up to 37: fire catching, then the collapse to ash. Neither is one movement
+# sampled unevenly.
+#
+# Timing is two clips in one. Sheet 1 gets 1 to 6 frames a drawing because a
+# killing blow is over before anyone reacts, and the only held drawing is the
+# guard BEFORE it -- eight frames of normal so the second drawing lands. Sheet
+# 2 gets 8 to 20 because nothing on it is an event, and the ash gets twenty
+# because the clip stops there.
+#
+# --travel carries her 64px in the direction of the blow across drawings 2 to 5
+# and then nothing moves again. --shake on the blow and the landing, at 12 and
+# 6, so the second reads as smaller.
+$SLICE assets/dahlia_death_blow_sheet.png -o out/dt_blow \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single blow
+$SLICE assets/dahlia_death_kindle_sheet.png -o out/dt_kindle \
+  --keyed --components --component-min 20000 --cluster-gap 14 --fill-holes 4 \
+  --align silhouette --single kindle
+python3 tools/merge_sheets.py out/dt_blow/frames out/dt_kindle/frames \
+  --skip-first out/dt_kindle/frames \
+  --match-scale -o out/dahlia_death -n dahlia_death
+$BUILD out/dahlia_death/frames -o out/dahlia_death -n dahlia_death \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 \
+  --holds 8,1,2,2,3,3,4,6,8,8,8,8,8,10,20 \
+  --shake 2:12,4:6 \
+  --travel 1:0,2:-26,3:-46,4:-58,5:-62,6:-64,7:-64,8:-64,9:-64,10:-64,11:-64,12:-64,13:-64,14:-64,15:-64 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
+# The dead loop -- the ash, for as long as she stays dead. One sheet, 8 drawn,
+# 7 played.
+#
+# POSE 8 IS BYTE-IDENTICAL TO POSE 1, so it is dropped rather than held: playing
+# both would put the same image on screen twice at the loop seam. The wrap is
+# 0.0 as a result, which is the only exactly seamless loop in the set.
+#
+# THE SILHOUETTE MEASURE IS BLIND TO THIS CLIP. Every step comes out 0 -- the
+# pile has the same outline on all eight drawings, which is exactly what was
+# asked for. What moves is the light: embers run 941, 542, 364, 115, 86, 180,
+# 418 and back to 941, a 10.9x swing that NEVER REACHES ZERO. That last part is
+# the whole job of the clip, because the tracker offers a Kindle Revive button
+# while she is like this and the picture has to say the button will work.
+#
+# --rows 2 --cols 4 instead of --components, and --despeckle 0. The smoke plume
+# is a thin faint thing that the component finder treated as junk below
+# --component-min and cut off; on the grid it survives. Whether it is WORTH
+# surviving is another matter -- see below.
+#
+# THE SMOKE WILL NOT BE VISIBLE AND THAT IS IN THE DRAWING, NOT HERE. It is
+# painted dark grey, mean RGB 48,43,44, at a median alpha of 29. Composited
+# over the panel's black stage that lands at luminance 2.9 with a peak of 20,
+# against 122 for the embers. It is kept because it costs nothing and it is
+# what was drawn, but a plume meant to read against black has to be LIGHTER
+# than the ground it plays over -- the same note the darks needed.
+$SLICE assets/dahlia_ashes_sheet.png -o out/dahlia_ashes_src \
+  --keyed --rows 2 --cols 4 --fill-holes 4 --despeckle 0 \
+  --align silhouette --single ashes
+python3 tools/merge_sheets.py out/dahlia_ashes_src/frames -o out/dahlia_ashes -n dahlia_ashes
+$BUILD out/dahlia_ashes/frames -o out/dahlia_ashes -n dahlia_ashes \
+  --poses 1,2,3,4,5,6,7 \
+  --holds 12,14,12,16,16,12,10 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
+# The soul attack -- the teleporting flame slash. Two sheets, 16 drawings, 15
+# played, and THE GENERATOR DREW THE EMPTY FRAME. Sheet 1 ends on her shape in
+# cinders with no character inside it, which was the instruction most likely to
+# be refused: it is a character sheet and the obvious thing is to put the
+# character on it.
+#
+# --rows 2 --cols 4 rather than --components, and it is not optional here. On
+# components the cinders reach far enough vertically that --cluster-gap 14
+# BRIDGED THE TWO ROWS: seven frames came out instead of eight, 1096px tall,
+# with two poses in one. The same fault the ash sheet had, for the same reason.
+#
+# The silhouette measure cannot read either cinder drawing and it is worth
+# knowing why before trusting a number on a particle sheet. The dots are mostly
+# semi-transparent -- the empty frame has 21,375 pixels above alpha 8 and only
+# 2,639 above 128 -- so a mask thresholded at 128 sees almost nothing and the
+# join scored 100.0, meaning "no overlap at all". Dropping the threshold to 8
+# still scored 87.7, because crop-and-rescale normalises on a BOUNDING BOX and
+# stray cinders set the box. Looked at directly, the two drawings are the same
+# pose at different densities. The number was wrong, not the art.
+#
+# --sheet-scale BY HAND, because --match-scale was wrong for the same reason.
+# It compares the two copies of the overlap pose, and here those are a bright
+# cinder figure against a fainter one: it read 462 against 413 and scaled sheet
+# 2 up by 111.9%, which put her guard at 480 where sheet 1's is 402. Measured
+# on the SOLID drawings instead -- 402 against 434 -- sheet 2 wants 92.6%, and
+# the loop then closes at -0.2%.
+#
+# NO --travel, which overrides what the prompt planned for. The intent was to
+# put the teleport distance back by hand, since clips register on her feet. But
+# the panel shows one character against nothing: a lateral jump has no map to
+# be relative to and would read as her sliding in a box, and it would leave her
+# 80px from where the idle expects her. The dissolve and the reassembly already
+# say she was not there and now is.
+#
+# --desalt is safe on a particle sheet, which was not obvious. The filter drops
+# small bright blobs and a cinder is exactly that. Measured: the empty cinder
+# frame is BYTE-IDENTICAL with and without it, and the worst other pose loses
+# 44 cinder pixels out of 4,888. The eroded-core rule is what saves it -- the
+# dots sit near the mask edge, which is excluded.
+$SLICE assets/dahlia_soul_leave_sheet.png -o out/sa_leave \
+  --keyed --rows 2 --cols 4 --fill-holes 4 \
+  --align silhouette --single leave
+$SLICE assets/dahlia_soul_arrive_sheet.png -o out/sa_arrive \
+  --keyed --rows 2 --cols 4 --fill-holes 4 \
+  --align silhouette --single arrive
+python3 tools/merge_sheets.py out/sa_leave/frames out/sa_arrive/frames \
+  --skip-first out/sa_arrive/frames --sheet-scale out/sa_arrive/frames=92.6 \
+  -o out/dahlia_soul -n dahlia_soul
+$BUILD out/dahlia_soul/frames -o out/dahlia_soul -n dahlia_soul \
+  --poses 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 \
+  --holds 6,4,3,3,3,3,3,4,2,1,1,2,3,5,10 \
+  --shake 9:6 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
+# The soul-engine rev idle. One sheet, 8 drawn, 7 played -- POSE 8 IS
+# BYTE-IDENTICAL TO POSE 1 again, so it is dropped rather than held and the
+# wrap comes out 0.0. That is the third sheet in a row to close a loop exactly,
+# which is worth noting as a pattern: asking for the last drawing to MATCH the
+# first, with the first attached, works far better than asking it to return to
+# the first.
+#
+# Measured on the light, because the silhouette cannot see this clip: her body
+# holds between 66,799 and 67,920 pixels across all eight drawings, a 1.7%
+# variation, which is the brief -- she braces and holds it.
+#
+# What moves is the glow, and IT FLICKERS RATHER THAN CLIMBS: 7140, 10733,
+# 5739, 9020, 15080, 8128, 9183 and back to 7140. Up, down, up, a hard catch at
+# more than double, down again. A pulse would have been a smooth ramp and would
+# have read as healthy; this reads as something turning over and not starting.
+# The sparks track it -- 136, 361, 83, 167, 1140, 118, 186 -- so they read as
+# leakage from the thing inside rather than as decoration.
+#
+# --holds puts the LONG dwells on the dim drawings and the short ones on the
+# bright: 5,3,6,4,3,6,4. The 15,080 flare gets three frames and the two dimmest
+# get six each, so it catches briefly and falls back rather than glowing
+# steadily. 31 frames, 1.29s -- the shortest clip in the set, which is what a
+# rev reads as.
+$SLICE assets/dahlia_rev_sheet.png -o out/dahlia_rev_src \
+  --keyed --rows 2 --cols 4 --fill-holes 4 \
+  --align silhouette --single rev
+python3 tools/merge_sheets.py out/dahlia_rev_src/frames -o out/dahlia_rev -n dahlia_rev
+$BUILD out/dahlia_rev/frames -o out/dahlia_rev -n dahlia_rev \
+  --poses 1,2,3,4,5,6,7 \
+  --holds 5,3,6,4,3,6,4 \
+  --fps 24 --breathe 0 --bob 1 --sway 0
+
+# The grab and the throw, built as TWO CLIPS from two sheets that join, so the
+# tracker can play the grab and sit on it before deciding to throw.
+#
+# The join is 2.0 and THE WRAP IS 2.5 -- the tightest pair in the project. The
+# throw ends on the reference guard, so it hands back to the idle with nothing
+# at the seam, and the grab's last drawing and the throw's first are the same
+# pose measured on silhouette.
+#
+# They differ on COLOUR though -- rgb 25.9 across that join against 2.0 on
+# shape -- so the same pose was drawn twice with different detail rather than
+# copied. It does not matter here because the two are separate clips and only
+# one of them is ever on screen, but it is why the silhouette number alone is
+# not proof of a copy.
+#
+# THE THROW'S SECOND DRAWING IS DROPPED. The prompt asked for the rotation to
+# start at her back foot with nothing above the hips moving, and that beat did
+# not get drawn: silhouette 6, rgb 5.7, and the feet band comes out 158-520
+# against 159-516 -- the foot did not turn. What IS drawn is a hold through
+# four drawings and then a fast release, so the timing follows the drawings
+# rather than the plan: 5,4,3,2,2,3,12, accelerating into the release and
+# settling after it.
+#
+# --scale-like on the throw, because it CONTINUES from the grab. Sized on its
+# own first frames it would be measured on her holding something with both arms
+# out, which is not the pose every other clip opens on.
+$SLICE assets/dahlia_grab_sheet.png -o out/dahlia_grab_src \
+  --keyed --rows 2 --cols 4 --fill-holes 4 --align silhouette --single grab
+$SLICE assets/dahlia_throw_sheet.png -o out/dahlia_throw_src \
+  --keyed --rows 2 --cols 4 --fill-holes 4 --align silhouette --single throw
+python3 tools/merge_sheets.py out/dahlia_grab_src/frames -o out/dahlia_grab -n dahlia_grab
+python3 tools/merge_sheets.py out/dahlia_throw_src/frames -o out/dahlia_throw -n dahlia_throw
+$BUILD out/dahlia_grab/frames -o out/dahlia_grab -n dahlia_grab \
+  --poses 1,2,3,4,5,6,7,8 --holds 5,3,3,3,4,3,3,16 --shake 6:5 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+$BUILD out/dahlia_throw/frames -o out/dahlia_throw -n dahlia_throw \
+  --poses 1,3,4,5,6,7,8 --holds 5,4,3,2,2,3,12 --shake 5:6 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
+# The ragdoll, and the first clip that did not come from a drawing sheet at
+# all. AutoSprite exports a finished spritesheet plus a manifest -- 64 frames on
+# a uniform 256x256 grid, in order, registered to each other, with real alpha --
+# so it skips the slicer and the merger and goes straight to the assembler.
+#
+# This is the second export. The first was a LOOP: it ran tumble, flight, land,
+# slide, settle, and then she curled up, rolled, and was thrown back into the
+# air to meet frame 0 again, within 0.3px. Asking for a stated FIRST frame and a
+# stated LAST frame fixed that outright. This one opens on her braced on her
+# feet and ends face down on the floor, and frame 63 is nothing like frame 0.
+#
+# It also bought the two beats the first export had no room for, because it was
+# spending them on the loop: an incoming slash, and the hit itself, flash and
+# all. Those are frames 3 and 4 and they are the reason the clip now reads as
+# something happening TO her rather than as a tumble that starts already in
+# progress.
+#
+# What still has to come off:
+#
+#   · The tail. Frames 50-63 are one drawing written fourteen times -- each
+#     changes 91 to 233 pixels against a median of 6724. That is 22% of the
+#     sheet spent holding a pose, and a hold belongs in --holds as a number.
+#
+#   · The hang. Frames 9-31 are 23 drawings of her horizontal in the air, and
+#     her body centre moves 13px across all of them. At 24fps that is a full
+#     second of hanging. Five are kept -- 9, 14, 19, 24, 29 -- which is enough
+#     to carry the slow rotation and the hair without the clip stopping dead in
+#     the middle of its own knockdown.
+#
+#   · Three more mid-clip holds at 18, 23 and 31, and the two standing frames
+#     1 and 2 that repeat frame 0 before anything has happened.
+#
+# 64 drawings become 25 poses.
+#
+# --travel again, and for the same reason as before: measured on her body with
+# the hair masked off, she ends 11px to the RIGHT of where she started, having
+# gone left during the launch and drifted back right through the skid. The
+# launch is real -- one 41px frame when she is hit -- and nothing after it is.
+# So 120px left is imposed over the whole clip: nothing while she is braced, a
+# burst through the hit, decelerating across the flight, and the last 20px
+# spent on the skid, which is the part that reads as being dragged.
+#
+# NO --flip. Measured against the idle rather than eyeballed: this export drew
+# her hair trailing left and her body angled right, which is the idle's facing
+# exactly. She is hit from the front and thrown backwards, head first, which is
+# why the travel is leftward.
+#
+# --stabilize none. The default registers every pose onto the first one's body,
+# which is right for drawings that arrived unregistered and wrong here twice
+# over: the sheet is already registered, and the travel IS the animation.
+KEEP=0,3,4,5,6,7,8,9,14,19,24,29,32,33,34,35,36,37,38,40,42,44,46,48,49
+python3 tools/import_spritesheet.py assets/dahlia_knockback_as64.png \
+  -o out/dahlia_ragdoll -n dahlia_ragdoll --rows 8 --cols 8 \
+  --drop "$(python3 -c "k={int(x) for x in '$KEEP'.split(',')}; print(','.join(str(i) for i in range(64) if i not in k))")"
+$BUILD out/dahlia_ragdoll/frames -o out/dahlia_ragdoll -n dahlia_ragdoll \
+  --poses 1-25 --holds 3,2,2,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,10 \
+  --shake 3:8,18:5 --stabilize none \
+  --travel 2:0,3:-2,4:-14,5:-28,6:-40,7:-51,8:-61,9:-70,10:-78,11:-85,12:-90,13:-94,14:-96,15:-97,16:-98,17:-99,18:-100,19:-106,20:-111,21:-115,22:-118,23:-119,24:-120,25:-120 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
+# The get-up, the other half of the knockdown and the same import path. 64
+# frames on the 8x8 grid, real alpha, already registered.
+#
+# Frame 0 is broken and is the only frame here that is: 22,626 opaque pixels
+# against a clip median of 15,000, a bounding box that stops at y=172 while
+# every other frame reaches 211, and a body centre 17px off its neighbour. It
+# is a crop of her, drawn at the wrong scale, not a pose. Dropped outright.
+#
+# Everything after it alternates drawing, copy, drawing, copy. Frames 2, 4, 6,
+# 8, 10, 12, 16, 18, 20, 23, 27, 29, 31, 33, 35, 37 and 39 change 161 to 1,114
+# pixels against a median of 5,269 -- seventeen of them, so the sheet is really
+# ~46 drawings padded to 64.
+#
+# The dwell is frames 22-41: twenty drawings on all fours with her body centre
+# moving 0.9px across the lot. That is the beat the prompt asked for and it is
+# four times longer than it should play, so five are kept. The rise, 42 to 56,
+# is where the drawing actually moves -- her top edge climbs from y=76 to y=11 --
+# and it is sampled every other frame rather than thinned.
+#
+# 64 drawings become 22 poses.
+#
+# Frame 63 is the ending, and it looked wrong on the first measurement: cyan
+# pixels fall from 1,088 to 77 over the last five frames, which reads as the
+# blade fading out. Looking at the drawings, it is the opposite -- the blade
+# RESOLVES, from a loose glowing mass into the crisp weapon the idle holds, and
+# the resolved version is mostly pale grey with cyan only in the fuller. The
+# measurement was counting glow, not blade.
+#
+# --travel 54px right, which is small on purpose. She gets up roughly where she
+# fell; the drift is the half step she takes catching her balance, not a walk.
+KEEP=1,7,13,17,19,21,22,26,32,38,42,44,46,48,50,52,54,56,57,59,61,63
+python3 tools/import_spritesheet.py assets/dahlia_getup_as64.png \
+  -o out/dahlia_getup -n dahlia_getup --rows 8 --cols 8 \
+  --drop "$(python3 -c "k={int(x) for x in '$KEEP'.split(',')}; print(','.join(str(i) for i in range(64) if i not in k))")"
+$BUILD out/dahlia_getup/frames -o out/dahlia_getup -n dahlia_getup \
+  --poses 1-22 --holds 3,2,2,2,2,2,2,3,3,3,2,2,2,2,2,2,2,2,2,2,2,8 \
+  --stabilize none \
+  --travel 2:2,3:4,4:6,5:8,6:10,7:12,8:14,9:16,10:18,11:22,12:26,13:30,14:34,15:38,16:42,17:46,18:49,19:51,20:52,21:53,22:54 \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
+# The stagger, and the first clip out of AutoSprite that had to LOOP rather
+# than end. Everything else asked it not to; this one asked it to wrap, and it
+# is the best wrap in the whole set: frame 63 differs from frame 0 by 1052
+# pixels against a median frame change of 9008, so 0.12x. Nothing had to be
+# done to close it.
+#
+# The prompt named the first frame as a POINT MID-MOTION rather than a pose --
+# leaning, head down, knees soft, feet planted wide -- which is the part that
+# matters for a loop. Started on an extreme, a sway wraps extreme to extreme
+# and reads as a jerk once a cycle.
+#
+# Fourteen holds come off (1, 8, 12, 18, 27, 29, 35, 41, 44, 50, 58, 60, 62,
+# 63), changing 109 to 1070 pixels each. That leaves 50 real drawings across
+# three sway cycles, which the source plays at 12.4 drawings a second. Every
+# other one is kept: 25 poses at two frames each is the same 12 a second and
+# half the atlas, and a sway is smooth enough to survive the sampling.
+#
+# It ends on 61 rather than 59, which is not arbitrary -- 61 wraps to frame 0
+# at 1128 pixels and 59 wraps at 8604, a whole median apart. The last drawing
+# of a loop is chosen by measuring the wrap, not by counting.
+#
+# No --travel. She is rooted; the sway is the animation and moving her would
+# make it a stumble.
+KEEP=0,3,5,7,10,13,15,17,20,22,24,26,30,32,34,37,39,42,45,47,49,52,54,57,61
+python3 tools/import_spritesheet.py assets/dahlia_stagger_as64.png \
+  -o out/dahlia_stagger -n dahlia_stagger --rows 8 --cols 8 \
+  --drop "$(python3 -c "k={int(x) for x in '$KEEP'.split(',')}; print(','.join(str(i) for i in range(64) if i not in k))")"
+$BUILD out/dahlia_stagger/frames -o out/dahlia_stagger -n dahlia_stagger \
+  --poses 1-25 --holds 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2 \
+  --stabilize none --fps 24 --breathe 0 --bob 0 --sway 0
+
+# The ritualization, the longest one-shot in the set and the only clip whose
+# subject changes SHAPE rather than pose. She goes from a braced stance to a
+# figure standing on a trunk of wires with a thorned crown over her head, and
+# the drawing grows to match: 13,209 opaque pixels at rest, 29,044 at the peak
+# of the eruption, and a bounding box that runs from y=38..221 at the start to
+# y=0..251 by the end. Her own scale never changes; the structure around her is
+# what expands.
+#
+# Because of that it is NOT a loop and does not want to be -- frame 63 differs
+# from frame 0 by 21,293 pixels, twice a median frame change. Nothing to strip.
+#
+# The tail is where the padding went this time. Frames 45-63 change 650 to
+# 5,984 pixels against a median of 10,950, and 58-63 change under 1,300 each.
+# Seven are kept out of nineteen. The two opening frames that repeat frame 0
+# go too.
+#
+# The starburst, 9-20, is the other thin: twelve drawings of the wires held out
+# at full extension while the blood pools. Five are kept, including 17, which
+# is the single largest frame change on the sheet at 31,119 and the moment the
+# spikes let go and collapse into the column.
+#
+# 64 drawings become 28 poses, and the eruption keeps every one of its six.
+#
+# A little art is clipped and it is worth knowing rather than discovering: from
+# frame 4 onward, 26 to 54 pixels of wire tip touch the top edge of the 256px
+# cell. She fits; the wires at full extension do not, by a few pixels. Nothing
+# structural is lost, and there is no framing to fix it with -- the cell size is
+# the tool's.
+#
+# No --travel. She is rooted and the column grows under her.
+#
+# It goes into RESTING with HOLD_LAST rather than being played as an event,
+# which is the down/death treatment: a transformation that looped would have
+# her erupt over and over for as long as she stays ritualized. The tracker
+# already carries the state -- units have a `ritualized` flag, in the same
+# declaration as the `stunned` and `soulFractured` the panel reads. It sits
+# directly below `down`, because being dead outranks being taken and nothing
+# else does.
+KEEP=0,3,4,5,6,7,8,10,13,16,17,19,21,23,25,27,29,31,33,36,39,42,45,48,51,55,59,63
+python3 tools/import_spritesheet.py assets/dahlia_ritual_as64.png \
+  -o out/dahlia_ritual -n dahlia_ritual --rows 8 --cols 8 \
+  --drop "$(python3 -c "k={int(x) for x in '$KEEP'.split(',')}; print(','.join(str(i) for i in range(64) if i not in k))")"
+$BUILD out/dahlia_ritual/frames -o out/dahlia_ritual -n dahlia_ritual \
+  --poses 1-28 --holds 4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,2,2,2,2,3,10 \
+  --shake 2:6,3:4 --stabilize none \
+  --fps 24 --breathe 0 --bob 0 --sway 0
+
+# The ritualized idle, and the clip the crown was the whole point of. It is
+# what the ritualization hands into once she is crowned, the way the death
+# animation hands into the ash loop.
+#
+# It loops, and the wrap is honest without help: frame 63 differs from frame 0
+# by 1,119 pixels against a median frame change of 2,584, so 0.43x. That ratio
+# reads worse than the stagger's 0.12x and is not -- this is a SUBTLE clip. Her
+# body barely moves, so a typical frame changes 4% of itself where the stagger
+# changed 14%, and half of a small number is still a small number.
+#
+# The crown does what was asked. Counting dark pixels in the top fifth of the
+# figure across the sheet: 1,482 at frame 0, 2,794 by 12, back to 1,868 by 24,
+# 2,743 by 30, 1,858 by 44, 2,664 by 51, and 1,488 by 63. Three full cycles of
+# it weaving itself up and coming apart, and its outer extent rises and falls
+# with it -- the top of the drawing runs 0, 18, 0, 16, 0, 19, 0. It never
+# finishes, which is what makes a clip out of a woman standing still.
+#
+# Nine holds come off. The rest is halved -- 55 real drawings to 28 -- and held
+# three frames each rather than two, which puts it at 3.5s against the source's
+# 4.04s. A crown assembling itself wants to look inevitable rather than busy.
+#
+# NOT in HOLD_LAST, unlike the ritualization it follows. That one clamps because
+# an eruption on repeat is absurd; this one is the resting state itself.
+KEEP=0,2,4,7,9,11,13,15,17,19,21,23,26,30,32,35,38,40,43,45,47,49,51,53,56,58,60,63
+python3 tools/import_spritesheet.py assets/dahlia_ritual_idle_as64.png \
+  -o out/dahlia_crowned -n dahlia_crowned --rows 8 --cols 8 \
+  --drop "$(python3 -c "k={int(x) for x in '$KEEP'.split(',')}; print(','.join(str(i) for i in range(64) if i not in k))")"
+$BUILD out/dahlia_crowned/frames -o out/dahlia_crowned -n dahlia_crowned \
+  --poses 1-28 --holds 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3 \
+  --stabilize none --fps 24 --breathe 0 --bob 0 --sway 0
+
+# ---------------------------------------------------------------------
+# VERGIL, the second character, and the first thing in this file that is not
+# Dahlia. The panel matches a character by the BASENAME of its atlas, so
+# vergil_atlas.json plays for any unit whose name contains "vergil" and nothing
+# else has to change to add him.
+# ---------------------------------------------------------------------
+#
+# His idle, and the least padded sheet AutoSprite has produced: two holds in
+# 64 frames against seventeen on the get-up. 62 real drawings, halved to 31 and
+# held three frames each, which puts it at 3.88s against the source's 4.04s --
+# near enough the rate it was authored at.
+#
+# It loops, wrap 1,396 pixels against a median frame change of 2,683, so 0.52x.
+# Subtle clip, small numbers: a typical frame changes 4% of itself, the same
+# territory as the crowned idle rather than the stagger.
+#
+# It ends on 63 rather than 62 because the wrap was measured rather than
+# counted: 63 wraps at 1,396, 62 at 1,985, 61 at 2,761, 60 at 5,067 and 58 at
+# 7,603. The end of a loop gets steadily worse the earlier it is cut.
+#
+# NO --flip, and this is the first sheet that has not needed one. Measured
+# against Dahlia rather than eyeballed: her face sits 21px right of her hair
+# mass in every idle frame, so she faces right, and he was generated facing
+# right to match.
+#
+# No --travel. He is rooted; the movement is a slow bob, his hands parting from
+# a prayer to touch the earring, and the axe drifting with its gauntlet.
+python3 tools/import_spritesheet.py assets/vergil_idle_as64.png \
+  -o out/vergil_idle -n vergil_idle --rows 8 --cols 8 \
+  --drop "$(python3 -c "k={0,3,5,7,9,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,61,63}; print(','.join(str(i) for i in range(64) if i not in k))")"
+$BUILD out/vergil_idle/frames -o out/vergil_idle -n vergil_idle \
+  --poses 1-31 --holds 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3 \
+  --stabilize none --fps 24 --breathe 0 --bob 0 --sway 0
+
+# ---------------------------------------------------------------------
+# PACKING COMES LAST, and that is load-bearing rather than tidy. It reads
+# out/dahlia_* off disk, so anything rebuilt after it is packed in its
+# PREVIOUS state. This block used to sit in the middle of the file, which
+# meant a clean run packed the four clips defined below it from whatever
+# happened to be on disk from the run before -- silently, since every clip
+# was present and the atlas came out looking finished.
+# ---------------------------------------------------------------------
+# Every finished clip onto one shared canvas, and one atlas for all of them.
+#
+# --match-scale is the second half of that and it was missing for nine clips.
+# Registering POSITION is not enough on its own: the sheets behind different
+# clips came back at very different sizes, and in the packed atlas her body
+# measured 269px on the idle and 450px on the slipping idle. Her feet were in
+# the right place and she was 67% larger -- so she jumped size every time the
+# panel changed clip, silently, because each clip looked correct on its own.
+#
+# The measure is sqrt(body area) rather than height, because height is a
+# property of the POSE: she is 325px through the dodge because she spends it
+# crouched and 603px through the slipping idle because she spends it upright.
+# Normalising on height would make her grow every time she stood up. Across
+# these clips the spread of sqrt(area) within a clip is under 6% where height
+# varies by 17%.
+#
+# The target is the MEDIAN clip, not the smallest. Taking the minimum let one
+# clip that happened to be drawn small decide the size of the whole cast, and
+# it moved every time a new clip came in under the old floor. The guarantee the
+# minimum was there to give -- that nothing is ever enlarged -- survives anyway,
+# because --scale runs afterwards: a clip's NET factor is (target/measure)*scale
+# and at 0.75 nothing here reaches 1.0. pack_clips checks that rather than
+# assuming it and says so if a clip really would be blown up.
+#
+# --scale-like is for a clip that is not the character. The ash loop is what is
+# left of her, and measuring "how big is she in it" returns the size of a pile,
+# which the median then tried to enlarge by 61% to make person-sized. Sized to
+# CONTINUE from the death instead, its first drawing matches the drawing the
+# death animation stops on, which is the only relationship between them that
+# matters.
+#
+# The assembler sizes each clip's canvas to that clip, which is right inside a
+# clip and wrong between them: the idle, the hit and the attack came out
+# 436x431, 459x378 and 485x385, with her boots 8, 12 and 16px off the bottom and
+# 119px apart horizontally. That is a jump every time the animation changes.
+# Registering the clips to each other brings it to 0px vertically and 3.3px
+# horizontally -- the residual is two ways of measuring where her boots are
+# disagreeing, not her moving.
+#
+# A clip is moved, not a frame. The frames inside a clip are already registered
+# and some of their motion is deliberate, so they all take the same offset.
+python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll out/dahlia_getup out/dahlia_stagger out/dahlia_ritual out/dahlia_crowned \
+  --scale-like out/dahlia_ashes=out/dahlia_death --match-scale -o out/atlas -n dahlia --preview --preview-scale 0.5
+
+# The same clips sized for a web page, where she is displayed small and the
+# bytes matter -- less than they did, since the tracker is opened off disk
+# rather than fetched, so 0.75 buys real resolution for load time nobody waits
+# on. --format webp here is a STILL image, not an animation: the
+# atlas is one picture either way, and WebP stores it in a third of the PNG's
+# bytes with the same pixels and the same alpha. At eight clips the same
+# atlas is 23.4MB as PNG and 6.8MB as WebP.
+# --role names each clip by what it IS rather than whose it is. With more than
+# one character in the tracker the panel has to ask for "the hit", not for
+# "dahlia_hit", so roles are what the manifest carries and the atlas basename
+# is what matches a unit by name.
+python3 tools/pack_clips.py out/dahlia_flourish out/dahlia_hit out/dahlia_attack \
+  out/dahlia_block out/dahlia_dodge out/dahlia_counter out/dahlia_taunt out/dahlia_slip out/dahlia_fracture out/dahlia_spec out/dahlia_cyber out/dahlia_down out/dahlia_death out/dahlia_ashes out/dahlia_soul out/dahlia_rev out/dahlia_grab out/dahlia_throw out/dahlia_ragdoll out/dahlia_getup out/dahlia_stagger out/dahlia_ritual out/dahlia_crowned \
+  --role out/dahlia_flourish=idle --role out/dahlia_hit=hit \
+  --role out/dahlia_attack=attack --role out/dahlia_block=block \
+  --role out/dahlia_dodge=dodge --role out/dahlia_counter=counter \
+  --role out/dahlia_taunt=taunt --role out/dahlia_slip=slipping --role out/dahlia_fracture=fractured --role out/dahlia_spec=spec --role out/dahlia_cyber=cyberpsychosis --role out/dahlia_down=down --role out/dahlia_death=death --role out/dahlia_ashes=dead --role out/dahlia_soul=soul --role out/dahlia_rev=rev --role out/dahlia_grab=grab --role out/dahlia_throw=throw --role out/dahlia_ragdoll=ragdoll --role out/dahlia_getup=recover --role out/dahlia_stagger=staggered --role out/dahlia_ritual=ritualized --role out/dahlia_crowned=crowned \
+  --scale-like out/dahlia_ashes=out/dahlia_death \
+  --scale-like out/dahlia_throw=out/dahlia_grab --match-scale -o out/web -n dahlia --scale 0.75 --format webp --quality 78
+cp out/web/dahlia_atlas.webp out/web/dahlia_atlas.json web/
+
+# Vergil's own atlas, alongside hers rather than inside it. One atlas per
+# character is what lets the panel carry a cast: it reads every *_atlas.json in
+# out/web and matches each to a unit by name.
+#
+# No --match-scale, because that registers clips of ONE character against each
+# other and he has one clip. The scale that matters here is BETWEEN characters,
+# and it is the same failure as the intra-clip one: the panel shows a single
+# unit at a time, so a character half the size of the last one jumps when the
+# panel changes subject.
+#
+# --scale 1.446 rather than the 0.75 everything else uses, and it is measured.
+# Packed at 0.75 he stood 154px from the top of his hair to his boots against
+# her 297 -- he needed 1.929x, and 0.75 x 1.929 is 1.446. Packed at that he
+# measures 299 against her 297, which is 0.7% apart.
+#
+# He is enlarged past his own resolution to get there, and that is not a fault
+# in this sheet: AutoSprite draws into a fixed 256px cell, so anything from it
+# is roughly half the linear scale of the drawing sheets the rest of her set
+# came from. Her ragdoll pays the same 2.37x. Nothing in a prompt fixes it.
+python3 tools/pack_clips.py out/vergil_idle \
+  --role out/vergil_idle=idle \
+  -o out/web -n vergil --scale 1.446 --format webp --quality 78
+cp out/web/vergil_atlas.webp out/web/vergil_atlas.json web/
+
+# Put the sprite feed into the combat tracker. Re-runnable: the injected block
+# is bounded by two markers and any earlier copy is removed first, so adding an
+# animation to the atlas means re-running this and nothing else. Deleting the
+# block between the markers restores the tracker byte for byte.
+#
+# The tracker is opened off disk, so the atlas cannot be fetched -- file://
+# blocks it -- and it is inlined as a data URI, which is how that file already
+# carries its battle-map backdrops.
+# Every <name>_atlas.json in out/web becomes one member of the cast, and its
+# basename is the match key: dahlia_atlas.json plays for any unit whose name
+# contains "dahlia". Adding a character is packing an atlas next to the others
+# and re-running this.
+# python3 tools/inject_sprite_panel.py path/to/BLACKBOX_MERC_OS.html -a out/web
+#
+# And then the HUD skin over the top, which is a second bounded block and a
+# second thing that can be deleted without touching the tracker:
+#
+# python3 tools/extract_ui_icons.py <reference sheets...> -o web/ui_icons.png
+# python3 tools/inject_hud_skin.py path/to/BLACKBOX_MERC_OS.html
+#
+# The extractor writes web/ui_icons.webp next to the PNG and the injector
+# inlines THAT one. The PNG stays the master that --append extends; the WebP is
+# what gets base64'd, because the skin spells the sprite into a CSS custom
+# property and Chromium silently drops one longer than 2^21 characters -- past
+# which every icon in the tracker renders as a solid block. The injector
+# refuses to write a build that would cross it.
+#
+# Three of the reference sheets are not icon sheets and do not go through that
+# tool at all. The HUD plates, the comic impacts and the glitch bands are full
+# colour and are used as artwork rather than as masks, so each is keyed to RGBA
+# once by hand and written straight to web/: hud_plate0..3.webp behind the four
+# resource pools, hud_impact.webp for the sprite panel's hit flash, and
+# hud_glitch.webp for its fractured and cyberpsychosis bands. The skin resolves
+# them by token like every other frame.
+#
+# web/fonts/ holds seven latin-subset WOFF2 faces, inlined the same way. Three
+# of them -- Space Mono, Chakra Petch, Cinzel -- are fonts the TRACKER ITSELF
+# names in --mono, --hud and --sacred and never shipped an @font-face for, so
+# until they were bundled the file rendered in ui-monospace, system-ui and
+# Georgia on every machine that did not happen to have them installed. All
+# seven are SIL Open Font License; web/fonts/NOTICE.md travels with them.
+#
+# Order matters only in that the skin has to be appended AFTER the tracker's own
+# </style>, and the sprite panel adds a <script> rather than a style, so the two
+# do not interact. Either can be re-run alone.
+#
+# And then the third block, the hostile AI:
+#
+# python3 tools/inject_nemesis.py path/to/BLACKBOX_MERC_OS.html
+#
+# This one goes LAST. It wraps resolveGroup and enemyRetaliation to observe each
+# exchange, and so does the sprite feed; whichever is injected second wraps the
+# other and both still run, but injecting the nemesis last means the animation
+# plays and then the AI learns from the same exchange, in that order.
+#
+# The injector also LIFTS four lists out of the tracker's source -- AVOID,
+# STRIKEBACK, AVOIDANCE_TYPES, STRIKEBACK_TYPES -- because they are declared
+# inside a function and are not globals, so no runtime lookup can reach them.
+# The other three tables it needs (RETAL_TYPES, MITIGATION_CFG, RETAL_DMG_MULT)
+# are top-level consts and ARE reachable, though not as window properties: a
+# top-level const is a lexical global, so the block reads them through a
+# function compiled in global scope. Reading them off window returns undefined
+# and every guarded lookup then falls back silently, which is how the first
+# build shipped an AI whose entire defensive half was inert.

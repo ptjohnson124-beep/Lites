@@ -1,0 +1,1464 @@
+/* ==== BEGIN HUD SKIN — injected block, delete to the END marker to revert ====
+
+   A skin, not a rewrite. The tracker carries 1.3MB of its own CSS across one
+   style block, and editing that in place is not reversible and not reviewable.
+   This is appended after it, wins on cascade order, and deleting the block
+   between the two markers restores the file byte for byte.
+
+   It answers two complaints, and they need different tools.
+
+   "TAKES UP TOO MUCH SCREEN" is a measurement, not a mood: at 1440x900 the
+   document is 7,432px, which is 8.3 screens. It is not spread evenly. The
+   board alone is 5,590px of it, one unit card is 1,080px, and .u-detail inside
+   each card is 790px -- five of those is 3,850px, over half the page, for the
+   panel a player looks at least often. The battle map stage is another 781px.
+   So the density work is aimed at those two and nothing else; trimming padding
+   everywhere would have cost the layout and saved a couple of hundred pixels.
+
+   "GENERIC AND BLAND" is about FORM rather than colour. The palette is already
+   the reference palette -- cyan #39d3e8, gold #e8b13a, crimson on near-black --
+   what it lacks is the angular vocabulary: cut corners, corner brackets, tabbed
+   headers with an angled trailing edge, hazard stripes on the destructive
+   controls, a scanline over the glass.
+
+   None of that is done with clip-path, deliberately. clip-path clips every
+   descendant, and these panels contain dropdowns, tooltips and absolutely
+   positioned overlays that would be cut off. A corner cut painted as a
+   background gradient looks identical and clips nothing.
+   ==================================================================== */
+
+/* ---- 1. THE CUT CORNER ---------------------------------------------
+   The single form that carries the whole look. Two opposite corners are
+   chamfered by painting the panel's own fill as a pair of diagonal gradients
+   over a transparent box, so the corner reads as cut without any clipping. */
+/* Selectors are doubled -- .card.card rather than .card -- and that is not a
+   typo. A skin appended after the tracker's own CSS only wins at EQUAL
+   specificity, and the tracker states these panels through more specific
+   selectors of its own, so the first version of this rule lost silently: the
+   corners stayed round and the frame never appeared. Doubling the class costs
+   nothing and beats a plain class without reaching for !important, which on a
+   sheet this size stops being a fix and becomes a fight. */
+.cmd.cmd, .card.card, .pool.pool, .unit.unit, #econ, .battlemap-panel.battlemap-panel,
+#passivesPanel, .resolve.resolve {
+  --cut: 12px;
+  background:
+    linear-gradient(135deg, transparent var(--cut), var(--panel) 0) top left / 51% 100% no-repeat,
+    linear-gradient(-45deg, transparent var(--cut), var(--panel) 0) bottom right / 51% 100% no-repeat;
+  /* No solid fallback under those two. The first attempt kept one and the cut
+     corners simply did not appear -- a background-color paints beneath every
+     background-image, so the transparent triangles were filled straight back
+     in. The two gradients cover 51% each and meet in the middle. */
+  border: 1px solid var(--line);
+  border-radius: 0;
+  position: relative;
+}
+
+/* ---- 2. THE FRAME ---------------------------------------------------
+   A real HUD frame lifted off the reference sheet rather than four corner
+   marks drawn in CSS, which is what this was. 764x272 of white line art keyed
+   the same way the icons were -- and the interior of the source is a dark
+   gradient fill, so keying on luminance hollows it out on its own. That is the
+   whole reason it can be a BORDER rather than a picture. 4.4KB.
+
+   It is drawn on a positioned ::after with zero layout impact, not with
+   border-image on the panel itself. border-image consumes the border box, so
+   an 18px frame would have taken 18px of padding off every panel or grown
+   every panel by 18px -- and growing them undoes the density work that this
+   same file just did. An overlay inset by -8px sits AROUND the panel and costs
+   nothing.
+
+   border-image-slice 58 because that is how far the corner detail reaches in:
+   the notch plus the hatch marks measure about 58px on a 764px-wide source,
+   and slicing inside that cuts a corner in half.
+
+   inset and border-width MATCH, and that is the part that was wrong first. At
+   inset -8px with an 18px border the ring straddled the panel edge, so 10px of
+   it lay INSIDE the panel at z-index 2 -- on top of the content. The command
+   panel's first button sits within that band and came out reading "OG #0001".
+   Setting both to 14px puts the ring entirely in the -14..0 strip outside the
+   box, where a frame belongs and where it cannot cover anything. */
+.cmd.cmd::after, .card.card::after, .pool.pool::after, .unit.unit::after,
+.battlemap-panel.battlemap-panel::after, .resolve.resolve::after {
+  content: ""; position: absolute; inset: -14px; pointer-events: none; z-index: 2;
+  border: 14px solid transparent;
+  border-image: url("__FRAME__") 58 stretch;
+  opacity: .85;
+}
+
+/* ---- 3. SCANLINE ----------------------------------------------------
+   2px pitch at 3% -- deliberately below the threshold where it reads as
+   texture on its own. At 6% it moires against the tracker's own 1px rules and
+   the battle map's grid, which is how the first attempt looked broken. */
+.cmd.cmd::before, .card.card::before, .pool.pool::before, .unit.unit::before, .battlemap-panel.battlemap-panel::before, .resolve.resolve::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: repeating-linear-gradient(
+    180deg, rgba(126,240,255,.03) 0 1px, transparent 1px 2px);
+}
+/* There was a rule here that gave every direct child position:relative and
+   z-index:1, to lift the content above the scanline. It is gone, but it should
+   be said that it was NOT the bug it was removed for -- the clipped header was
+   the frame overlay above, and pulling this rule changed nothing. It stays out
+   because it is not needed: a 3% white wash over the text rather than under it
+   is what a scanline does anyway, and at 3% the difference is invisible.
+
+   Worth keeping as a rule of thumb even so. A skin should not change the
+   POSITIONING of elements it did not author; position is layout, and layout is
+   behaviour. */
+
+/* ---- 4. TABBED HEADERS ---------------------------------------------
+   The "SELECT 01" motif: a filled label block with an angled trailing edge,
+   rather than a line of small caps floating over the panel. */
+/* Only .cmd > h1, and that is a retreat from where this started. The rule was
+   written for .card > h2 as well and matched nothing: the resource cards label
+   themselves with a bare SPAN, and there are exactly two .k elements in the
+   whole document, so there is no class that means "this panel's title". The
+   frame carries the look instead -- cut corners, brackets and the top rail
+   need no markup knowledge at all, which is why they are doing the work. */
+.cmd > h1 {
+  display: inline-block; margin: 0 0 8px; padding: 3px 22px 3px 10px;
+  background: linear-gradient(90deg, var(--cyand), rgba(28,127,142,.15));
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  color: var(--ice); letter-spacing: .14em; text-transform: uppercase;
+}
+
+/* ---- 5. BUTTONS -----------------------------------------------------
+   271 of them, so this is the change with the widest reach and the one most
+   able to make the page look broken. A notch on the leading corner and a 2px
+   accent bar down the left, nothing that changes a hit area. */
+.btn.btn {
+  border-radius: 0;
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  box-shadow: inset 2px 0 0 rgba(57,211,232,.45);
+  letter-spacing: .06em;
+}
+.btn.btn:hover { box-shadow: inset 2px 0 0 var(--cyanb), 0 0 10px rgba(57,211,232,.18); }
+
+/* Destructive controls get the hazard bar from the reference sheet, and WHICH
+   controls those are took three passes to get right.
+
+   The first guessed at #btnReset and [onclick*=reset] and marked nothing. The
+   second used .cr, the tracker's own class, on the strength of a four-element
+   sample that read Reset System, Force System Break, Spawn Ritualized, Ambush.
+   Counted properly there are 41 of them and .cr means "crimson", not
+   "dangerous": it also covers the damage nudgers, +15, Confirm and Close. A
+   hazard stripe on a heal button is the same failure as no stripe on a reset
+   -- the mark stops meaning anything.
+
+   So it is four IDs, which the buttons turn out to have. Narrow and checkable,
+   and a new destructive control has to be added here on purpose rather than
+   inheriting a warning by being red. */
+#btnReset, #btnBreak, #btnSpawn, #bmAmbushEnemy {
+  background-image: repeating-linear-gradient(
+    45deg, rgba(224,70,76,.22) 0 6px, transparent 6px 12px) !important;
+  box-shadow: inset 2px 0 0 var(--crim);
+}
+
+/* ---- 6. DENSITY: the unit detail ------------------------------------
+   790px per card, five cards, 3,850px -- the largest single block on the page
+   and the one that is open least often. Capped and made to scroll rather than
+   collapsed behind a click: collapsing hides that there IS anything there,
+   and this panel is where a player's kit lives. */
+.u-detail.u-detail {
+  max-height: 300px; overflow-y: auto; overscroll-behavior: contain;
+  border-top: 1px solid var(--line);
+  -webkit-mask-image: linear-gradient(180deg, #000 0 88%, rgba(0,0,0,.25) 100%);
+          mask-image: linear-gradient(180deg, #000 0 88%, rgba(0,0,0,.25) 100%);
+}
+/* The fade at the bottom edge is the only thing that says "there is more".
+   Without it a capped scroller reads as a panel that happens to end. */
+
+/* ---- 7. DENSITY: the battle map ------------------------------------- */
+.bm-stage.bm-stage { max-height: 430px; overflow: auto; }
+
+/* ---- 8. HUD SCROLLBARS ----------------------------------------------
+   Two capped scrollers now exist that did not before, so they have to look
+   deliberate rather than like a browser default landing in a dark UI. */
+.u-detail::-webkit-scrollbar, .bm-stage::-webkit-scrollbar { width: 9px; height: 9px; }
+.u-detail::-webkit-scrollbar-track, .bm-stage::-webkit-scrollbar-track {
+  background: rgba(35,48,66,.35); }
+.u-detail::-webkit-scrollbar-thumb, .bm-stage::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--cyand), rgba(28,127,142,.35));
+  border: 1px solid rgba(126,240,255,.25); }
+.u-detail, .bm-stage { scrollbar-width: thin; scrollbar-color: var(--cyand) rgba(35,48,66,.35); }
+
+/* ---- 9. TIGHTENING ---------------------------------------------------
+   Small and broad. The resource cards are 130px tall for two lines, which is
+   padding rather than content. */
+.card.card, .pool.pool { padding: 9px 11px; }
+.cmd.cmd  { padding: 12px 14px; }
+.field { margin-bottom: 5px; }
+.retalopt { padding: 3px 7px; }
+
+/* ---- 10. THE ICON SET ------------------------------------------------
+   263 icons lifted off the four reference sheets by tools/extract_ui_icons.py
+   and packed 16 across at 64px. They are STENCILS -- white with the keyed
+   alpha, no colour of their own -- and they are painted with mask-image plus a
+   background, never with background-image. That is the whole reason one sprite
+   can serve a crimson danger button and a cyan panel header at once; an icon
+   carrying the pack's own red would have imported a fourth palette into a UI
+   that already has three.
+
+   HOW A POSITION IS WORKED OUT. The sheet is 16 cells across at 64px, so it is
+   1024x1088. Shown in a 16px box it has to be SCALED to 256x272 first, and
+   then icon N sits at -(N % 16 * 16)px -(N / 16 * 16)px.
+
+   The scaling is what was wrong on the first pass: the box was 15px but
+   mask-size was left at the native 1024x1088, so every icon showed the
+   top-left fifteen pixels of its 64px cell. On screen that is a corner
+   fragment, and four in a row read as a rendering bug rather than an offset. */
+:root { --uic: url("__ICONS__"); }
+/* Spelled out ONCE, into a custom property, and every rule below takes
+   var(--uic). Written inline per rule it appeared eight times, and a 466KB PNG
+   is 620KB as base64, so the tracker went 5.6MB -> 10.6MB for one image.
+
+   THAT PROPERTY HAS A CEILING, and crossing it costs the whole icon set.
+   Chromium drops a custom property whose value runs past 2^21 characters --
+   measured, not guessed: 2,097,152 computes, 2,097,153 computes to the empty
+   string. No warning, no error. var(--uic) then resolves to nothing,
+   mask-image falls back to none, and an element with a background colour and
+   no mask paints as a SOLID BLOCK.
+
+   The sprite crossed it at 848 icons and every icon in this file rendered as a
+   grey square for a whole build without anyone noticing, because a 16px filled
+   square in the right place still reads as a deliberate bullet.
+
+   base64 is 4/3 of the bytes, so the ceiling is 1.5MB of image and the PNG was
+   1.6MB. The sheet is inlined as LOSSLESS WebP instead -- identical pixels,
+   945KB, 61% of the ceiling -- and tools/inject_hud_skin.py now refuses to
+   write a build that would go past it. */
+
+.pool.pool > *:first-child::before,
+#btnReset::before, #btnBreak::before, #btnSpawn::before, #bmAmbushEnemy::before {
+  content: ""; display: inline-block; width: 16px; height: 16px;
+  vertical-align: -3px; margin-right: 6px; background: currentColor;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
+  opacity: 1;
+}
+
+/* The four resource pools, by position. No class distinguishes them -- they
+   are .pool elements differing only in their text, and CSS cannot select on
+   text -- so nth-of-type is the only handle. Checked against their contents
+   rather than assumed: Battle, Retaliation, Special, Save, in that order. */
+/* Picked for how they survive being shrunk, not for how they look on the
+   sheet. The first set used icons drawn INSIDE a box -- crossed blades in a
+   square, a cross in a square -- and at 16px the box wins and the glyph inside
+   it turns to mush, so Battle read as a cancel button. These four are bare
+   glyphs with no enclosure. */
+.pool.pool:nth-of-type(1) > *:first-child::before {   /* 226 blade */
+  -webkit-mask-position: -32px -224px; mask-position: -32px -224px; }
+.pool.pool:nth-of-type(2) > *:first-child::before {   /* 201 double chevron */
+  -webkit-mask-position: -144px -192px; mask-position: -144px -192px; }
+.pool.pool:nth-of-type(3) > *:first-child::before {   /* 205 lightning */
+  -webkit-mask-position: -208px -192px; mask-position: -208px -192px; }
+.pool.pool:nth-of-type(4) > *:first-child::before {   /* 194 charged heart */
+  -webkit-mask-position: -32px -192px; mask-position: -32px -192px; }
+
+/* The destructive controls, which already carry the hazard stripe. The icon is
+   the half of the warning that survives being glanced at: a stripe says "this
+   one is different", a bang says "this one is dangerous". */
+#btnReset::before, #btnBreak::before, #btnSpawn::before, #bmAmbushEnemy::before { /* 91 bang */
+  width: 13px; height: 13px; margin-right: 5px;
+  -webkit-mask-position: -176px -80px; mask-position: -176px -80px; }
+
+/* And the mark that says a capped panel keeps going. The fade at .u-detail's
+   bottom edge says there is more; this says which way. */
+.unit.unit .u-detail::after {                         /* 202 chevrons */
+  content: ""; position: absolute; right: 12px; bottom: 4px; z-index: 3;
+  width: 15px; height: 15px; background: var(--cyand); pointer-events: none;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
+  -webkit-mask-position: -160px -192px; mask-position: -160px -192px;
+}
+
+/* ---- 11. THE SPRITE PANEL'S STATE ------------------------------------
+   The panel writes its clip name to data-role on the state label and stops
+   there; the icon is attached here, where the sprite already is. That split is
+   the whole reason a tracker built with the panel and WITHOUT this skin shows
+   no icons instead of a row of solid blocks -- an undefined var(--uic) is not
+   "no icon", it is "no mask", and an unmasked element paints in full.
+
+   Only states that mean something get one. idle, taunt, dodge, grab and throw
+   are deliberately bare: an icon beside every label is an icon beside none,
+   and the point of the mark is that DOWN and DEATH catch the eye across a
+   table mid-turn. */
+.dsp-state[data-role]::before {
+  content: ""; display: inline-block; width: 12px; height: 12px;
+  vertical-align: -2px; margin-right: 5px; background: currentColor;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
+  -webkit-mask-position: 999px 999px; mask-position: 999px 999px;
+}
+/* The default position is off the sheet on purpose. Every state gets the box
+   and only the named ones get a glyph, so an unlisted or new clip name shows
+   nothing rather than whichever icon happens to sit at 0,0. */
+.dsp-state[data-role="death"]::before { /* 111 */
+  -webkit-mask-position: -240px -96px; mask-position: -240px -96px; }
+.dsp-state[data-role="dead"]::before { /* 111 */
+  -webkit-mask-position: -240px -96px; mask-position: -240px -96px; }
+.dsp-state[data-role="down"]::before { /* 218 */
+  -webkit-mask-position: -160px -208px; mask-position: -160px -208px; }
+.dsp-state[data-role="ragdoll"]::before { /* 200 */
+  -webkit-mask-position: -128px -192px; mask-position: -128px -192px; }
+.dsp-state[data-role="recover"]::before { /* 231 */
+  -webkit-mask-position: -112px -224px; mask-position: -112px -224px; }
+.dsp-state[data-role="staggered"]::before { /* 213 */
+  -webkit-mask-position: -80px -208px; mask-position: -80px -208px; }
+.dsp-state[data-role="ritualized"]::before { /* 141 */
+  -webkit-mask-position: -208px -128px; mask-position: -208px -128px; }
+.dsp-state[data-role="crowned"]::before { /* 141 */
+  -webkit-mask-position: -208px -128px; mask-position: -208px -128px; }
+.dsp-state[data-role="cyberpsychosis"]::before { /* 157 */
+  -webkit-mask-position: -208px -144px; mask-position: -208px -144px; }
+.dsp-state[data-role="fractured"]::before { /* 235 */
+  -webkit-mask-position: -176px -224px; mask-position: -176px -224px; }
+.dsp-state[data-role="slipping"]::before { /* 209 */
+  -webkit-mask-position: -16px -208px; mask-position: -16px -208px; }
+.dsp-state[data-role="spec"]::before { /* 205 */
+  -webkit-mask-position: -208px -192px; mask-position: -208px -192px; }
+.dsp-state[data-role="attack"]::before { /* 226 */
+  -webkit-mask-position: -32px -224px; mask-position: -32px -224px; }
+.dsp-state[data-role="soul"]::before { /* 226 */
+  -webkit-mask-position: -32px -224px; mask-position: -32px -224px; }
+.dsp-state[data-role="block"]::before { /* 140 */
+  -webkit-mask-position: -192px -128px; mask-position: -192px -128px; }
+.dsp-state[data-role="counter"]::before { /* 246 */
+  -webkit-mask-position: -96px -240px; mask-position: -96px -240px; }
+.dsp-state[data-role="hit"]::before { /* 200 */
+  -webkit-mask-position: -128px -192px; mask-position: -128px -192px; }
+.dsp-state[data-role="rev"]::before { /* 205 */
+  -webkit-mask-position: -208px -192px; mask-position: -208px -192px; }
+
+/* ---- 12. GAUGES -----------------------------------------------------
+   Reshaped rather than re-imaged. A gauge's fill changes width every time the
+   number changes, so a picture of a gauge is the wrong tool -- the shape has
+   to be a clip the fill lives inside, not a frame drawn around it.
+
+   The reference sheet names fifteen; two of them fit what is here. .bar is
+   8px tall, and at 8px the pointed gauge's chevron ends are a two-pixel bevel
+   that reads as an artefact, so these take the SLANTED box instead -- the same
+   parallelogram, which survives being short. The tick overlay is the
+   segmented gauge from the same sheet, at 12px pitch.
+
+   Both the track and its fill are clipped by clipping the parent, because
+   these already carry overflow:hidden. That is load-bearing: clip-path on the
+   parent alone would leave a square fill poking out of a slanted track. */
+.bar.bar {
+  border-radius: 0;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  position: relative;
+}
+.bar.bar::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(90deg,
+    transparent 0 10px, rgba(7,10,14,.85) 10px 12px);
+}
+/* .track is the layer bar and is already segmented by real elements, so it
+   takes the shape and not the ticks -- ticks over segments is two grids. */
+.track.track { border-radius: 0;
+  clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%); }
+
+/* ---- 13. FRAMES BY ROLE ---------------------------------------------
+   Four more frames off the MOOVOR sheet, keyed and tinted the same way, put
+   where their shape means something rather than everywhere at once.
+
+   Every one is drawn the way rule 2 established: a ::after whose inset EQUALS
+   its border-width, so the ring sits entirely in the strip outside the box.
+   That is not a style choice, it is the fix for the frame that covered the
+   command panel's first button. */
+.unit.unit::after, .resolve.resolve::after {          /* the long notched bar */
+  border-width: 15px; inset: -15px;
+  border-image: url("__CARD__") 46 stretch; opacity: .8; }
+
+.retaltypes::after, #econ::after, #passivesPanel::after {
+  content: ""; position: absolute; inset: -12px; pointer-events: none; z-index: 2;
+  border: 12px solid transparent;
+  border-image: url("__SOFT__") 40 stretch; opacity: .75; }
+.retaltypes, #econ, #passivesPanel { position: relative; }
+/* position:relative is added to exactly these three, by name, and only because
+   an absolutely positioned ::after needs a positioned parent. The blanket
+   version of this on every panel CHILD is what the note in rule 3 is about. */
+
+/* ---- 14. THE DIVIDER -------------------------------------------------
+   The chevron rule, as a background rather than a border-image, because it is
+   not a frame -- it has a direction and stretching it round four sides would
+   lose that. It goes on the top edge of the unit detail panel, which is the
+   one place in a unit card where two unrelated things meet. */
+.u-detail.u-detail {
+  border-top: 0;
+  background-image: url("__RULE__");
+  background-repeat: no-repeat;
+  background-position: left top;
+  background-size: 210px 12px;
+  padding-top: 14px;
+}
+
+/* ---- 15. CONTROLS ---------------------------------------------------
+   84 selects and 222 inputs, which between them are most of what a person
+   actually touches. The notch matches the buttons; nothing here changes a hit
+   area or a focus behaviour.
+
+   appearance:none removes the native dropdown arrow, so one is drawn back on.
+   Leaving it off would have been the same class of failure as the hazard
+   stripes that marked nothing: a select that does not look like a select. */
+select {
+  appearance: none; -webkit-appearance: none;
+  border-radius: 0;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  padding-right: 20px !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--cyan) 50%),
+    linear-gradient(135deg, var(--cyan) 50%, transparent 50%);
+  background-position: right 11px center, right 6px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+input[type="text"], input[type="number"], input:not([type]), textarea {
+  border-radius: 0;
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  box-shadow: inset 2px 0 0 rgba(57,211,232,.28);
+}
+
+/* ---- 16. RETALIATION AND ACTIONS ------------------------------------
+   36 .retalopt chips and the action rows. Chips take the button notch at a
+   smaller radius so a dense row of them still reads as separate objects, and
+   the row they sit in takes the tab frame. */
+.retalopt.retalopt {
+  border-radius: 0;
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  box-shadow: inset 2px 0 0 rgba(57,211,232,.30);
+}
+.u-acts, .u-acts-more { position: relative; }
+.u-acts::before, .u-acts-more::before {
+  content: ""; position: absolute; left: 0; right: 0; top: -7px; height: 9px;
+  pointer-events: none; opacity: .5;
+  background: url("__RULE__") no-repeat left center / 150px 9px;
+}
+
+/* ---- 17. THE ICON SET, ACROSS THE FILE -------------------------------
+   373 icons now, after 101 more were unboxed off two 512px packs. Wiring them
+   broadly is the point of this section, and the constraint is the same one
+   that has bitten twice: CSS cannot read text, so an icon can only be attached
+   where the markup distinguishes one label from another.
+
+   Where it does, the icon is specific. Where it does not, one generic mark is
+   used rather than a guessed-specific one -- a wrong icon is worse than a
+   neutral one, because a reader trusts it.
+
+   One shared box, then a position per role. Everything inherits currentColor,
+   so an icon on a crimson control comes out crimson without a second rule. */
+.qb::before, .uag-h::before, .g::before, .vi::before, .rn::before,
+.u-expand-tog::before, .pmf .gk::before, .mf .gk::before, .tech .gk::before {
+  content: ""; display: inline-block; width: 13px; height: 13px;
+  vertical-align: -2px; margin-right: 5px; background: currentColor;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
+  -webkit-mask-position: 999px 999px; mask-position: 999px 999px;
+  opacity: .8;
+}
+/* mask-size is 256x384 now, not 256x272: the sheet grew from 17 rows to 24
+   when the second pack was appended. Every position below is arithmetic on the
+   16-across grid -- icon N at -(N%16*16)px -(N/16*16)px -- and it only stays
+   correct because the packer APPENDS rather than repacks. A tool that
+   renumbered its own sprite would move every icon in this file by one. */
+
+/* The eleven action buttons, which share one parent and so can be told apart
+   by position. Verified against their own text in DOM order rather than
+   assumed: Strike, Light, Ranged, Heavy, Engine Lt, Combo, QQC Lock, Daze,
+   Pressure, Harmonize, Rotate. */
+.qb:nth-of-type(1)::before { -webkit-mask-position:-32px -224px; mask-position:-32px -224px; } /* Strike */
+.qb:nth-of-type(2)::before { -webkit-mask-position:-0px -272px; mask-position:-0px -272px; } /* Light */
+.qb:nth-of-type(3)::before { -webkit-mask-position:-160px -304px; mask-position:-160px -304px; } /* Ranged */
+.qb:nth-of-type(4)::before { -webkit-mask-position:-0px -320px; mask-position:-0px -320px; } /* Heavy */
+.qb:nth-of-type(5)::before { -webkit-mask-position:-48px -352px; mask-position:-48px -352px; } /* Engine Lt */
+.qb:nth-of-type(6)::before { -webkit-mask-position:-176px -320px; mask-position:-176px -320px; } /* Combo */
+.qb:nth-of-type(7)::before { -webkit-mask-position:-64px -288px; mask-position:-64px -288px; } /* QQC Lock */
+.qb:nth-of-type(8)::before { -webkit-mask-position:-80px -208px; mask-position:-80px -208px; } /* Daze */
+.qb:nth-of-type(9)::before { -webkit-mask-position:-208px -192px; mask-position:-208px -192px; } /* Pressure */
+.qb:nth-of-type(10)::before { -webkit-mask-position:-64px -272px; mask-position:-64px -272px; } /* Harmonize */
+.qb:nth-of-type(11)::before { -webkit-mask-position:-48px -272px; mask-position:-48px -272px; } /* Rotate */
+
+/* The four kit sections, four to a unit card and repeating, so nth-of-type
+   cycles correctly inside each card. */
+.uag-h:nth-of-type(1)::before { -webkit-mask-position:-48px -320px; mask-position:-48px -320px; } /* Character Kit */
+.uag-h:nth-of-type(2)::before { -webkit-mask-position:-144px -304px; mask-position:-144px -304px; } /* Gear & Loadout */
+.uag-h:nth-of-type(3)::before { -webkit-mask-position:-80px -272px; mask-position:-80px -272px; } /* Mask / State */
+.uag-h:nth-of-type(4)::before { -webkit-mask-position:-192px -288px; mask-position:-192px -288px; } /* Table / GM */
+
+/* The three gauge labels. These CANNOT be told apart by position -- all 15
+   sit alone in 15 different parents, so nth-of-type sees each as the first of
+   its kind -- but their containers are classed, which is the handle. */
+.pmf .gk::before { -webkit-mask-position:-64px -272px; mask-position:-64px -272px; }   /* 276 balance */
+.mf .gk::before   { -webkit-mask-position:-48px -352px; mask-position:-48px -352px; }   /* 355 charge  */
+.tech .gk::before { -webkit-mask-position:-192px -288px; mask-position:-192px -288px; }   /* 300 system  */
+
+/* Generic marks, where the markup gives nothing to distinguish on. A banner is
+   always an alert, an expander always points, a retaliation is always a guard;
+   none of those need to know WHICH one they are. */
+.g::before            { -webkit-mask-position:-176px -80px; mask-position:-176px -80px; }   /* 91  alert */
+.u-expand-tog::before { -webkit-mask-position:-144px -192px; mask-position:-144px -192px; } /* 201 chevrons */
+.rn::before           { -webkit-mask-position:-192px -128px; mask-position:-192px -128px; } /* 140 guard */
+.vi::before           { -webkit-mask-position:-208px -192px; mask-position:-208px -192px; } /* 205 charge */
+
+/* ---- 18. THE NAMEPLATE ----------------------------------------------
+   The unit card header, on the decal plate from the sticker sheet.
+
+   That sheet is the one asset here that could not be used as drawn: its labels
+   are compositions with words baked into them, and a tracker is not improved
+   by every unit card saying CRYPTO_PASS/2. What survives is the SILHOUETTE --
+   keyed, closed, holes filled so the knocked-out lettering does not punch
+   through, and reduced to the largest blob. 1.1KB of shape with no content.
+
+   It is a mask on a background rather than an image, for the same reason the
+   icons are: the plate takes the panel's own colour instead of importing the
+   sheet's. */
+.u-top { position: relative; }
+.u-top::before {
+  content: ""; position: absolute; left: -6px; top: -3px; bottom: -3px; width: 190px;
+  pointer-events: none; z-index: 0; opacity: .18;
+  background: linear-gradient(90deg, var(--cyand), transparent);
+  -webkit-mask: url("__DECAL__") no-repeat left center / 100% 100%;
+          mask: url("__DECAL__") no-repeat left center / 100% 100%;
+}
+
+/* ---- 19. SECTION PLATES ---------------------------------------------
+   The tabbed header, finally. It was attempted in rule 4 and abandoned: the
+   rule was written for .card > h2 and matched nothing, because the resource
+   cards label themselves with a bare SPAN and there are exactly two .k
+   elements in the whole document. The plate sheet solves it from the other
+   end -- the shape no longer has to come from the markup, it comes from a
+   mask, so any wide element can wear it.
+
+   Two layers, because the source plates are SOLID with dark hatch marks drawn
+   on them. Filling the holes gives the silhouette, which is the part worth
+   having; the marks are recovered separately and painted back over it, so the
+   detail is not simply lost to the fill. 2.9KB and 2.6KB.
+
+   Both sit on ::before/::after at z-index 0 with the content above, rather than
+   as a mask on the element itself -- mask clips descendants exactly like
+   clip-path does, and these headers contain text. */
+.uag-h, .g { position: relative; padding: 4px 12px 4px 14px; }
+.uag-h > *, .g > * { position: relative; z-index: 1; }
+.uag-h::after, .g::after {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(90deg, rgba(28,127,142,.55), rgba(28,127,142,.06));
+  -webkit-mask: url("__HDR__") no-repeat center / 100% 100%;
+          mask: url("__HDR__") no-repeat center / 100% 100%;
+}
+/* The hatch marks, over the plate and under the text. */
+.uag-h::before, .g::before { z-index: 0; }
+.uag-h, .g { isolation: isolate; }
+
+/* ---- 20. BAR END CAPS: NOT DONE, AND WHY -----------------------------
+   The two HUD references that came with this batch could not be extracted at
+   all -- both are labelled presentation boards with their own captions baked
+   in, not asset sheets. What they carry is a TREATMENT rather than art: a bar
+   bracketed by chevrons and broken by segment ticks.
+
+   The ticks were already added in rule 12. The chevron caps were written,
+   rendered, and taken out again, because they cannot work here: the caps have
+   to sit OUTSIDE the bar, and the bar is clip-pathed to get its slanted shape.
+   clip-path clips a pseudo-element exactly like it clips a child, so the cap
+   was drawn and immediately cut off -- present in the computed style, invisible
+   on screen. That is the same failure as the frame that straddled the panel
+   edge, in the other direction.
+
+   Doing it would need a wrapper around each bar to hang the caps on, and the
+   tracker does not provide one. Adding markup is past what a skin should do,
+   so the bars keep the shape and the ticks and go without the caps. */
+
+/* ---- 21. THE TIER BADGE ----------------------------------------------
+   The hex badges finally have somewhere to go, and it took the tracker having
+   a tier control rather than a level number. It does: a select of X / EX / UEX
+   inside .lvltop, five of them, one per unit.
+
+   CSS cannot read a select's value -- but it can read which OPTION is checked,
+   and :has() carries that up to the container. So
+
+     .lvltop:has(option:nth-child(3):checked)
+
+   matches the row whose select is on UEX, live, with no script.
+
+   It is nth-child rather than [value="UEX"], and that distinction cost a
+   debugging pass. The first version matched nothing at all, and the reason is
+   that these options carry NO value attribute -- option.value falls back to the
+   text when the attribute is absent, so reading the DOM said "X" while
+   [value="X"] matched zero elements. :has() itself was never the problem;
+   :has(select option:checked) was true the whole time.
+
+   The cost of nth-child is that it depends on the option ORDER, which was read
+   off the page rather than assumed: X, EX, UEX. Reordering that select silently
+   reorders these badges.
+
+   These are the one asset in the whole skin that KEEPS its own colour instead
+   of being recoloured through a mask. Everything else is a stencil so it can
+   take the palette it lands in; a rank badge is the opposite -- blue, purple
+   and gold ARE the distinction, and painting them all cyan would delete the
+   only thing they say.
+
+   .lvltop is display:flex, so the badge is a flex item and needs no
+   positioning at all. It has zero width until a tier matches, so a browser
+   without :has() gets nothing rather than an empty gap. */
+.lvltop::after {
+  content: ""; flex: none; width: 0; height: 19px; align-self: center;
+  margin-left: 7px; background: no-repeat center / contain;
+}
+.lvltop:has(option:nth-child(1):checked)::after   { width: 19px; background-image: url("__TIERX__"); }
+.lvltop:has(option:nth-child(2):checked)::after  { width: 19px; background-image: url("__TIEREX__"); }
+.lvltop:has(option:nth-child(3):checked)::after { width: 20px; background-image: url("__TIERUEX__"); }
+
+/* ---- 22. GEAR AND DAMAGE TYPE ---------------------------------------
+   26 more icons off the ability sheet -- armour plates, impact bursts, ammo,
+   shields, a medkit. Two hooks take them, and both are generic marks rather
+   than specific ones for the reason that keeps recurring: the 49 gear names
+   and the 31 damage-type tags differ only in their TEXT, and CSS cannot read
+   text. A chip for an installed module and a burst for a damage tag are true
+   of every one of them; guessing which is a slash and which is frequency
+   would be true of some. */
+.sk::before, .graft-st::before {
+  content: ""; display: inline-block; width: 11px; height: 11px;
+  vertical-align: -1px; margin-right: 4px; background: currentColor;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
+  opacity: .55;
+}
+.sk::before       { -webkit-mask-position: -32px -400px; mask-position: -32px -400px; }  /* 402 module */
+.graft-st::before { -webkit-mask-position: -96px -384px; mask-position: -96px -384px; }  /* 390 impact */
+
+/* ---- 23. RADIAL DIALS, THE REAL KIND --------------------------------
+   Every reference sheet in this project has arc gauges on it and not one of
+   them could be used, for a reason worth stating once: a picture of a dial at
+   70% is a picture. These numbers move.
+
+   So the ring is drawn rather than pasted -- a conic-gradient swept to
+   calc(var(--v) * 1%) and punched through with a radial mask -- and a small
+   script in the same injection keeps --v equal to the bar it sits beside. The
+   tracker publishes that value in the one place that makes it cheap: every
+   .bar holds an <i> whose inline style.width is a percentage.
+
+   The dial is a SIBLING of the bar, never a child. Inside it would fall under
+   the bar's clip-path, which is exactly what cut the chevron end caps off when
+   those were attempted. */
+.hud-dial {
+  --v: 0;
+  display: inline-block; flex: none; width: 20px; height: 20px;
+  vertical-align: -5px; margin-right: 7px; border-radius: 50%;
+  background: conic-gradient(var(--cyan) calc(var(--v) * 1%), rgba(35,48,66,.5) 0);
+  -webkit-mask: radial-gradient(closest-side, transparent 57%, #000 60%);
+          mask: radial-gradient(closest-side, transparent 57%, #000 60%);
+}
+/* The bar and its dial have to share a line, and .bar is a block. Making it
+   inline-block is not enough on its own: an inline-block shrinks to its
+   content, and a bar's content is a fill sized in PERCENT, so the two collapse
+   each other and every bar came out a few pixels wide. The width has to be
+   given back explicitly, and it is taken off the parent rather than guessed --
+   100% minus exactly the dial and its gap. */
+.bar.bar { display: inline-block; vertical-align: middle; width: calc(100% - 29px); }
+
+/* ---- 24. FACTION EMBLEMS --------------------------------------------
+   38 emblems keyed off the logo sheet, wired the same way the tier badge is:
+   :has() on a checked option, which needs no script and updates live.
+
+   Which select is which took measuring. There are five distinct select groups
+   in .u-meta and .uag, and one .u-meta container holds FOUR selects at once --
+   15, 8, 3 and 11 options -- so an option-count test on that container reads
+   whichever select is largest. The three that hold exactly one select each are
+   the safe ones, and they are told apart by how deep their options go:
+   :has(option:nth-child(24)) is true only of the Soul Engine list, because
+   nth-child counts within a select and no other select here is that long.
+
+   Emblems are stencils like everything else, so they take the panel's colour
+   rather than importing the sheet's. */
+.u-meta:has(option:nth-child(24))::after, .uag:has(option:nth-child(4))::after {
+  content: ""; display: inline-block; flex: none; width: 0; height: 17px;
+  vertical-align: -4px; margin-left: 7px; background: currentColor; opacity: .75;
+  -webkit-mask-image: url("__EMB__"); mask-image: url("__EMB__");
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 170px 68px; mask-size: 170px 68px;
+}
+/* Width stays 0 until a row matches, so an unlisted option -- or a browser
+   without :has() -- shows nothing rather than an empty gap or a wrong emblem. */
+.u-meta:has(option:nth-child(24)):has(option:nth-child(2):checked)::after { -webkit-mask-position:-34px -0px; mask-position:-34px -0px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(3):checked)::after { -webkit-mask-position:-51px -0px; mask-position:-51px -0px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(4):checked)::after { -webkit-mask-position:-102px -0px; mask-position:-102px -0px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(5):checked)::after { -webkit-mask-position:-119px -0px; mask-position:-119px -0px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(6):checked)::after { -webkit-mask-position:-0px -17px; mask-position:-0px -17px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(7):checked)::after { -webkit-mask-position:-34px -17px; mask-position:-34px -17px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(8):checked)::after { -webkit-mask-position:-51px -17px; mask-position:-51px -17px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(9):checked)::after { -webkit-mask-position:-85px -17px; mask-position:-85px -17px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(10):checked)::after { -webkit-mask-position:-136px -17px; mask-position:-136px -17px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(11):checked)::after { -webkit-mask-position:-153px -17px; mask-position:-153px -17px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(12):checked)::after { -webkit-mask-position:-0px -34px; mask-position:-0px -34px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(13):checked)::after { -webkit-mask-position:-34px -34px; mask-position:-34px -34px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(14):checked)::after { -webkit-mask-position:-68px -34px; mask-position:-68px -34px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(15):checked)::after { -webkit-mask-position:-102px -34px; mask-position:-102px -34px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(16):checked)::after { -webkit-mask-position:-119px -34px; mask-position:-119px -34px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(17):checked)::after { -webkit-mask-position:-0px -51px; mask-position:-0px -51px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(18):checked)::after { -webkit-mask-position:-17px -51px; mask-position:-17px -51px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(19):checked)::after { -webkit-mask-position:-34px -51px; mask-position:-34px -51px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(20):checked)::after { -webkit-mask-position:-51px -51px; mask-position:-51px -51px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(21):checked)::after { -webkit-mask-position:-68px -51px; mask-position:-68px -51px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(22):checked)::after { -webkit-mask-position:-85px -51px; mask-position:-85px -51px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(23):checked)::after { -webkit-mask-position:-102px -51px; mask-position:-102px -51px; width:17px; }
+.u-meta:has(option:nth-child(24)):has(option:nth-child(24):checked)::after { -webkit-mask-position:-119px -51px; mask-position:-119px -51px; width:17px; }
+.uag:has(option:nth-child(4)):has(option:nth-child(1):checked)::after { -webkit-mask-position:-51px -51px; mask-position:-51px -51px; width:17px; }
+.uag:has(option:nth-child(4)):has(option:nth-child(2):checked)::after { -webkit-mask-position:-153px -17px; mask-position:-153px -17px; width:17px; }
+.uag:has(option:nth-child(4)):has(option:nth-child(3):checked)::after { -webkit-mask-position:-102px -51px; mask-position:-102px -51px; width:17px; }
+.uag:has(option:nth-child(4)):has(option:nth-child(4):checked)::after { -webkit-mask-position:-119px -0px; mask-position:-119px -0px; width:17px; }
+
+/* ---- 25. NINE DIVIDERS ----------------------------------------------
+   The rule sheet is nine separate horizontal dividers rather than one, so the
+   sections stop sharing a mark. Until now every divider in this file was the
+   same MOOVOR chevron, which reads as decoration repeated rather than as a
+   system: a reader learns nothing from a rule that is identical everywhere.
+   These are 0.5KB to 2.5KB each, keyed white-on-black like the icons.
+
+   Each is sized to its own aspect rather than to a round number -- squashing a
+   550x54 rule into a 200x12 box turns its hexagonal end caps into blobs. The
+   height is chosen and the width computed from it. */
+.u-detail.u-detail  { background-image: url("__RULE7__"); background-size: 191px 18px; }
+.u-acts::before, .u-acts-more::before {
+  background: url("__RULE5__") no-repeat left center / 207px 14px; }
+.retaltypes::before {
+  content: ""; position: absolute; left: 0; right: 0; top: -8px; height: 14px;
+  pointer-events: none; opacity: .6;
+  background: url("__RULE1__") no-repeat left center / 222px 12px; }
+#econ::before {
+  content: ""; position: absolute; left: 10px; right: 10px; top: 4px; height: 16px;
+  pointer-events: none; opacity: .5; z-index: 1;
+  background: url("__RULE8__") no-repeat left center / 195px 16px; }
+/* Right-aligned, not left. Left-aligned it landed straight across the words
+   BATTLE MAP, which is the failure a divider is least able to survive: a rule
+   over a title reads as a strikethrough. Both panels that carry a rule inside
+   their own header put it on the side the heading is not. */
+.battlemap-panel.battlemap-panel::before {
+  background: url("__RULE3__") no-repeat right 14px top 6px / 212px 14px,
+    repeating-linear-gradient(180deg, rgba(126,240,255,.03) 0 1px, transparent 1px 2px); }
+.resolve.resolve::before {
+  background: url("__RULE0__") no-repeat right 14px top 6px / 196px 16px,
+    repeating-linear-gradient(180deg, rgba(126,240,255,.03) 0 1px, transparent 1px 2px); }
+
+/* ---- 26. THE DIAL RING ----------------------------------------------
+   The dial was a bare donut. It now sits inside the decorative ring off the
+   same sheet, which is what an instrument looks like in every one of these
+   references and what a plain circle does not.
+
+   That needed the dial restructured rather than decorated. It used to carry
+   the conic-gradient and the donut mask ITSELF, and a mask applies to an
+   element's pseudo-elements as well -- so a ring added on ::after was punched
+   out by the same hole that shapes the gauge. The element is now an unmasked
+   box: ::before is the masked gauge, ::after is the ring, and neither clips
+   the other. */
+.hud-dial {
+  position: relative; background: none;
+  -webkit-mask: none; mask: none;
+  width: 26px; height: 26px; vertical-align: -8px;
+}
+.hud-dial::before {
+  content: ""; position: absolute; inset: 4px; border-radius: 50%;
+  background: conic-gradient(var(--cyan) calc(var(--v) * 1%), rgba(35,48,66,.5) 0);
+  -webkit-mask: radial-gradient(closest-side, transparent 54%, #000 58%);
+          mask: radial-gradient(closest-side, transparent 54%, #000 58%);
+}
+.hud-dial::after {
+  content: ""; position: absolute; inset: 0; opacity: .55;
+  background: var(--cyand);
+  -webkit-mask: url("__RING__") no-repeat center / contain;
+          mask: url("__RING__") no-repeat center / contain;
+}
+.bar.bar { width: calc(100% - 35px); }
+
+/* ---- 27. CORNER BRACKETS --------------------------------------------
+   Real ones, on the two STAGES rather than on the panels. The panels already
+   wear a border-image frame and a second corner mark on top of it is two
+   frames arguing; a stage is a viewport into something and brackets are what
+   sits at the corner of a viewport.
+
+   One image per pair, mirrored for the other side, because the sheet draws
+   only the left-hand corners and a scaleX(-1) is exact where a second export
+   would be a second thing to keep in step. */
+.bm-stage, .dsp-stage { position: relative; }
+.bm-stage::before, .bm-stage::after,
+.dsp-stage > .dsp-cnr { pointer-events: none; }
+.bm-stage::before, .bm-stage::after {
+  content: ""; position: absolute; width: 22px; height: 22px; z-index: 4;
+  background: var(--cyand); opacity: .7;
+}
+.bm-stage::before {
+  left: 3px; top: 3px;
+  -webkit-mask: url("__CNRTL__") no-repeat center / contain;
+          mask: url("__CNRTL__") no-repeat center / contain; }
+.bm-stage::after {
+  right: 3px; bottom: 3px; transform: scaleX(-1);
+  -webkit-mask: url("__CNRBL__") no-repeat center / contain;
+          mask: url("__CNRBL__") no-repeat center / contain; }
+
+/* ---- 28. NINE INSTRUMENT RINGS --------------------------------------
+   The dial wore one ring; there are nine on the callout sheet and every gauge
+   in the tracker was wearing the same face. They are handed out in DOM order
+   by the script, not at random, so a given bar keeps its ring across reloads --
+   a gauge that changed its own face between sessions would read as a different
+   gauge. 32KB for all nine.
+
+   The default in rule 26 stays as the fallback: a tenth bar, or a dial the
+   script did not reach, still gets a ring rather than a bare donut. */
+.hud-dial[data-ring="0"]::after { -webkit-mask-image: url("__DIAL0__"); mask-image: url("__DIAL0__"); }
+.hud-dial[data-ring="1"]::after { -webkit-mask-image: url("__DIAL1__"); mask-image: url("__DIAL1__"); }
+.hud-dial[data-ring="2"]::after { -webkit-mask-image: url("__DIAL2__"); mask-image: url("__DIAL2__"); }
+.hud-dial[data-ring="3"]::after { -webkit-mask-image: url("__DIAL3__"); mask-image: url("__DIAL3__"); }
+.hud-dial[data-ring="4"]::after { -webkit-mask-image: url("__DIAL4__"); mask-image: url("__DIAL4__"); }
+.hud-dial[data-ring="5"]::after { -webkit-mask-image: url("__DIAL5__"); mask-image: url("__DIAL5__"); }
+.hud-dial[data-ring="6"]::after { -webkit-mask-image: url("__DIAL6__"); mask-image: url("__DIAL6__"); }
+.hud-dial[data-ring="7"]::after { -webkit-mask-image: url("__DIAL7__"); mask-image: url("__DIAL7__"); }
+.hud-dial[data-ring="8"]::after { -webkit-mask-image: url("__DIAL8__"); mask-image: url("__DIAL8__"); }
+
+/* ---- 29. THE LIVE SIGNAL BAND ---------------------------------------
+   The first thing in this skin that MOVES. A 150-frame animated HUD panel,
+   cropped to its waveform box, recoloured to the tracker's cyan and re-encoded
+   as animated WebP: 9.3MB of GIF becomes 327KB at 238x68.
+
+   Three things made that affordable. Only the wave box is kept -- the source
+   carries labels reading CONTAINED, UNLEASHED and TRANCE baked into the art,
+   and a tracker is not improved by a band that says CONTAINED under everything.
+   Every second frame is dropped, which halves the weight and keeps the 4.5s
+   period by doubling the interval. And the whole thing is keyed to alpha, so
+   it lays over the panel instead of covering it.
+
+   It sits under the command header rather than on the frequency readout, which
+   is where it belongs thematically and where it cannot be put: nothing in that
+   panel's markup distinguishes it, and CSS still cannot read the text "33Hz".
+   The header band is the honest second choice -- it needs no text match, and a
+   live trace under the OS title says the same thing. */
+/* Sized to the source's own 3.5:1 and placed bottom-RIGHT, and both of those
+   were corrections. Squashed into a 238x20 band the sine waves flattened into
+   a single line -- 68px of vertical travel compressed to 20 leaves no wave to
+   see, which is the same mistake as squashing a divider's end caps. And put at
+   the bottom-left it would have needed real height added to a header this file
+   spent effort shortening; the right-hand end of that row is empty, so at
+   190x54 it costs eight pixels rather than fifty-four. */
+/* padding-bottom buys the band its own strip. At 18px the wave was drawn but
+   half of it sat behind the commentary field -- present, animating, and
+   invisible, which is the same failure mode as the frame that straddled the
+   panel edge. 40px is what 130x37 needs to clear the content, and 22px of
+   header against a 5,151px document is the price. */
+.cmd.cmd { padding-bottom: 40px; }
+.cmd.cmd::before {
+  background:
+    url("__WAVE__") no-repeat right 16px bottom 3px / 130px 37px,
+    repeating-linear-gradient(180deg, rgba(126,240,255,.03) 0 1px, transparent 1px 2px);
+  opacity: .8;
+}
+
+/* ---- 30. THE SET GROWS TO 663 ---------------------------------------
+   187 arrows, reticles and cyber icons off two boxed packs, then 60 more from
+   the weapon and pictogram sheets. The sheet is 42 rows now, so every
+   mask-size in this file moved from 256x416 to 256x672 -- the POSITIONS did
+   not, because the packer appends rather than repacks and the scale per cell
+   is unchanged.
+
+   Five marks are replaced rather than added, which is the point of having a
+   bigger set: the generic stand-in gets swapped for the specific glyph now
+   that one exists. */
+.dsp-state[data-role="cyberpsychosis"]::before { /* 522 was 157: a masked skull
+   rather than a skull in a diamond -- at 12px the diamond was most of the ink */
+  -webkit-mask-position: -160px -512px; mask-position: -160px -512px; }
+.u-expand-tog::before {                          /* 439 filled double chevron */
+  -webkit-mask-position: -112px -432px; mask-position: -112px -432px; }
+.g::before {                                     /* 583 alert diamond, was a bang */
+  -webkit-mask-position: -112px -576px; mask-position: -112px -576px; }
+.rn::before {                                    /* 452 reticle: a retaliation is
+   a thing aimed at you, which a shield did not say */
+  -webkit-mask-position: -64px -448px; mask-position: -64px -448px; }
+.sk::before {                                    /* 595 toolbox, was a chip */
+  -webkit-mask-position: -48px -592px; mask-position: -48px -592px; }
+
+/* ---- 31. THE REAL HAZARD BAR: TRIED AND REVERTED --------------------
+   The four destructive controls carry hazard stripes drawn as a repeating
+   linear-gradient at 22% alpha. The warning sheet has a real hazard bar with
+   the ends and the pitch an artist chose, so it was swapped in -- and it made
+   FORCE SYSTEM BREAK unreadable.
+
+   The reason is not fixable by tuning. The gradient is a wash the label sits
+   on top of; the bar is dense full-strength artwork with its own internal
+   detail, and behind 11px letterspaced text at 9px it competes rather than
+   backs. Dropping its opacity to where the text reads leaves a smear that no
+   longer says hazard.
+
+   So the gradient stays. It is the rare case where the CSS approximation beats
+   the asset, because what this needs is a texture that gets out of the way and
+   the asset is a graphic that does not. web/hud_hazard.png is kept for a place
+   with no text over it, if one turns up. */
+
+/* ---- 32. 848 ICONS, AND FIVE MORE REPLACEMENTS ----------------------
+   185 more: an ability-upgrade sheet, a set of Korean skill effects, and
+   eighteen hand seals. 53 rows now, so mask-size moves to 256x848 -- and once
+   again no POSITION moves, which is the fifth time that has held.
+
+   The hand seals are the find. Nothing else in 663 icons said "a frequency
+   being worked by hand", and this whole character set is built on exactly
+   that. The baseline spec takes one, and Harmonize takes cupped hands. */
+.dsp-state[data-role="soul"]::before {                /* 826 swirl, was a blade */
+  -webkit-mask-position: -160px -816px; mask-position: -160px -816px; }
+.dsp-state[data-role="spec"]::before {                /* 832 hand seal, was a bolt */
+  -webkit-mask-position: -0px -832px; mask-position: -0px -832px; }
+.dsp-state[data-role="rev"]::before {                 /* 812 orbit */
+  -webkit-mask-position: -192px -800px; mask-position: -192px -800px; }
+.dsp-state[data-role="block"]::before {               /* 761 honeycomb guard */
+  -webkit-mask-position: -144px -752px; mask-position: -144px -752px; }
+.qb:nth-of-type(10)::before {                         /* 843 cupped hands, Harmonize */
+  -webkit-mask-position: -176px -832px; mask-position: -176px -832px; }
+
+
+/* ---- 33. TWO MARKS: BATTLE AND RETALIATION --------------------------
+   850 icons. The last two are not pack icons -- they are the two logo marks
+   for the two systems this tracker actually spends its time in, and they are
+   wired to those systems rather than sprinkled.
+
+   Both arrived as single marks on their own black plates, so the component
+   search was run on a crop with a 41px dilation and a 150px minimum: one
+   component per sheet, kept whole. The swirl's plate carried CONCEPT DESIGNS
+   captions and four corner registration marks, which the search would have
+   returned as five more icons, so the crop cuts them off before keying.
+
+   848 is the ringed compass-star: BATTLE. 849 is the four-point swirl:
+   RETALIATION. 54 rows now, so mask-size moves to 256x864, and for the sixth
+   time no position moves, because the packer appends.
+
+   THE POOLS ARE CLASSED, so these two do not need nth-of-type. .pool.battle
+   and .pool.retal are real classes in the tracker's own stylesheet -- the ones
+   that colour the pool's top border cyan and violet -- which is a better
+   handle than counting, and it survives a pool being reordered or hidden. The
+   nth-of-type rules above still set special and save.
+
+   The class has to be doubled to WIN, though, and coming later is not enough:
+   .pool.pool:nth-of-type(1) > *:first-child is three classes and a
+   :first-child, and .pool.battle > *:first-child is one class short of that,
+   so the first pass left both pools showing their old icons. Doubling .pool
+   puts these one ahead. Measured rather than reasoned -- the browser reported
+   -32px -224px on Battle until the extra class went on. */
+.pool.pool.retal > *:first-child::before {            /* 849 swirl, was 201 chevrons */
+  -webkit-mask-position: -16px -848px; mask-position: -16px -848px; }
+
+/* THE COMPASS CANNOT GO ON A BUTTON, and that is a property of the drawing
+   rather than of the size it was given. Rendered at 11, 12, 13, 14, 15, 16,
+   18, 20 and 24px and looked at: below about 20 the four-pointed star inside
+   the ring loses its arms and what is left is a circle with one diagonal
+   through it -- the international sign for NOT ALLOWED. It was on "Resolve"
+   and on "actions (15)" for one build and both read as disabled controls.
+   Dilating the alpha before the downscale, the usual fix for a mark that goes
+   thin, does nothing here: the topology IS a slashed circle, so thickening it
+   just draws a bolder slashed circle. Tried at radii 4, 7, 10 and 14.
+
+   So it is used at sizes where the star survives, and the two buttons keep
+   what they had. The swirl has no such problem -- it reads from 14px, and its
+   own four points are the outline rather than the detail.
+
+   The Battle pool takes it at 20px. The pool headers are 10px type but the
+   cards are 130px tall and mostly empty, so a mark half again the size of the
+   other pools' icons reads as deliberate rather than as a mistake. */
+.pool.pool.battle > *:first-child::before {           /* 848 compass, was 226 blade */
+  width: 20px; height: 20px; vertical-align: -5px;
+  -webkit-mask-size: 320px 1140px; mask-size: 320px 1140px;
+  -webkit-mask-position: -0px -1060px; mask-position: -0px -1060px; }
+
+/* The Retaliation resolve button. .btn.vi already gave it the generic charge
+   mark from section 17; an ID beats a class, so this replaces that one without
+   touching any other .vi. */
+#btnRetal::before {
+  content: ""; display: inline-block; width: 14px; height: 14px;
+  vertical-align: -2px; margin-right: 6px; background: currentColor;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
+  -webkit-mask-position: -16px -848px; mask-position: -16px -848px;
+  opacity: .9;
+}
+
+/* And the battle-actions row on every unit card, which is where the compass
+   gets the pixels it needs: 26px, as a watermark rather than a control.
+
+   The space it sits in is BOUGHT rather than borrowed. z-index -1 was tried
+   first and the mark vanished: .u-acts is position:relative with z-index auto,
+   so it opens no stacking context and a negative child paints behind the unit
+   card's own background. z-index 0 shows it, but ::after is the last child and
+   so paints over any button that reaches the right edge. 32px of padding-right
+   on the row settles it -- the flex line wraps 32px earlier, the mark sits in
+   space no button can occupy, and nothing overlaps at any width. The waveform
+   was placed the same way for the same reason.
+
+   Its ::before is the divider rule from section 16, so this takes ::after. */
+.u-acts { padding-right: 32px; }
+.u-acts::after {
+  content: ""; position: absolute; right: 2px; top: 50%; z-index: 0;
+  width: 26px; height: 26px; margin-top: -13px; pointer-events: none;
+  background: var(--cyan); opacity: .34;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 416px 1482px; mask-size: 416px 1482px;
+  -webkit-mask-position: -0px -1378px; mask-position: -0px -1378px;
+}
+
+/* The 28 retaliation names, which are the retaliations themselves. They kept a
+   reticle up to now because nothing in the set said "retaliation" -- this mark
+   does, so it takes the slot. 13px is small for it and was checked rather than
+   assumed: the four points hold and the swirl inside reads as rotation. */
+.rn::before { -webkit-mask-position: -16px -848px; mask-position: -16px -848px; }
+
+/* Three pools were showing icon 0.
+
+   .pool.pool > *:first-child::before sets the BOX for every pool, and only
+   four nth-of-type rules ever set a position, so System Pressure, Harmonization
+   and Last Rites Stock fell back to 0% 0% -- the top-left cell of the sheet,
+   which is a glyph none of them mean. It was invisible until this build,
+   because until this build every icon on the page was a solid block. */
+.pool.pool.pressure > *:first-child::before {         /* 91 alert */
+  -webkit-mask-position: -176px -80px; mask-position: -176px -80px; }
+.pool.pool.harmon > *:first-child::before {           /* 843 cupped hands */
+  -webkit-mask-position: -176px -832px; mask-position: -176px -832px; }
+/* Last Rites Stock is a bare <div class="pool"> with nothing else on it, so it
+   gets the DEFAULT rather than a rule of its own: one generic mark on the
+   shared selector, which every classed pool above outranks. A stock of rebuild
+   material and a toolbox are close enough, and a pool added later inherits
+   something neutral instead of whatever happens to sit in cell 0. */
+.pool.pool > *:first-child::before {                  /* 595 toolbox */
+  -webkit-mask-position: -48px -592px; mask-position: -48px -592px; }
+
+/* ---- 34. THE PERK SHEET: 35 GLYPHS OFF THEIR PLATES ------------------
+   899 cells, 35 of them new. The sheet they came from is 35 hexagonal badges,
+   and the hexagon is the problem: this file already learned once that a glyph
+   drawn INSIDE a box does not survive being shrunk, because at 16px the box
+   wins and the contents turn to mush. The resource pools shipped with a Battle
+   icon that read as a cancel button for exactly that reason.
+
+   So the plate was thrown away rather than unboxed. The badges are three
+   luminances -- near-black ground, mid-slate hexagon, near-white glyph -- and
+   keying with the floor raised to 130 drops the middle one entirely. What
+   comes out is 35 bare glyphs, which is what the set wanted anyway. Measured
+   before it was run: the ground is 84% of the sheet under luminance 25, the
+   hexagons 10% between 26 and 51, the glyphs 4% above 230. A wide gap either
+   side of 130.
+
+   THEY LANDED AT 864, not 850. --append counts CELLS, not icons, and the
+   sheet was 16x54 with fourteen empty cells at the end. That is the right
+   behaviour -- padding cells are still cells, and reusing them would shift
+   nothing but would make the arithmetic depend on the manifest rather than the
+   image -- but it is worth writing down, because the obvious guess is wrong.
+   57 rows now, so mask-size moves to 256x912. */
+
+/* The six stats, which are the same six in the same order on every unit card:
+   PWR, PREC, SOUL, DEF, EVA, INTEG-DMG. Six .stedit siblings to a grid, so
+   nth-of-type cycles correctly inside each card. Verified against their own
+   text on three cards rather than assumed. */
+.sl::before, .adv::before, .ftg::before {
+  content: ""; display: inline-block; width: 12px; height: 12px;
+  vertical-align: -2px; margin-right: 4px; background: currentColor;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
+  -webkit-mask-position: -32px -880px; mask-position: -32px -880px;  /* 882 default */
+  opacity: .7;
+}
+.stedit:nth-of-type(1) .sl::before { -webkit-mask-position:-16px -896px; mask-position:-16px -896px; } /* 897 flexed arm   PWR */
+.stedit:nth-of-type(2) .sl::before { -webkit-mask-position:-64px -864px; mask-position:-64px -864px; } /* 868 lens         PREC */
+.stedit:nth-of-type(3) .sl::before { -webkit-mask-position:-160px -816px; mask-position:-160px -816px; } /* 826 swirl      SOUL */
+.stedit:nth-of-type(4) .sl::before { -webkit-mask-position:-240px -864px; mask-position:-240px -864px; } /* 879 shield      DEF */
+.stedit:nth-of-type(5) .sl::before { -webkit-mask-position:-0px -896px; mask-position:-0px -896px; }   /* 896 runners      EVA */
+.stedit:nth-of-type(6) .sl::before { -webkit-mask-position:-128px -864px; mask-position:-128px -864px; } /* 872 vitals    INTEG-DMG */
+/* SOUL takes the swirl the sprite panel already uses for its soul state rather
+   than a new glyph. The same idea should not have two marks in one file. */
+
+/* The four unit flags, identical in content and order on all five cards --
+   checked, because nth-of-type on a list that varies per unit would silently
+   mislabel the ones that differ.
+
+   FIFTH THROUGH EIGHTH, not first through fourth. nth-of-type counts by TAG,
+   and every flag in this row is a <label>: four toggles (DOWN, SKIP, WPN
+   BREAK, REV) come first and the four .adv flags follow them, so .adv:nth-of-
+   type(1) matches nothing at all. It matched nothing quietly, too -- all eight
+   labels simply kept the shared default and the row looked deliberate. The
+   four toggles are unconditional in the markup, so the offset is fixed. */
+.adv:nth-of-type(5)::before { -webkit-mask-position:-96px -864px; mask-position:-96px -864px; }   /* 870 burst+key  ADV +15% */
+.adv:nth-of-type(6)::before { -webkit-mask-position:-144px -864px; mask-position:-144px -864px; } /* 873 brute      ELITE */
+.adv:nth-of-type(7)::before { -webkit-mask-position:-160px -864px; mask-position:-160px -864px; } /* 874 machine    COLOSSAL/MACHINE */
+.adv:nth-of-type(8)::before { -webkit-mask-position:-144px -880px; mask-position:-144px -880px; } /* 889 droplet    WATER-VULNERABLE */
+
+/* The battle map legend was tried and taken out again. Three of its five
+   entries have an exact glyph here -- plate, droplet, cell -- and the other two,
+   high ground and low ground, have nothing this sheet can say. Marking three
+   and defaulting two put a meaningless glyph next to a coloured swatch that
+   was already the key, so the row gained noise and no information. A wrong
+   icon is worse than none, and a neutral one next to a real key is worse than
+   nothing at all. .bm-leg-item stays out of the shared box rule. */
+
+/* And five sprite-panel states that now have a glyph that says what they are
+   instead of one that merely fits. */
+.dsp-state[data-role="death"]::before      { -webkit-mask-position:-16px -864px; mask-position:-16px -864px; }   /* 865 skull */
+.dsp-state[data-role="fractured"]::before  { -webkit-mask-position:-96px -880px; mask-position:-96px -880px; }   /* 886 cracked */
+.dsp-state[data-role="counter"]::before    { -webkit-mask-position:-32px -896px; mask-position:-32px -896px; }   /* 898 grapple */
+.dsp-state[data-role="cyberpsychosis"]::before { -webkit-mask-position:-0px -880px; mask-position:-0px -880px; } /* 880 rage */
+.dsp-state[data-role="recover"]::before    { -webkit-mask-position:-128px -880px; mask-position:-128px -880px; } /* 888 stim */
+.dsp-state[data-role="hit"]::before        { -webkit-mask-position:-48px -864px; mask-position:-48px -864px; }   /* 867 impact */
+.dsp-state[data-role="staggered"]::before  { -webkit-mask-position:-176px -864px; mask-position:-176px -864px; } /* 875 bandaged */
+
+/* ---- 35. FOUR HUD PLATES IN THE POOLS' DEAD SPACE --------------------
+   The plate sheet is eight label frames -- violet blocks with cyan outlined
+   capsules, hatching, pixel drift and corner brackets. They are compositions
+   rather than icons: 240px square, with an empty label box in the middle that
+   is the whole point of the drawing. Cropping one to a 16px glyph would throw
+   away everything that makes it a plate.
+
+   So they are used near their own size, in the one place on this page with
+   room. Four of the seven pools -- Battle, Retaliation, Special, Save -- put
+   their pips and their control row in the top 60px of a 130px card and leave
+   the rest empty. The other three do not: System Pressure, Harmonization and
+   Last Rites Stock fill their cards with gauges and notes, and a plate behind
+   them made the text unreadable, which is what the first pass shipped. They
+   are excluded by name rather than dimmed.
+
+   Colour is kept rather than keyed to a stencil, deliberately. The sheet is
+   already violet and pale cyan, which is this tracker's --vio and --cyan;
+   recolouring it would be work that changes nothing. What IS keyed is the
+   ground: the plates were drawn on near-black, and that black is transparent
+   now, so what reaches the panel is the artwork alone at 17% -- baked into the
+   file rather than applied in CSS, because a background-image has no opacity
+   of its own and .pool has already spent both its pseudo-elements on the panel
+   texture and the frame.
+
+   FOUR FILES, NOT ONE STRIP. The obvious packing -- all eight plates in one
+   sheet, offset into place like the icons -- does not work for a background on
+   a wide element: background-repeat:no-repeat draws the whole image once, and
+   the visible part is however much of it lands inside the box. A 340px pool
+   showed four and a half plates in a row. There is no cropping the background
+   of an element to less than the element, and .pool has already spent both
+   pseudo-elements on the panel texture and the frame, so each plate is its own
+   file at 14KB.
+
+   Positioned in the four-value form, "right 6px bottom 2px". It was written
+   first as "calc(100% + 504px) bottom -2px", which is not valid: an x
+   expression cannot be mixed with a keyword-and-offset pair, so the whole
+   declaration was dropped and all four pools fell back to 0% 0% -- over the
+   name and the count. An invalid background-position does not warn; it just
+   puts the image somewhere plausible enough to look deliberate. */
+.pool.battle, .pool.retal, .pool.special, .pool.save {
+  background-repeat: no-repeat;
+  background-size: 72px 72px;
+  background-position: right 6px bottom 2px;
+}
+.pool.battle  { background-image: url("__PLATE0__"); }
+.pool.retal   { background-image: url("__PLATE1__"); }
+.pool.special { background-image: url("__PLATE2__"); }
+.pool.save    { background-image: url("__PLATE3__"); }
+
+/* ---- 36. SIX COMIC IMPACTS, ON THE ONE SURFACE THAT WANTS THEM -------
+   Two sheets of hand-drawn comic bursts -- BLAM, BRAM, KRAK, and three
+   wordless ones -- in full colour on a flat grey plate.
+
+   THESE DO NOT BELONG ANYWHERE IN THE HUD, and that is worth saying plainly.
+   Every other asset in this file became a stencil the CSS paints in cyan, gold
+   or crimson; these are twelve-colour paintings with their own black line work,
+   and behind 9px letterspaced type they would do exactly what the real hazard
+   bar did to FORCE SYSTEM BREAK. There is no size at which a magenta starburst
+   backs a control instead of competing with it.
+
+   The one surface on this page that is not HUD chrome is the sprite stage: a
+   painted battle map with characters animating on it, already full colour,
+   already not trying to be read as text. A comic impact is native there. So
+   they are the ONLY asset here used as artwork rather than as a mask, and they
+   appear for 460ms when something lands.
+
+   KEYED ON SATURATION, NOT ON DISTANCE FROM THE GROUND. The plate is flat grey
+   and each burst sits on a soft grey drop shadow, and a shadow is exactly as
+   far from mid-grey as a thin pale stroke is -- so a distance key either kept
+   the shadows or ate the highlights. What separates them is that the ink is
+   saturated and the shadow is not, with the black line work and the white
+   sparks picked up by luminance at either end instead.
+
+   The panel names a NUMBER and this decides what it draws. The panel positions
+   the element and leaves it invisible, so a tracker with the panel and no skin
+   never flashes rather than showing an empty box mid-stage. */
+.dsp-impact[data-k] { background-image: url("__IMPACT__"); background-size: 1200% 100%; }
+.dsp-impact[data-k="0"]  { background-position:   0%      50%; }   /* BLAM    */
+.dsp-impact[data-k="1"]  { background-position:   9.0909% 50%; }   /* BRAM    */
+.dsp-impact[data-k="2"]  { background-position:  18.1818% 50%; }   /* KRAK    */
+.dsp-impact[data-k="3"]  { background-position:  27.2727% 50%; }   /* BRAAAK  */
+.dsp-impact[data-k="4"]  { background-position:  36.3636% 50%; }   /* POCK    */
+.dsp-impact[data-k="5"]  { background-position:  45.4545% 50%; }
+.dsp-impact[data-k="6"]  { background-position:  54.5455% 50%; }
+.dsp-impact[data-k="7"]  { background-position:  63.6364% 50%; }
+.dsp-impact[data-k="8"]  { background-position:  72.7273% 50%; }
+.dsp-impact[data-k="9"]  { background-position:  81.8182% 50%; }
+.dsp-impact[data-k="10"] { background-position:  90.9091% 50%; }   /* WABAM   */
+.dsp-impact[data-k="11"] { background-position: 100%      50%; }   /* VWAAM   */
+/* Twelve cells now, up from six, because six repeated visibly in a long
+   exchange. background-size is 1200% and the cells are NOT at multiples of
+   1/12: a percentage background-position aligns that point of the image with
+   the same point of the box, so with an image twelve times the box the cells
+   land on multiples of 100/11. Sixth of the way along is not cell 2. */
+
+.dsp-impact.go { animation: dsp-pop .46s cubic-bezier(.16,.9,.3,1) 1; }
+@keyframes dsp-pop {
+  0%   { opacity: 0;   transform: translate(-50%, -50%) scale(.55) rotate(-7deg); }
+  16%  { opacity: 1;   transform: translate(-50%, -50%) scale(1.06) rotate(2deg); }
+  38%  { opacity: .95; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+  100% { opacity: 0;   transform: translate(-50%, -50%) scale(1.14) rotate(1deg); }
+}
+/* The transform is respecified in every keyframe including the translate,
+   because a keyframe REPLACES the property rather than adding to it -- leaving
+   translate(-50%,-50%) out of the frames would drop the centring the moment
+   the animation started and snap the burst to the stage's middle-right. */
+
+/* ---- 37. THREE TEARING BANDS, FOR THE STATES THAT ARE BREAKING -------
+   The glitch sheet is three horizontal bars of digital tearing -- displaced
+   scanlines in magenta, cyan and lime. Like the impact bursts they are full
+   colour and cannot be a stencil, and like the bursts there is exactly one
+   surface here that can carry them: the sprite stage.
+
+   They were shipped on a JPEG of a TRANSPARENCY CHECKERBOARD, which means the
+   transparency is painted rather than stored -- there is no alpha to recover,
+   only a grey check to remove. The same saturation key the bursts use handles
+   it: the tearing is saturated and the checker is not, with the white blowouts
+   picked up by luminance.
+
+   Which state gets which bar is by severity rather than by looks. Fractured
+   and cyberpsychosis are the mind going, and take the two loudest; slipping is
+   the quiet one and takes the softest. down, dead and ragdoll get nothing --
+   she is not glitching, she is on the floor, and the panel already says so.
+
+   THE ANIMATION STEPS RATHER THAN SLIDES. A smooth scroll of a torn scanline
+   reads as a moving texture, which is the opposite of the point; steps(5)
+   makes it jump, and a jump is what tearing looks like. */
+.dsp-panel[data-state="fractured"] .dsp-glitch,
+.dsp-panel[data-state="cyberpsychosis"] .dsp-glitch,
+.dsp-panel[data-state="slipping"] .dsp-glitch {
+  opacity: .9;
+  background-image: url("__GLITCH__");
+  background-repeat: repeat-x;
+  background-size: 320px 300%;
+  animation: hud-tear 1.15s steps(5) infinite;
+}
+/* 300% and then 0/50/100 percent, not three pixel offsets. The band's height
+   is a share of the stage and so is not known here; sizing the image to three
+   times the band makes one bar exactly one band tall whatever that works out
+   to, and a percentage background-position aligns that point of the image with
+   the same point of the box -- which for an image three times the box means 0%
+   is the first bar, 50% the second and 100% the third. Fixed -40px and -80px
+   offsets showed all three bars stacked in a 113px band. */
+.dsp-panel[data-state="fractured"] .dsp-glitch      { background-position-y: 0%; }
+.dsp-panel[data-state="cyberpsychosis"] .dsp-glitch { background-position-y: 50%; }
+.dsp-panel[data-state="slipping"] .dsp-glitch       { background-position-y: 100%; opacity: .55; }
+@keyframes hud-tear {
+  from { background-position-x: 0; }
+  to   { background-position-x: -320px; }
+}
+
+/* ---- 38. SPENDING THE REST OF THE PERK SHEET -------------------------
+   Seventeen of the 35 glyphs were wired in section 34 and eighteen were left
+   in the sheet. These are the ones that had somewhere real to go.
+
+   THE TOP COMMAND ROW HAS IDS, which is better than anything counted. Every
+   button in it carries one -- #btnSetup, #btnPick, #btnSparPick -- so these
+   rules cannot be broken by a button being added, removed or reordered, which
+   is the standing risk with every nth-of-type in this file.
+
+   Only six of the eleven get a mark. Save, Export and Save Slots have no glyph
+   in this sheet that means saving rather than merely fitting, and Begin
+   Engagement and Reset System already read on their own. Each rule carries its
+   own box, so a button with no rule gets no pseudo-element at all -- rather
+   than a box with no position, which is how three pools ended up displaying
+   cell 0. */
+#btnSetup::before, #btnPick::before, #btnSparPick::before,
+#btnImportGear::before, #btnNewLog::before, #btnBeginEngagement::before {
+  content: ""; display: inline-block; width: 12px; height: 12px;
+  vertical-align: -2px; margin-right: 5px; background: currentColor;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
+  opacity: .8;
+}
+#btnBeginEngagement::before { -webkit-mask-position:-240px -880px; mask-position:-240px -880px; } /* 895 stance */
+#btnSetup::before           { -webkit-mask-position:-80px -864px; mask-position:-80px -864px; } /* 869 gear-eye */
+#btnPick::before            { -webkit-mask-position:-224px -880px; mask-position:-224px -880px; } /* 894 two faces */
+#btnSparPick::before        { -webkit-mask-position:-32px -896px; mask-position:-32px -896px; } /* 898 grapple  */
+#btnImportGear::before      { -webkit-mask-position:-16px -880px; mask-position:-16px -880px; } /* 881 hardware */
+#btnNewLog::before          { -webkit-mask-position:-64px -880px; mask-position:-64px -880px; } /* 884 scroll   */
+
+/* The battle map controls, which are nine buttons and one select in a fixed
+   row. nth-of-type counts BUTTONs, so the select does not shift the numbering
+   -- but the numbering is still counted, so it is written against the row as
+   it actually renders: Day, Sandstorm, Acid Pools, Freq. Storm, Ambush
+   (Party), Ambush (Hostiles), Reroll Terrain, Reset Positions, collapse.
+
+   Four of the nine. Day and collapse already carry a glyph in their own label
+   text, and nothing in this sheet means sandstorm or reroll.
+
+   Ambush (Hostiles) was a fifth and is not: it is #bmAmbushEnemy, one of the
+   four destructive controls, and the hazard bang is set on that ID -- which
+   beats a counted selector. That is the right outcome and the rule was deleted
+   rather than fought, because what the button most needs to say is that it
+   turns the ambush on the party. */
+.bm-controls .btn:nth-of-type(3)::before,
+.bm-controls .btn:nth-of-type(4)::before,
+.bm-controls .btn:nth-of-type(5)::before,
+.bm-controls .btn:nth-of-type(8)::before {
+  content: ""; display: inline-block; width: 11px; height: 11px;
+  vertical-align: -1px; margin-right: 4px; background: currentColor;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
+  opacity: .75;
+}
+.bm-controls .btn:nth-of-type(3)::before { -webkit-mask-position:-208px -880px; mask-position:-208px -880px; } /* 893 droplet  Acid Pools */
+.bm-controls .btn:nth-of-type(4)::before { -webkit-mask-position:-224px -864px; mask-position:-224px -864px; } /* 878 signal   Freq. Storm */
+.bm-controls .btn:nth-of-type(5)::before { -webkit-mask-position:-160px -880px; mask-position:-160px -880px; } /* 890 blade    Ambush (Party) */
+.bm-controls .btn:nth-of-type(8)::before { -webkit-mask-position:-0px -896px; mask-position:-0px -896px; }     /* 896 runners  Reset Positions */
+
+/* The damage nudgers on every unit card: two that take integrity off and one
+   that puts it back. Three siblings, so the split is by position, and it is
+   the one place in the file where the icon carries the SIGN rather than the
+   subject -- a claw for the two that hurt, a medical heart for the one that
+   heals. */
+.hp-quick .btn::before {
+  content: ""; display: inline-block; width: 10px; height: 10px;
+  vertical-align: -1px; margin-right: 3px; background: currentColor;
+  -webkit-mask-image: var(--uic); mask-image: var(--uic);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-size: 256px 912px; mask-size: 256px 912px;
+  -webkit-mask-position: -208px -864px; mask-position: -208px -864px;  /* 877 claw */
+  opacity: .7;
+}
+.hp-quick .btn:nth-of-type(3)::before {                /* 871 medical heart */
+  -webkit-mask-position: -112px -864px; mask-position: -112px -864px; }
+
+/* And one state swap: a striking fist says attack more plainly than what was
+   there, which was a blade shared with three other things. */
+.dsp-state[data-role="attack"]::before { -webkit-mask-position:-176px -880px; mask-position:-176px -880px; } /* 891 fist */
+
+/* ---- 39. THREE MORE PLATES, WHERE THE SLACK ACTUALLY IS --------------
+   Four plates were left over after the pools. Rather than guess at homes for
+   them, every panel on the page was measured for the gap between its own
+   bottom edge and the bottom of its lowest child -- dead space, in other
+   words -- and three places came back with enough of it.
+
+   The two resolve readouts are the best of them: 535 by 82 with a single line
+   of placeholder text in the top-left corner, so the whole right half is
+   empty until a result is written into it. They take a background rather than
+   a pseudo-element, which puts the plate BEHIND the text automatically -- when
+   a long resolution does fill the box, the words are on top of the plate
+   rather than fighting it.
+
+   The modals take the third, in the corner of the title row. They are only on
+   screen while something is being configured, so the plate is chrome for a
+   moment rather than furniture.
+
+   The eighth plate is not used. There is nowhere left with slack that is not
+   already spoken for, and hanging it somewhere at 8% to say it was used would
+   be worse than leaving it in the folder. */
+#resOut, #retOut {
+  background-repeat: no-repeat;
+  background-size: 72px 72px;
+  background-position: right 8px bottom -6px;
+}
+#resOut { background-image: url("__PLATE4__"); }
+#retOut { background-image: url("__PLATE5__"); }
+
+.modal {
+  background-repeat: no-repeat;
+  background-size: 104px 104px;
+  background-position: right -12px top -10px;
+  background-image: url("__PLATE6__");
+}
+
+/* ---- 40. THE TYPEFACES, WHICH WERE NEVER ACTUALLY SHIPPED ------------
+   The reference sheet is a JPEG of an After Effects title pack. There is no
+   font in it to take -- a raster image carries pixels, not outlines -- so what
+   follows is not that pack's type. It is seven open-licence faces chosen to
+   land in the same place: squared techno caps, one heavy italic-feeling
+   display, and a very wide letterspaced face for the small labels.
+
+   FIRST, THREE THAT WERE ALREADY ASKED FOR. The tracker declares
+
+     --mono:'Space Mono', ui-monospace, Menlo, monospace
+     --hud:'Chakra Petch', system-ui, sans-serif
+     --sacred:'Cinzel', Georgia, serif
+
+   and ships no @font-face for any of them. A font-family name is a request,
+   not a delivery: unless the reader happens to have those three installed --
+   and nobody does -- the file has been rendering in ui-monospace, system-ui
+   and Georgia since it was written. 97 selectors take var(--mono). Embedding
+   them here needs no rule changes at all; the names simply start resolving,
+   and the tracker looks the way it was specified for the first time.
+
+   All seven are SIL Open Font License, latin subset, woff2, inlined as data
+   URIs for the same reason every other asset is: this file gets opened off a
+   USB stick and file:// will not fetch a sibling.
+
+   font-display:block, not swap. A swap would paint every label in the fallback
+   and then reflow the entire page a moment later; these are inlined, so there
+   is no network to wait for and the block period is over before first paint. */
+@font-face { font-family:'Space Mono'; font-style:normal; font-weight:400;
+  font-display:block; src:url("__F_MONO__") format("woff2"); }
+@font-face { font-family:'Space Mono'; font-style:normal; font-weight:700;
+  font-display:block; src:url("__F_MONOB__") format("woff2"); }
+@font-face { font-family:'Chakra Petch'; font-style:normal; font-weight:600;
+  font-display:block; src:url("__F_HUD__") format("woff2"); }
+@font-face { font-family:'Cinzel'; font-style:normal; font-weight:700;
+  font-display:block; src:url("__F_SACRED__") format("woff2"); }
+@font-face { font-family:'Orbitron'; font-style:normal; font-weight:800;
+  font-display:block; src:url("__F_DISP__") format("woff2"); }
+@font-face { font-family:'Audiowide'; font-style:normal; font-weight:400;
+  font-display:block; src:url("__F_HEAVY__") format("woff2"); }
+@font-face { font-family:'Syncopate'; font-style:normal; font-weight:700;
+  font-display:block; src:url("__F_WIDE__") format("woff2"); }
+
+/* Then two roles the tracker did not have, because Chakra Petch was carrying
+   both the body text and every title and a face cannot do both jobs.
+
+   --disp is the squared techno cap from the sheet's CYBER DATA and LOADING
+   panels. --wide is its very wide, thin-spaced cousin -- the SCI-FI panel --
+   which only works in short strings and only in caps, so it goes on labels
+   that are already short and already uppercase and nowhere else. */
+:root { --disp: 'Orbitron', 'Chakra Petch', system-ui, sans-serif;
+        --wide: 'Syncopate', 'Chakra Petch', system-ui, sans-serif;
+        --heavy: 'Audiowide', 'Orbitron', system-ui, sans-serif; }
+
+/* The masthead takes the heaviest of them, once. It is the only string on the
+   page that is allowed to be pure styling. */
+.cmd-top h1 { font-family: var(--heavy); letter-spacing: .04em; }
+
+/* Section titles and unit names: the squared face, which is what makes a
+   panel header read as a header at a glance rather than as bolder body text. */
+h2, .u-nm, .dsp-who, .scan-titlebar h2 { font-family: var(--disp); }
+
+/* h2 sizes are UNCHANGED. Orbitron sets about 12% wider than Chakra Petch at
+   the same size, and a section header that grows enough to wrap is worse than
+   one in the wrong face; the tracker's own 14px is left alone and the letter
+   spacing is pulled in to pay for the width. */
+h2 { letter-spacing: -.01em; }
+
+/* And the wide face on the short uppercase labels only.
+
+   .pool-nm and .uag-h were the first choice and are not, because the measuring
+   said so: Syncopate sets about 30% wider than Space Mono, and while BATTLE
+   and SAVE looked exactly right, SYSTEM PRESSURE wrapped to two lines and
+   pushed its own gauge row down, HARMONIZATION jammed into its AUTO ON, and
+   LAST RITES STOCK ran straight into its count -- .pool-top is a flex row with
+   space-between and no gap, so a label that grows has nothing to give.
+
+   There is no selecting the four that fit. So the face went to labels that are
+   short because there is nothing else they could be: ACTING and REACTING on
+   the turn-order cards, and the sprite panel's one-word state.
+
+   The two pills at the head of the command row were a third and lasted one
+   build. LOG #0001 and REGULAR are short enough, but they sit at the front of
+   a twelve-button flex row that was already within a few pixels of full, and
+   30% more width on the first two items pushed Reset System onto a second
+   line. Short is not the only thing that matters; what is downstream of it
+   does. */
+.side-card .r, .dsp-state { font-family: var(--wide); }
+
+/* ================= END HUD SKIN ========================= */

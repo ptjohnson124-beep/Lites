@@ -1,0 +1,589 @@
+
+/* ==== BEGIN SPRITE FEED — injected block, delete to the END marker ====
+   -------------------------------------------------------------------
+   A black-grid panel under the battle map showing whoever is currently
+   acting, for any character who has sprites. It appears when at least one
+   sprited character is fielded and removes itself when none is.
+
+   Everything below is additive: no existing function is edited, four are
+   wrapped the same way this file already wraps renderCmd. Delete from this
+   comment to the matching end marker and the tracker is exactly as it was.
+
+   Frames are drawn cell by cell out of an atlas rather than played as an
+   animated GIF or WebP, because an <img> cannot be driven: it starts when it
+   loads, loops forever, and offers script no way to run a clip once or to
+   learn that it has finished. A hit has to play once and hand back to the
+   idle, so the frames are drawn by hand.
+   =================================================================== */
+(function(){
+ const CAST = __CAST__;
+
+ /* Which clip answers which event. A character only needs 'idle', 'hit' and
+    'attack' to narrate a fight; the rest are for whoever earns them, and a
+    character without one simply keeps idling rather than borrowing someone
+    else's meaning. */
+ const EVASIVE = new Set(["dodge"]);
+ const COUNTERING = new Set(["counter", "parry"]);
+
+ /* RESTING states, most severe first. These are not event clips: an event
+    role plays once and hands back, while a resting role REPLACES the idle for
+    as long as its condition holds and hands back on its own when it lifts.
+
+    'idle' is the floor and needs no entry. The first row whose test passes AND
+    whose clip the character actually has wins, so a character with only an
+    idle falls straight through and this costs the rest of the cast nothing.
+    A fourth state is a row here rather than another branch.
+
+    None of these thresholds is invented. cyber reaches 100 in one place --
+    checkCorruption, where the tracker's own log line says CYBERPSYCHOSIS FULLY
+    TRIGGERS -- and it is a SUBTYPE rather than anything of hers, so this row
+    is the first that any character can use. soulFractured is set in exactly
+    one place too, alongside pmf = 0, and never clears on its own. 60 is the
+    line the tracker already draws: the specs that ask whether a frequency is
+    holding all test PMF >= 60, and pmfBracketOf steps at 60 too.
+
+    Cyberpsychosis outranks the fracture, which is a judgement call rather than
+    a fact: both are terminal and a unit could carry both. It goes first
+    because the tracker only reaches it AFTER a PMF collapse, so it is the
+    later of the two to arrive. Swapping the two rows swaps the answer. */
+ const RESTING = [
+  ["death",          u => !!u.dead],
+  ["down",           u => !!u.down || !!u.dead],
+  ["ritualized",     u => !!u.ritualized],
+  ["cyberpsychosis", u => (u.cyber || 0) >= 100],
+  ["fractured",      u => !!u.soulFractured],
+  ["staggered",      u => !!u.stunned],
+  ["slipping",       u => ((typeof u.pmf === "number") ? u.pmf : 90) < 60],
+ ];
+
+ /* Resting roles that play THROUGH ONCE and then stay on their last drawing.
+    Every other resting clip loops, which is right for an idle and wrong for a
+    collapse: looping it would have her fall over on repeat for as long as she
+    is down. So these clamp instead of wrapping, and the state re-enters from
+    the top only when the condition changes.
+
+    The ragdoll is listed but INERT today, and that is worth saying plainly
+    rather than leaving to be discovered. This set is only consulted for a
+    resting clip; the ragdoll is played as a one-shot event, and a one-shot
+    is already play-once -- it hands back to whatever is resting when it
+    finishes, which for a knockdown is the idle, or down/death if she is
+    actually out. The entry is here for the day something makes "knocked
+    down" a state she sits in, and it costs nothing until then. */
+ const HOLD_LAST = new Set(["down", "death", "ragdoll", "ritualized"]);
+
+ /* One resting role that runs INTO another. The death animation plays through
+    once and ends on a pile of ash; the ash then has its own loop, and that loop
+    is what should be on screen for however long she stays dead. The table
+    cannot say that on its own -- both rows answer the same condition, and the
+    first would win forever -- so the handover lives here.
+
+    A character with the death and no ash loop falls back to HOLD_LAST and sits
+    on the last drawing, which is the same picture, just not breathing.
+
+    The ritualization is the same shape: it erupts once, ending with her stood
+    on a trunk of wires under a thorned crown, and then the crowned idle takes
+    over and keeps weaving that crown for as long as she stays ritualized. */
+ const AFTER = { death: "dead", ritualized: "crowned" };
+
+ /* 'down' still answers u.dead as well as u.down, and that is deliberate: it
+    is the fallback for a character who has a down clip and no death clip. The
+    table is ordered, so anyone with both gets the death. */
+
+ // onload rather than decode(), and a closure over the entry itself rather
+ // than an index resolved later. The first version did neither and simply
+ // never became ready, with a bare .catch swallowing whatever the reason was.
+ // Anything that can fail here is recorded on the entry instead, so
+ // spriteFeed.cast can be asked why a character is not drawing.
+ const cast = CAST.map(c => {
+  const entry = { key: c.key, match: c.key.toLowerCase(), atlas: c.atlas,
+                  img: new Image(), ready: false, error: null,
+                  label: c.label || c.key };
+  entry.img.onload = () => {
+   entry.ready = true;
+   try { sync(); } catch (e) {}
+  };
+  entry.img.onerror = () => { entry.error = "atlas image failed to load"; };
+  entry.img.src = c.src;
+  return entry;
+ });
+ const forUnit = u => {
+  if (!u || !u.name) return null;
+  const n = u.name.toLowerCase();
+  return cast.find(c => n.indexOf(c.match) >= 0) || null;
+ };
+ const unitById = id => {
+  try { return (S.eng.units || []).find(u => u.id === id) || null; } catch (e) { return null; }
+ };
+ const fielded = () => {
+  try { return (S.eng.units || []).filter(u => forUnit(u)); } catch (e) { return []; }
+ };
+
+ /* ---- the panel ---------------------------------------------------- */
+ const css = document.createElement("style");
+ css.textContent = `
+ .dsp-panel{background:var(--panel);border:1px solid var(--line);border-radius:3px;
+   padding:10px 11px;margin-bottom:14px}
+ .dsp-head{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:4px}
+ .dsp-title{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+   color:var(--cyand);text-transform:uppercase}
+ .dsp-who{font-family:var(--hud);font-size:13px;font-weight:600;color:var(--ice);
+   letter-spacing:.02em}
+ .dsp-state{font-family:var(--mono);font-size:9px;letter-spacing:.1em;
+   color:var(--ember);text-transform:uppercase;margin-left:auto}
+ .dsp-sub{font-family:var(--mono);font-size:9px;color:var(--dim);margin-bottom:8px}
+ /* The stage is a painted battle map with the tactical grid laid OVER it,
+    rather than a grid with a picture behind. The distinction is what the
+    numbers are for below: a backdrop competes with the sprite for the eye,
+    and the sprite has to win. */
+ .dsp-stage{position:relative;display:grid;place-items:center;border:1px solid var(--line);
+   border-radius:2px;overflow:hidden;padding:10px 0;
+   background-color:var(--pit);
+   background-image:url("__BACKDROP__");
+   background-size:cover;background-position:center bottom;background-repeat:no-repeat}
+ /* The grid drops from .55/.14 to .30/.09 and the whole overlay is multiplied
+    down again by a scrim. Left at full strength over a painting it reads as
+    damage rather than as a HUD -- the map already carries texture at the same
+    24px pitch the grid uses, so the two interleave into noise. */
+ /* The impact flash sits OVER the stage and out of its flow. .dsp-stage is a
+    grid with place-items:center, so a static child would become a second grid
+    item and push the canvas off centre; absolute takes it out of the grid
+    entirely. It is invisible by default and stays invisible without the HUD
+    skin, which is where the artwork and the animation live -- the same split
+    the state icon uses, and for the same reason: the panel should degrade to
+    no flash rather than to a blank box in the middle of the stage. */
+ /* A tearing band for the states that mean something is WRONG with her. Same
+    arrangement as the impact: the panel positions it and leaves it empty, and
+    the skin decides whether it draws anything at all. The state is put on the
+    PANEL as well as on the label, because the thing that needs to change is
+    inside the stage and a sibling cannot be selected from a label. */
+ .dsp-glitch{position:absolute;left:0;right:0;top:38%;height:24%;
+   pointer-events:none;opacity:0;z-index:2}
+
+ .dsp-impact{position:absolute;left:50%;top:47%;height:62%;aspect-ratio:1;
+   transform:translate(-50%,-50%);pointer-events:none;opacity:0;z-index:3;
+   background-repeat:no-repeat;background-position:center}
+ /* SQUARE, sized off the stage's height. The bursts are packed one to a square
+    cell, and the skin shows a cell by scaling the strip to six box-widths --
+    which only leaves the cell undistorted if the box itself is square. Sized
+    58% by 58% of a stage four times wider than it is tall, the first hit came
+    out as a burst stretched to four times its width. */
+
+ .dsp-stage::before{content:"";position:absolute;inset:0;pointer-events:none;
+   background-image:
+     linear-gradient(rgba(20,30,44,.55),rgba(20,30,44,.12) 45%,rgba(12,18,28,.42)),
+     linear-gradient(rgba(35,48,66,.30) 1px,transparent 1px),
+     linear-gradient(90deg,rgba(35,48,66,.30) 1px,transparent 1px),
+     linear-gradient(rgba(57,211,232,.09) 1px,transparent 1px),
+     linear-gradient(90deg,rgba(57,211,232,.09) 1px,transparent 1px);
+   background-size:100% 100%,24px 24px,24px 24px,96px 96px,96px 96px}
+ /* The ground line stays, and now it has something to agree with. It is the
+    only thing in the panel that knows where the character's feet actually are
+    -- it is computed from the atlas anchor, not placed -- so it doubles as the
+    check that the sand is under her rather than behind her. */
+ .dsp-stage::after{content:"";position:absolute;left:0;right:0;pointer-events:none;
+   bottom:calc(10px + (var(--dsp-cell-h) - var(--dsp-anchor-y)) * var(--dsp-zoom));
+   height:1px;background:linear-gradient(90deg,transparent,rgba(57,211,232,.32),transparent)}
+ /* A quarter of her is darker than luminance 20 -- trousers, boots, the
+    shadowed side of the hoodie -- and against any dark ground that is about
+    1.1:1, which is invisible. No backdrop colour fixes it either: her dark
+    range covers the whole shadow end, so separating her needs light NEAR her
+    rather than a different ground.
+    It has to be a WIDE, DIM halo and never a tight bright rim. The first
+    attempt led with a 1px line at 85% opacity, and her silhouette has 3,392
+    boundary pixels -- 5.3% of her ink, every hair strand among them -- so it
+    painted a bright speckle along all of them and read as grain ON her. */
+ .dsp-canvas{position:relative;z-index:1;image-rendering:auto;
+   filter:drop-shadow(0 0 8px rgba(72,112,152,.60))
+          drop-shadow(0 0 22px rgba(40,72,106,.55))}
+ .dsp-panel.dsp-down .dsp-canvas{filter:grayscale(1) brightness(.55)}
+ .dsp-panel.dsp-down .dsp-state{color:var(--crimb)}
+ `;
+ document.head.appendChild(css);
+
+ const panel = document.createElement("div");
+ panel.className = "dsp-panel";
+ panel.id = "spriteFeedPanel";
+ panel.style.display = "none";
+ panel.innerHTML =
+   '<div class="dsp-head"><span class="dsp-title">Sprite Feed</span>' +
+   '<span class="dsp-who" id="dspWho">—</span>' +
+   '<span class="dsp-state" id="dspState">idle</span></div>' +
+   '<div class="dsp-sub" id="dspSub">Follows whoever is acting. Countered, avoided, soaked or taken — it plays whichever actually happened.</div>' +
+   '<div class="dsp-stage" id="dspStage"><canvas class="dsp-canvas" id="dspCanvas"></canvas>' +
+   '<i class="dsp-impact" id="dspImpact"></i>' +
+   '<i class="dsp-glitch" id="dspGlitch"></i></div>';
+
+ const anchor = document.getElementById("passivesPanel") ||
+                document.getElementById("battleMapPanel");
+ if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(panel, anchor);
+ else document.body.appendChild(panel);
+
+ const stage = panel.querySelector("#dspStage");
+ const impactEl = panel.querySelector("#dspImpact");
+ const cv = panel.querySelector("#dspCanvas");
+ const stateEl = panel.querySelector("#dspState");
+ const whoEl = panel.querySelector("#dspWho");
+ const ctx = cv.getContext("2d");
+
+ /* ---- playback ------------------------------------------------------
+    Time is accumulated against the real clock rather than against animation
+    frame callbacks, so a 24fps clip runs at 24fps on a 60Hz screen and on a
+    144Hz one. A delta returned by a backgrounded tab is clamped, so the clip
+    resumes where it was instead of skipping most of the way through. */
+ let subject = null;          // whose sprites are on screen
+ let raf = 0, zoom = 1;
+ let current = "idle", oneShot = null, i = 0, acc = 0, last = 0;
+
+ const clipOf = (who, role) => (who && who.atlas.clips[role]) || null;
+
+ /* Which clip she rests in. Read fresh every time rather than cached, because
+    the thing it depends on moves between frames. */
+ let subjectUnit = null;
+ function rest(){
+  if (!subjectUnit) return "idle";
+  for (const [role, holds] of RESTING) {
+   if (!clipOf(subject, role)) continue;
+   let yes = false;
+   try { yes = !!holds(subjectUnit); } catch (e) {}
+   if (yes) return role;
+  }
+  return "idle";
+ }
+
+ /* How big a character may be drawn, in packed pixels, so that EVERY character
+    is drawn that big.
+
+    Fitting the cell to the panel is not enough on its own and taking the
+    smaller of the two constraints is not either -- that was the first attempt
+    and it changed nothing, because the cell fit is what was shrinking her in
+    the first place. A cell is as wide as the widest clip inside it: Dahlia's
+    is 809px because her ragdoll travels 120px, Vergil's is 275px because his
+    idle stands still. Fitting each to the panel independently rendered her 30%
+    smaller than him although the two are packed to within 3% of each other,
+    and since the panel shows one unit at a time that lands as the character
+    changing size whenever the subject changes.
+
+    So the cast is solved together: work out the zoom each character CAN have
+    with its cell fitting, see how large that leaves it, and take the smallest
+    of those. Whoever is most constrained by their own widest animation sets
+    the size for everyone. Shrinking only -- enlarging past a sprite's own
+    resolution is the one loss that cannot be undone. */
+ function commonFigure(avail){
+  let best = Infinity;
+  for (const c of cast) {
+   const a = c.atlas; if (!a || !a.unit) continue;
+   best = Math.min(best, a.unit * Math.min(1, avail / a.cell[0]));
+  }
+  return best;
+ }
+
+ function fit(){
+  if (!subject) return;
+  const [w, h] = subject.atlas.cell;
+  const avail = Math.max(160, stage.clientWidth - 20);
+  const target = commonFigure(avail);
+  zoom = (subject.atlas.unit && isFinite(target))
+       ? target / subject.atlas.unit
+       : Math.min(1, avail / w);
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = Math.round(w * zoom * dpr);
+  cv.height = Math.round(h * zoom * dpr);
+  cv.style.width = (w * zoom) + "px";
+  cv.style.height = (h * zoom) + "px";
+  ctx.imageSmoothingQuality = "high";
+  stage.style.setProperty("--dsp-cell-h", h + "px");
+  stage.style.setProperty("--dsp-anchor-y", subject.atlas.anchor[1] + "px");
+  stage.style.setProperty("--dsp-zoom", zoom);
+  draw();
+ }
+
+ function draw(){
+  if (!subject || !subject.ready) return;
+  const clip = clipOf(subject, current) || clipOf(subject, rest());
+  if (!clip) return;
+  const cell = clip.frames[Math.min(i, clip.frames.length - 1)];
+  const [w, h] = subject.atlas.cell, cols = subject.atlas.cols;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.drawImage(subject.img, (cell % cols) * w, Math.floor(cell / cols) * h, w, h,
+                0, 0, cv.width, cv.height);
+ }
+
+ function tick(now){
+  raf = requestAnimationFrame(tick);
+  if (!subject) return;
+  const clip = clipOf(subject, current) || clipOf(subject, rest());
+  if (!clip) return;
+  acc += Math.min(now - last, 250);
+  last = now;
+  const step = 1000 / clip.fps;
+  let dirty = false;
+  while (acc >= step) {
+   acc -= step;
+   i += 1;
+   if (i >= clip.frames.length) {
+    const next = !oneShot && AFTER[current];
+    if (next && clipOf(subject, next)) {
+     current = next; i = 0; setState(current);
+     dirty = true;
+     continue;
+    }
+    if (!oneShot && HOLD_LAST.has(current)) {
+     i = clip.frames.length - 1;      // arrived, and it stays arrived
+     acc = 0;
+     break;
+    }
+    i = 0;
+    if (oneShot) { oneShot = null; current = rest(); setState(current); }
+   }
+   dirty = true;
+  }
+  if (dirty) draw();
+ }
+
+ /* The label carries the role as DATA as well as text, so a stylesheet can
+    reach it. The text is display -- it gets upper-cased and letter-spaced --
+    and matching a status icon on display text would break the first time the
+    wording changed. data-role is the clip name, which is the same string the
+    atlas is keyed on.
+
+    The icon itself is not drawn here. It lives in the HUD skin, which owns the
+    icon sprite, and that separation is load-bearing: a mask-image pointing at
+    a variable that does not exist is not an element with no icon, it is an
+    element with no mask, which paints as a SOLID BLOCK. Keeping the rules
+    where the sprite is means a tracker with the panel and no skin simply has
+    no icons, rather than a row of blocks where the state should be. */
+ function setState(txt){
+  const role = String(txt).toLowerCase().replace(/[^a-z]/g, "");
+  stateEl.textContent = txt;
+  stateEl.setAttribute("data-role", role);
+  panel.setAttribute("data-state", role);
+ }
+
+ /* Switching who is on screen. A clip that is mid-play is not interrupted by a
+    mere change of turn -- only by something actually happening to somebody
+    else -- so the panel does not flicker between units while a hit is still
+    reading. */
+ function show(who, force){
+  if (!who || who === subject) return false;
+  if (oneShot && !force) return false;
+  subject = who;
+  subjectUnit = (fielded().find(x => forUnit(x) === who)) || null;
+  whoEl.textContent = who.label;
+  oneShot = null; i = 0; acc = 0;
+  current = rest(); setState(current);
+  fit();
+  return true;
+ }
+
+ /* Play a role for a named unit. Missing roles fall through to nothing at all
+    rather than to a stand-in: a wrong animation is worse than no animation,
+    and a character with three clips should simply keep idling through a block
+    rather than borrow the hit. */
+ /* Which events get a comic impact behind them, and which burst. Only the
+    roles where something LANDS -- a dodge is the absence of an impact and a
+    taunt is not one either, so neither flashes. Four bursts each for the two
+    common roles so a long exchange does not repeat the same drawing every
+    time, two each for the counter and the block because they are rarer. It
+    was two and one, and two came round again inside a single round.
+
+    The artwork is not named here. The panel sets a NUMBER on the element and
+    the skin decides what that number draws, which keeps the sprite sheet in
+    one place and means a tracker with no skin simply never flashes. */
+ const IMPACT = { hit: [0, 1, 7, 10], attack: [3, 5, 8, 11], counter: [4, 9], block: [2, 6] };
+ let impactN = 0;
+ function flash(role){
+  if (!impactEl) return;
+  const set = IMPACT[role];
+  impactEl.classList.remove("go");
+  if (!set) return;
+  impactEl.dataset.k = set[impactN++ % set.length];
+  // Reading offsetWidth between the two class changes is what restarts a
+  // running animation. Without it a second hit inside half a second does
+  // nothing at all, because the class never actually left the element.
+  void impactEl.offsetWidth;
+  impactEl.classList.add("go");
+ }
+
+ function play(unit, role, label){
+  const who = forUnit(unit);
+  if (!who || !who.ready) return false;
+  if (!clipOf(who, role)) return false;
+  show(who, true);
+  flash(role);
+  oneShot = role === "idle" ? null : role;
+  current = role; i = 0; acc = 0; last = performance.now();
+  setState(label || role);
+  draw();
+  start();
+  return true;
+ }
+
+ function start(){ if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); } }
+ function stop(){ if (raf) cancelAnimationFrame(raf); raf = 0; }
+ addEventListener("resize", fit);
+
+ /* ---- who is acting -------------------------------------------------
+    Three things in the tracker point at a unit, in falling order of how
+    deliberate they are: the actor chosen in the resolve panel, the actor in
+    the retaliation panel, and whatever is selected on the battle map. The
+    first sprited one wins. */
+ function acting(){
+  const ids = [];
+  for (const id of ["resActor", "retActor"]) {
+   const el = document.getElementById(id);
+   if (el && el.value) ids.push(el.value);
+  }
+  try { if (window.bmSelectedUnitId) ids.push(window.bmSelectedUnitId); } catch (e) {}
+  try { if (S.eng.lastActorId) ids.push(S.eng.lastActorId); } catch (e) {}
+  for (const id of ids) {
+   const u = unitById(id);
+   if (forUnit(u)) return u;
+  }
+  return null;
+ }
+
+ function sync(){
+  const on = fielded();
+  panel.style.display = on.length ? "" : "none";
+  if (!on.length) {
+   stop();
+   subject = null; subjectUnit = null; oneShot = null; current = "idle"; i = 0;
+   setState("idle"); whoEl.textContent = "—";
+   panel.classList.remove("dsp-down");
+   return;
+  }
+  // Follow the acting unit, but never yank the panel away mid-clip.
+  const act = acting();
+  if (act) show(forUnit(act));
+  if (!subject) show(forUnit(on[0]));
+  const u = on.find(x => forUnit(x) === subject);
+  subjectUnit = u || null;
+  // Crossing the line changes what she rests in. Only ever between clips --
+  // a hit that is still playing finishes, and lands in the new resting state
+  // when it hands back, because tick() asks rest() at that moment too.
+  const want = rest();
+  if (!oneShot && current !== want && AFTER[want] !== current) {
+   current = want; i = 0; acc = 0;
+  }
+  // The grey wash was a stand-in for not having a drawing of her on the floor.
+  // A character who now HAS that drawing does not need it, and it would only
+  // make the one clip that is already dark harder to see.
+  const out = !!(u && (u.dead || u.down));
+  panel.classList.toggle("dsp-down", out && !clipOf(subject, "down"));
+  if (!oneShot) setState(current);
+  fit();
+  start();
+ }
+
+ /* ---- the wraps ------------------------------------------------------
+    damage(u,v) is the single place every point of damage lands: the quick
+    -20/-10 buttons call it directly and applyDamageToTarget calls it too, so
+    wrapping it catches a resolved exchange and a manual adjustment both, and
+    only once. */
+ let claimed = false;
+
+ const _damage = damage;
+ damage = function(u, v){
+  const mine = v > 0 && forUnit(u) && !u.dead;
+  const hp = mine ? u.hp : 0;
+  const r = _damage.apply(this, arguments);
+  // Which defensive clip plays is read off real state rather than guessed.
+  // Inside damage() the shield and the grafts drain before anything reaches
+  // them, so a hit soaked whole leaves HP untouched and is the block, and a
+  // hit that moved it is the hit -- including one only partly soaked, which
+  // did get through. It has to be measured after the call.
+  if (mine) {
+   const through = u.hp < hp;
+   if (play(u, through ? "hit" : "block", through ? "struck" : "blocked")) claimed = true;
+  }
+  return r;
+ };
+
+ const _applyDamageToTarget = applyDamageToTarget;
+ applyDamageToTarget = function(e, attacker, target, dmg, graftIdx, actKind){
+  const mine = dmg > 0 && forUnit(attacker) && attacker !== target;
+  const defeated = _applyDamageToTarget.apply(this, arguments);
+  // A finish gets the taunt, and the function already says so in its return
+  // value -- the only thing that does. Inspecting the target does not work: a
+  // hostile is never marked dead or down at all, because damage() routes that
+  // whole side through an integrity pool instead.
+  if (mine) play(attacker, defeated ? "taunt" : "attack",
+                 defeated ? "upper hand" : "striking");
+  return defeated;
+ };
+
+ /* Two separate paths reach a retaliation and they disagree about which end of
+    the exchange the retaliator is on. Resolving inline they are the TARGET
+    being attacked and the type is selectedInlineRetalType; through the
+    retaliation panel they are the ACTOR answering and the type is
+    selectedRetalType. */
+ function retaliator(varName, elId){
+  try {
+   const el = document.getElementById(elId);
+   const u = unitById(el && el.value);
+   return forUnit(u) ? { type: __BB[varName] || "", unit: u } : null;
+  } catch (e) { return null; }
+ }
+
+ function wrapExchange(fn, varName, elId){
+  return function(){
+   const r0 = retaliator(varName, elId);
+   claimed = false;
+   const r = fn.apply(this, arguments);
+   // A counter that lands deals damage, so applyDamageToTarget has already
+   // played the attack by now -- and the counter is the truer description, so
+   // it plays last and wins. `claimed` still decides: if the retaliation
+   // failed and a hit landed, the hit stays.
+   if (r0 && !claimed) {
+    if (COUNTERING.has(r0.type)) play(r0.unit, "counter", "countered");
+    else if (EVASIVE.has(r0.type)) play(r0.unit, "dodge", "evaded");
+   }
+   return r;
+  };
+ }
+
+ resolveGroup = wrapExchange(resolveGroup, "selectedInlineRetalType", "resTarget");
+ if (typeof enemyRetaliation === "function")
+  enemyRetaliation = wrapExchange(enemyRetaliation, "selectedRetalType", "retActor");
+
+ // The buttons have to be re-bound, which is the part that actually broke this
+ // the first time. Both were wired with onclick = resolveGroup /
+ // enemyRetaliation long before this block runs, so each button holds a
+ // reference to the ORIGINAL function. Reassigning the name rebinds every
+ // caller that looks it up by name -- which is every internal call, and every
+ // test written against it -- and does nothing for the two buttons a person
+ // actually presses.
+ for (const [id, fn] of [["btnResolve", resolveGroup], ["btnRetal", enemyRetaliation]]) {
+  const el = document.getElementById(id);
+  if (el && typeof fn === "function") el.onclick = fn;
+ }
+
+ // Changing the actor should move the panel even when nothing has happened yet.
+ for (const id of ["resActor", "retActor"]) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener("change", () => { try { sync(); } catch (e) {} });
+ }
+
+ const _render = render;
+ render = function(){ const r = _render.apply(this, arguments); try { sync(); } catch (e) {} return r; };
+
+ window.spriteFeed = {
+  play: (name, role) => {
+   const u = (S.eng.units || []).find(x => x.name && x.name.toLowerCase()
+              .indexOf(String(name).toLowerCase()) >= 0);
+   return play(u, role, role);
+  },
+  show: (name) => {
+   const u = (S.eng.units || []).find(x => x.name && x.name.toLowerCase()
+              .indexOf(String(name).toLowerCase()) >= 0);
+   const who = forUnit(u); return who ? show(who, true) : false;
+  },
+  get subject(){ return subject && subject.label; },
+  get cast(){ return cast.map(c => ({ name: c.key, ready: c.ready, error: c.error,
+                                     clips: Object.keys(c.atlas.clips) })); },
+  panel
+ };
+
+ sync();
+})();
+/* ================= END SPRITE FEED ========================= */

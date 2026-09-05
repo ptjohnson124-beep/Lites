@@ -1,0 +1,566 @@
+{
+ "name": "dahlia",
+ "pieces": [
+  {
+   "name": "head",
+   "file": "../out/rig_head/frames/head_01.png"
+  },
+  {
+   "name": "hair-fringe",
+   "file": "../out/rig_head/frames/head_02.png"
+  },
+  {
+   "name": "hair-crown",
+   "file": "../out/rig_head/frames/head_03.png"
+  },
+  {
+   "name": "hair-tail",
+   "file": "../out/rig_head/frames/head_04.png"
+  },
+  {
+   "name": "hair-strand-l",
+   "file": "../out/rig_head/frames/head_05.png"
+  },
+  {
+   "name": "hair-strand-r",
+   "file": "../out/rig_head/frames/head_06.png"
+  },
+  {
+   "name": "hood",
+   "file": "../out/rig_head/frames/head_07.png"
+  },
+  {
+   "name": "eye-l",
+   "file": "../out/rig_head/frames/head_08.png"
+  },
+  {
+   "name": "eye-r",
+   "file": "../out/rig_head/frames/head_09.png"
+  },
+  {
+   "name": "torso",
+   "file": "../out/rig_body/frames/body_01.png"
+  },
+  {
+   "name": "hips",
+   "file": "../out/rig_body/frames/body_02.png"
+  },
+  {
+   "name": "arm-upper",
+   "file": "../out/rig_body/frames/body_03.png"
+  },
+  {
+   "name": "arm-fore",
+   "file": "../out/rig_body/frames/body_04.png"
+  },
+  {
+   "name": "hand-fist",
+   "file": "../out/rig_body/frames/body_05.png"
+  },
+  {
+   "name": "hand-open",
+   "file": "../out/rig_body/frames/body_06.png"
+  },
+  {
+   "name": "holster",
+   "file": "../out/rig_body/frames/body_07.png"
+  },
+  {
+   "name": "dagger",
+   "file": "../out/rig_body/frames/body_08.png"
+  },
+  {
+   "name": "thigh",
+   "file": "../out/rig_legs/frames/legs_01.png"
+  },
+  {
+   "name": "shin",
+   "file": "../out/rig_legs/frames/legs_02.png"
+  },
+  {
+   "name": "boot",
+   "file": "../out/rig_legs/frames/legs_03.png"
+  },
+  {
+   "name": "thigh-far",
+   "file": "../out/rig_legs/frames/legs_04.png"
+  },
+  {
+   "name": "shin-far",
+   "file": "../out/rig_legs/frames/legs_05.png"
+  },
+  {
+   "name": "boot-far",
+   "file": "../out/rig_legs/frames/legs_06.png"
+  },
+  {
+   "name": "arm-upper-far",
+   "file": "../out/rig_legs/frames/legs_07.png"
+  },
+  {
+   "name": "arm-fore-far",
+   "file": "../out/rig_legs/frames/legs_08.png"
+  }
+ ],
+ "anchors": {
+  "thigh": {
+   "proximal": [
+    0.5,
+    0.04
+   ],
+   "distal": [
+    0.5,
+    0.96
+   ]
+  },
+  "thigh-far": {
+   "proximal": [
+    0.5,
+    0.04
+   ],
+   "distal": [
+    0.5,
+    0.96
+   ]
+  },
+  "shin": {
+   "proximal": [
+    0.5,
+    0.05
+   ],
+   "distal": [
+    0.5,
+    0.95
+   ]
+  },
+  "shin-far": {
+   "proximal": [
+    0.5,
+    0.05
+   ],
+   "distal": [
+    0.5,
+    0.95
+   ]
+  },
+  "boot": {
+   "proximal": [
+    0.4,
+    0.08
+   ],
+   "distal": [
+    0.48,
+    0.97
+   ]
+  },
+  "boot-far": {
+   "proximal": [
+    0.4,
+    0.08
+   ],
+   "distal": [
+    0.48,
+    0.97
+   ]
+  },
+  "arm-upper": {
+   "proximal": [
+    0.5,
+    0.05
+   ],
+   "distal": [
+    0.5,
+    0.95
+   ]
+  },
+  "arm-upper-far": {
+   "proximal": [
+    0.5,
+    0.05
+   ],
+   "distal": [
+    0.5,
+    0.95
+   ]
+  },
+  "arm-fore": {
+   "proximal": [
+    0.5,
+    0.05
+   ],
+   "distal": [
+    0.5,
+    0.93
+   ]
+  },
+  "arm-fore-far": {
+   "proximal": [
+    0.5,
+    0.05
+   ],
+   "distal": [
+    0.5,
+    0.93
+   ]
+  },
+  "hand-fist": {
+   "proximal": [
+    0.5,
+    0.1
+   ],
+   "distal": [
+    0.5,
+    0.7
+   ]
+  },
+  "hand-open": {
+   "proximal": [
+    0.5,
+    0.1
+   ],
+   "distal": [
+    0.5,
+    0.7
+   ]
+  },
+  "hand-far": {
+   "proximal": [
+    0.5,
+    0.1
+   ],
+   "distal": [
+    0.5,
+    0.7
+   ]
+  },
+  "torso": {
+   "proximal": [
+    0.5,
+    0.96
+   ],
+   "distal": [
+    0.5,
+    0.08
+   ]
+  },
+  "head": {
+   "proximal": [
+    0.46,
+    0.96
+   ],
+   "distal": [
+    0.5,
+    0.06
+   ]
+  },
+  "dagger": {
+   "proximal": [
+    0.86,
+    0.5
+   ],
+   "distal": [
+    0.04,
+    0.45
+   ]
+  },
+  "hips": {
+   "anchor": [
+    0.5,
+    0.28
+   ]
+  },
+  "holster": {
+   "anchor": [
+    0.5,
+    0.16
+   ]
+  },
+  "hood": {
+   "anchor": [
+    0.5,
+    0.24
+   ]
+  },
+  "hair-crown": {
+   "anchor": [
+    0.5,
+    0.42
+   ]
+  },
+  "hair-fringe": {
+   "anchor": [
+    0.5,
+    0.26
+   ]
+  },
+  "hair-tail": {
+   "anchor": [
+    0.5,
+    0.05
+   ]
+  },
+  "hair-strand-l": {
+   "anchor": [
+    0.5,
+    0.04
+   ]
+  },
+  "hair-strand-r": {
+   "anchor": [
+    0.5,
+    0.04
+   ]
+  },
+  "eye-l": {
+   "anchor": [
+    0.5,
+    0.5
+   ]
+  },
+  "eye-r": {
+   "anchor": [
+    0.5,
+    0.5
+   ]
+  }
+ },
+ "control_bones": [
+  {
+   "name": "hip",
+   "parent": "root",
+   "place": [
+    0,
+    291
+   ],
+   "direction": 0
+  }
+ ],
+ "pose": {
+  "hip": 0,
+  "thigh": -95,
+  "shin": -90,
+  "boot": -90,
+  "thigh-far": -85,
+  "shin-far": -90,
+  "boot-far": -90,
+  "torso": 90,
+  "head": 90,
+  "arm-upper": -100,
+  "arm-fore": -96,
+  "hand-fist": -94,
+  "arm-upper-far": -80,
+  "arm-fore-far": -84,
+  "hand-far": -86,
+  "dagger": 200
+ },
+ "pose_rel": {
+  "hips": 0,
+  "holster": 90,
+  "hood": -90,
+  "hair-crown": -90,
+  "hair-fringe": -90,
+  "hair-tail": -90,
+  "hair-strand-l": -90,
+  "hair-strand-r": -90
+ },
+ "joint": {
+  "hip": {
+   "world": [
+    0,
+    291
+   ]
+  },
+  "thigh": {
+   "from": "hip",
+   "offset": [
+    -28,
+    0
+   ]
+  },
+  "shin": {
+   "from": "thigh",
+   "at": "tip"
+  },
+  "boot": {
+   "from": "shin",
+   "at": "tip"
+  },
+  "thigh-far": {
+   "from": "hip",
+   "offset": [
+    28,
+    0
+   ]
+  },
+  "shin-far": {
+   "from": "thigh-far",
+   "at": "tip"
+  },
+  "boot-far": {
+   "from": "shin-far",
+   "at": "tip"
+  },
+  "hips": {
+   "from": "hip",
+   "offset": [
+    0,
+    -8
+   ]
+  },
+  "holster": {
+   "from": "thigh",
+   "offset": [
+    40,
+    -26
+   ]
+  },
+  "torso": {
+   "from": "hip",
+   "offset": [
+    0,
+    -6
+   ]
+  },
+  "head": {
+   "from": "torso",
+   "at": "tip"
+  },
+  "hood": {
+   "from": "torso",
+   "offset": [
+    138,
+    0
+   ]
+  },
+  "arm-upper": {
+   "from": "torso",
+   "offset": [
+    112,
+    60
+   ]
+  },
+  "arm-fore": {
+   "from": "arm-upper",
+   "at": "tip"
+  },
+  "hand-fist": {
+   "from": "arm-fore",
+   "at": "tip"
+  },
+  "arm-upper-far": {
+   "from": "torso",
+   "offset": [
+    112,
+    -60
+   ]
+  },
+  "arm-fore-far": {
+   "from": "arm-upper-far",
+   "at": "tip"
+  },
+  "hand-far": {
+   "from": "arm-fore-far",
+   "at": "tip"
+  },
+  "dagger": {
+   "from": "hand-fist",
+   "at": "tip"
+  },
+  "hair-crown": {
+   "from": "head",
+   "offset": [
+    152,
+    2
+   ]
+  },
+  "hair-fringe": {
+   "from": "head",
+   "offset": [
+    168,
+    2
+   ]
+  },
+  "hair-tail": {
+   "from": "head",
+   "offset": [
+    142,
+    4
+   ]
+  },
+  "hair-strand-l": {
+   "from": "head",
+   "offset": [
+    152,
+    74
+   ]
+  },
+  "hair-strand-r": {
+   "from": "head",
+   "offset": [
+    152,
+    -76
+   ]
+  }
+ },
+ "parent": {
+  "hips": "hip",
+  "torso": "hip",
+  "thigh": "hip",
+  "shin": "thigh",
+  "boot": "shin",
+  "holster": "thigh",
+  "thigh-far": "hip",
+  "shin-far": "thigh-far",
+  "boot-far": "shin-far",
+  "head": "torso",
+  "hood": "torso",
+  "hair-crown": "head",
+  "hair-fringe": "head",
+  "hair-tail": "head",
+  "hair-strand-l": "head",
+  "hair-strand-r": "head",
+  "arm-upper": "torso",
+  "arm-fore": "arm-upper",
+  "hand-fist": "arm-fore",
+  "dagger": "hip",
+  "arm-upper-far": "torso",
+  "arm-fore-far": "arm-upper-far",
+  "hand-far": "arm-fore-far"
+ },
+ "draw_order": [
+  "hair-tail",
+  "arm-upper-far",
+  "arm-fore-far",
+  "hand-far",
+  "thigh-far",
+  "shin-far",
+  "boot-far",
+  "hair-crown",
+  "thigh",
+  "shin",
+  "boot",
+  "hips",
+  "holster",
+  "torso",
+  "hood",
+  "head",
+  "hair-strand-l",
+  "hair-strand-r",
+  "hair-fringe",
+  "arm-upper",
+  "arm-fore",
+  "hand-fist",
+  "dagger"
+ ],
+ "alternates": {
+  "hand-fist": [
+   "hand-open"
+  ]
+ },
+ "attachment_of": {
+  "hand-far": "hand-fist"
+ },
+ "slot_color": {
+  "hand-far": "b4b4b4ff"
+ }
+}
