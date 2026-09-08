@@ -92,6 +92,13 @@ def main():
     ap.add_argument("--fps", type=int, default=30)
     ap.add_argument("--quality", type=int, default=90)
     ap.add_argument("--pad", type=int, default=4, help="transparent margin per cell")
+    ap.add_argument("--cell-h", type=int, default=192,
+                    help="target cell height; every clip is scaled to fit it. "
+                         "0 keeps the source size. A unit token is 5.4-8.2%% of "
+                         "a stage that caps at 780px tall on a 12x8 grid, so it "
+                         "draws at roughly 63-96px: 192 is already 2x headroom "
+                         "for a retina screen, and the art is otherwise five to "
+                         "seven times larger than it will ever be shown.")
     ap.add_argument("--lossless", action="store_true")
     args = ap.parse_args()
 
@@ -116,6 +123,22 @@ def main():
     # ---- one cell big enough for the widest and tallest footprint -----------
     cw = max(c["bbox"][2] - c["bbox"][0] + 1 for c in clips.values()) + 2 * args.pad
     ch = max(c["bbox"][3] - c["bbox"][1] + 1 for c in clips.values()) + 2 * args.pad
+
+    # An atlas is decoded to raw RGBA and held there. At source size these clips
+    # want an 11088x11328 sheet -- 479 MB resident, on a page that already holds
+    # another character's. Scaling to the size it is actually drawn at is not a
+    # compromise, it is the correct size; everything above it is memory spent on
+    # detail no one sees.
+    if args.cell_h and ch != args.cell_h:
+        s = args.cell_h / float(ch)
+        for c in clips.values():
+            c["frames"] = [np.asarray(Image.fromarray(f).resize(
+                (max(1, round(f.shape[1] * s)), max(1, round(f.shape[0] * s))),
+                Image.LANCZOS)) for f in c["frames"]]
+            c["bbox"] = bbox_of(c["frames"])
+        cw = max(c["bbox"][2] - c["bbox"][0] + 1 for c in clips.values()) + 2 * args.pad
+        ch = max(c["bbox"][3] - c["bbox"][1] + 1 for c in clips.values()) + 2 * args.pad
+        print(f"scaled every clip by {s:.3f} to a {cw}x{ch} cell")
 
     # ---- lay every frame into a cell, de-duplicating identical ones ---------
     cells, index = [], {}
@@ -203,6 +226,8 @@ def main():
     print(f"\ncell {cw}x{ch}   grid {cols}x{rows}   {n} unique cells "
           f"({sum(len(c['frames']) for c in clips.values())} frames in, "
           f"{sum(len(c['frames']) for c in clips.values()) - n} deduped)")
+    px = cols * cw * rows * ch
+    print(f"sheet {cols*cw}x{rows*ch} = {px/1e6:.1f} Mpx, {px*4/1048576:.0f} MB decoded")
     print(f"atlas {os.path.getsize(img_path)/1048576:.2f} MB   "
           f"manifest {os.path.getsize(json_path)/1024:.1f} KB   "
           f"(sources were {src_total/1048576:.2f} MB)")
