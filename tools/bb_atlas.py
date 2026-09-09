@@ -188,10 +188,21 @@ def main():
         report.append((role, len(c["frames"]), len(set(c["ids"])),
                        sum(c["durs"]) / 1000.0, len(seq) / args.fps, c["src"]))
 
-    idle = out_clips.get("idle") or next(iter(out_clips.values()))
-    tall = max(c["bbox"][3] - c["bbox"][1] + 1 for c in clips.values())
+    # `unit` is the scale reference the feed divides into its target height, so
+    # it has to follow the same convention the rest of the cast uses or this
+    # character renders the wrong size beside them. Measured off the tracker:
+    # Dahlia is 73.0 against a 122px idle, the existing Vergil 177.5 against
+    # 299px -- both 0.596 of the drawn character. Guessing it from the cell
+    # instead made Vergil 24% too small, because his cell carries effect
+    # headroom his body does not fill.
+    UNIT_RATIO = 0.596
+    idle_key = "idle" if "idle" in clips else next(iter(clips))
+    ic = clips[idle_key]
+    idle_h = float(np.median([
+        (lambda ys: ys.max() - ys.min() + 1)(np.where((f[..., 3] > 25).any(axis=1))[0])
+        for f in ic["frames"] if (f[..., 3] > 25).any()]))
     manifest = dict(image=img_name, cell=[cw, ch], cols=cols, rows=rows, cells=n,
-                    unit=round(tall * 0.62, 1),               # rough torso-height ref
+                    unit=round(idle_h * UNIT_RATIO, 1),
                     anchor=[round(cw / 2, 1), round(ch - args.pad, 1)],
                     clips=out_clips)
     json_path = os.path.join(args.out, f"{args.name}_atlas.json")
