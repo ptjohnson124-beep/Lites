@@ -1,0 +1,40 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Dahlia — keyed sprite demo</title>
+<style>
+  body{margin:0;min-height:100vh;display:grid;place-items:center;gap:18px;
+       background:#12171c;color:#e4eaf0;font:15px/1.5 system-ui,sans-serif}
+  canvas{image-rendering:auto}
+  kbd{background:#222c35;border:1px solid #38444f;border-radius:4px;
+      padding:2px 7px;font:12px ui-monospace,monospace}
+  #now{color:#41cfcb;font:13px ui-monospace,monospace;min-height:1.4em}
+</style>
+
+<canvas id="stage"></canvas>
+<p><kbd>A</kbd> attack &nbsp; <kbd>H</kbd> take a hit &nbsp; <kbd>Esc</kbd> back to idle</p>
+<p id="now">loading…</p>
+
+<script src="dahlia-sprite.js"></script>
+<script>
+(async () => {
+  const now = document.getElementById('now');
+  const d = await DahliaSprite.load(document.getElementById('stage'),
+                                    'dahlia_atlas.json', { scale: 1 });
+
+  // The idle is the clip everything falls back to when a one-shot ends.
+  d.idle('dahlia_twirl');
+  const label = () => { now.textContent = d.playing || 'idle · dahlia_twirl'; };
+  label();
+
+  // This is the whole integration: a key maps to one play() call. The clip
+  // runs once, returns to the idle by itself, and `then` fires when it is
+  // actually over — which is the thing an <img> could never tell you.
+  const keys = { a: 'dahlia_attack', h: 'dahlia_hit' };
+  addEventListener('keydown', e => {
+    if (e.repeat) return;
+    const clip = keys[e.key.toLowerCase()];
+    if (clip) { d.play(clip, { then: label }); label(); }
+    else if (e.key === 'Escape') { d.stop(); label(); }
+  });
+})();
+</script>
