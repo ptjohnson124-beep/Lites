@@ -1,0 +1,1236 @@
+#!/usr/bin/env python3
+"""Slice a sprite sheet into aligned animation frames.
+
+The sheet this was written for is an AI-generated character sheet: a flat
+grey background, one animation per row, and frames that are *not* on a tidy
+uniform grid. So frames are found by segmenting the foreground rather than by
+assuming a fixed cell size, then re-aligned on the character's feet so the
+sprite does not jitter during playback.
+
+Outputs (in --outdir):
+  frames/rowN_MM.png   trimmed, padded, feet-aligned frames
+  frames.json          frame rects in sheet space + normalized canvas info
+  rowN.gif             one animated GIF per row
+  rowN.webp            same, animated WebP (smaller, keeps alpha cleanly)
+"""
+
+import argparse
+import json
+import os
+import shutil
+import warnings
+from collections import Counter
+
+import numpy as np
+from PIL import Image, ImageFilter
+
+
+def grid_ink(rgb, darkness=90, bg=None, sign=0):
+    """Pixels that could belong to a drawn panel grid.
+
+    A drawn grid is not always black. Some sheets rule their cells in a grey
+    only a little off the background, and others rule them in a light grey
+    brighter than it, neither of which an absolute darkness test can see. When
+    a background colour is known, look for a consistent offset from it instead
+    — but only ever in one direction at a time, because a line is uniformly
+    lighter or uniformly darker than the backdrop while a sprite is both, and
+    taking the two together lets a figure score as solidly as a divider.
+    """
+    if bg is None:
+        return rgb.max(axis=2) < darkness
+    d = rgb.astype(np.int16) - np.asarray(bg, dtype=np.int16)
+    if sign > 0:
+        return (d.min(axis=2) > 8) & (d.max(axis=2) < 110)
+    return (d.max(axis=2) < -8) & (d.min(axis=2) > -110)
+
+
+def spans(profile, coverage, limit, grow, thickest=0):
+    """Indices covered by lines in a coverage profile, widened by `grow`.
+
+    Lines are widened to swallow their antialiased edges: one pixel left
+    standing still walls the background flood out of the cell, and then nothing
+    inside gets keyed at all. `thickest` rejects a run too broad to be a ruled
+    line, which is the only thing separating a divider from a sprite that
+    happens to stand square in its cell.
+    """
+    hits, runs = np.flatnonzero(profile > coverage), []
+    for i in hits:
+        if runs and i <= runs[-1][1] + 1:
+            runs[-1][1] = i
+        else:
+            runs.append([i, i])
+
+    wide = set()
+    for lo, hi in runs:
+        if thickest and hi - lo + 1 > thickest:
+            continue
+        wide.update(range(max(0, lo - grow), min(limit, hi + grow + 1)))
+    return sorted(wide)
+
+
+def uniform(strip, axis, bg, tol=8, spread=14, share=0.45):
+    """Per-line flag: is most of this line's ink one flat colour?
+
+    A ruled divider is drawn in a single tone, so the pixels along it barely
+    vary. A column of sprite can cover a cell just as completely — hair, a
+    coat seam, a leg — but it is shaded, so its tones are spread wide.
+    Uniformity is what tells the two apart, and without it the grid eraser
+    eventually cuts a stripe of transparency straight through a figure.
+
+    Measured against the median rather than by standard deviation, because
+    the lines that matter most are the ones sprites stand on. A ground line
+    ruled under a row of poses is uniform along nearly all its length and wild
+    where eight pairs of boots cross it, and one std over the whole line puts
+    it at 35-50 — indistinguishable from a sprite. The share of ink sitting
+    close to the line's own median ignores the crossings: on this sheet that
+    reads 0.53-0.80 for the ground lines against 0.07-0.32 for rows of pure
+    character.
+    """
+    lum = strip.astype(np.float32).mean(axis=2)
+    ink = np.abs(lum - float(np.mean(bg))) > tol
+    with np.errstate(invalid="ignore"), warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)   # lines with no ink at all
+        med = np.nanmedian(np.where(ink, lum, np.nan), axis=axis)
+    med = np.where(np.isnan(med), 0.0, med)
+    near = ink & (np.abs(lum - (med[:, None] if axis == 1 else med[None, :])) < spread)
+    return near.sum(axis=axis) / np.maximum(ink.sum(axis=axis), 1) > share
+
+
+def panel_border_lines(rgb, darkness=90, coverage=0.8, grow=3, bg=None):
+    """Rows and columns occupied by a drawn panel grid.
+
+    Some sheets box each pose in a black frame. The frame is ink, so the
+    segmenter reads the whole grid as one connected drawing and finds no gaps to
+    split on. Painting the grid out gives the gaps back.
+    """
+    if bg is None:
+        inks, thickest = [grid_ink(rgb, darkness)], 0
+    else:
+        inks = [grid_ink(rgb, darkness, bg, sign=+1), grid_ink(rgb, darkness, bg, sign=-1)]
+        # A ruled line is interrupted wherever a sprite crosses it, so demanding
+        # near-total coverage misses exactly the lines that matter on a busy
+        # sheet — a ground line ruled under a row of poses that are lying on it
+        # scores 0.54. Half is enough, because `uniform` below is what actually
+        # separates a line from a sprite, and it separates them by a wide
+        # margin; coverage only has to be loose enough not to veto the answer.
+        coverage, thickest = 0.50, 6
+
+    h, w = rgb.shape[:2]
+    flat_rows = uniform(rgb, 1, bg) if bg is not None else np.ones(h, bool)
+    flat_cols = uniform(rgb, 0, bg) if bg is not None else np.ones(w, bool)
+    rows, cols = set(), set()
+    for ink in inks:
+        rows.update(spans(np.where(flat_rows, ink.mean(axis=1), 0.0),
+                          coverage, h, grow, thickest))
+        cols.update(spans(np.where(flat_cols, ink.mean(axis=0), 0.0),
+                          coverage, w, grow, thickest))
+    return sorted(rows), sorted(cols)
+
+
+def row_bands(rows, height, minimum=40):
+    """The horizontal strips of cells left between a grid's row lines."""
+    marks, bands = sorted(set(rows)), []
+    for i in marks:
+        if bands and i <= bands[-1][1] + 1:
+            bands[-1][1] = i
+        else:
+            bands.append([i, i])
+
+    edges, cells = [0] + [b[1] + 1 for b in bands], []
+    for k, lo in enumerate(edges):
+        hi = bands[k][0] if k < len(bands) else height
+        if hi - lo > minimum:
+            cells.append((lo, hi))
+    return cells
+
+
+def banded_column_lines(rgb, rows, bg, coverage=0.55, grow=3):
+    """Column lines found separately inside each row of cells.
+
+    A grid is not always regular. This sheet gives its first row six wide cells
+    and the rest seven narrow ones, so the dividers in row one exist nowhere
+    else on the sheet and score barely a quarter of the height when the column
+    profile is taken over the whole image. Measured inside their own band they
+    are as solid as any other line. Scanning band by band also stops a divider
+    from one row being painted through a sprite standing in another.
+    """
+    inks = [grid_ink(rgb, bg=bg, sign=+1), grid_ink(rgb, bg=bg, sign=-1)]
+    out = []
+    for y0, y1 in row_bands(rows, rgb.shape[0]):
+        flat = uniform(rgb[y0:y1], 0, bg)
+        cols = set()
+        for ink in inks:
+            profile = np.where(flat, ink[y0:y1].mean(axis=0), 0.0)
+            cols.update(spans(profile, coverage, rgb.shape[1], grow, thickest=6))
+        out.append((y0, y1, sorted(cols)))
+    return out
+
+
+def strip_captions(rgb, bg, rows, darkness=90, coverage=0.8):
+    """Blank a caption written under each pose on a panelled sheet.
+
+    A labelled reference sheet puts a line of text below every cell. It is ink
+    like anything else, so it segments as part of the pose and rides along into
+    the animation. The text sits under the figure with a thin blank gap between
+    them, and spans the cell far wider than her boots do, so within each row of
+    cells the quietest scanline in the bottom third is that gap: everything
+    below it is caption and gets painted out. On a sheet with no captions the
+    quietest line is already below her feet and nothing is lost.
+    """
+    ink = np.abs(rgb.astype(np.int16) - bg).max(axis=2) > 14
+
+    out, cut = rgb.copy(), 0
+    for lo, hi in row_bands(rows, rgb.shape[0]):
+        profile = ink[lo:hi].sum(axis=1)
+        start = int(len(profile) * 0.67)
+        quietest = start + int(np.argmin(profile[start:]))
+        if quietest < len(profile) - 2:
+            out[lo + quietest:hi] = bg
+            cut += 1
+    return out, cut
+
+
+def dilate(mask, radius):
+    """Grow a mask by `radius` pixels in the four directions."""
+    out = mask
+    for _ in range(radius):
+        out = (out | np.roll(out, 1, 0) | np.roll(out, -1, 0) |
+               np.roll(out, 1, 1) | np.roll(out, -1, 1))
+    return out
+
+
+def flatten_checker(rgb, tol=40, jump=3):
+    """Flatten a transparency checkerboard into one background colour.
+
+    A sheet exported with transparency and then saved as JPEG arrives with the
+    editor's checkerboard baked in as pixels: two grey tones in a regular grid.
+    Everything downstream assumes one flat background, and against two tones it
+    reads half the backdrop as ink.
+
+    The two tones are taken from the colour histogram, and only background
+    actually reachable from the sheet edge through them is repainted — so a dark
+    boot that happens to sit near one of the tones is never touched. Repainting
+    rather than masking keeps the sprite's antialiased fringe meaningful: it
+    still shades off toward a background, just a single one now.
+    """
+    px = rgb.reshape(-1, 3).astype(np.uint32)
+    packed = (px[:, 0] << 16) | (px[:, 1] << 8) | px[:, 2]
+    vals, counts = np.unique(packed, return_counts=True)
+
+    tones, order = [], np.argsort(counts)[::-1]
+    for i in order[:400]:
+        v = int(vals[i])
+        colour = np.array([(v >> 16) & 255, (v >> 8) & 255, v & 255], dtype=np.int16)
+        if colour.max() - colour.min() > 12:          # a tone, not artwork
+            continue
+        if all(np.abs(colour - t).max() > 24 for t in tones):
+            tones.append(colour)
+        if len(tones) == 2:
+            break
+    if len(tones) < 2:
+        return rgb, None
+
+    d = [np.abs(rgb.astype(np.int16) - t).max(axis=2) for t in tones]
+    near = np.minimum(*d) < tol
+    field = outside(near)
+    flat = np.round(np.mean(tones, axis=0)).astype(np.int16)
+
+    out = rgb.copy()
+    out[field] = flat
+
+    # Checker sealed inside the artwork is still transparency. A strict flood
+    # from the sheet edge cannot reach the squares showing through the gaps in
+    # her hair or behind a translucent muzzle flash — the thin film of artwork
+    # across the opening walls it out — and those came out as grey confetti over
+    # the sprite. Flooding again through a slightly widened backdrop steps over
+    # a film that thin, and the result is intersected back with the real
+    # checker, so nothing but checker is ever repainted. Anything walled off by
+    # more than `jump` pixels of solid drawing is genuinely interior and stays:
+    # a grey costume part is never mistaken for backdrop, and her gun is grey.
+    # The second flood is held to a much tighter match than the first. `tol` is
+    # generous enough to swallow the checker's antialiasing, but it is also wide
+    # enough to cover a white hoodie, and a flood that can step over an outline
+    # will eat one: only a near-exact tone counts as a pocket.
+    exact = np.minimum(*d) < max(4, int(np.abs(tones[0] - tones[1]).max()) // 4)
+    out[outside(dilate(exact, jump)) & exact] = flat
+    return out, flat
+
+
+def load_sheet(path):
+    return Image.open(path).convert("RGBA")
+
+
+def background_color(rgb, probe=8, skip_rows=(), skip_cols=()):
+    """Most common colour among the sheet's corner patches.
+
+    On a panelled sheet the corners are the drawn grid rather than the
+    background, so those rows and columns are dropped first and the commonest
+    colour over everything that remains is used instead.
+    """
+    if len(skip_rows) or len(skip_cols):
+        keep_r = np.setdiff1d(np.arange(rgb.shape[0]), np.asarray(skip_rows, dtype=int))
+        keep_c = np.setdiff1d(np.arange(rgb.shape[1]), np.asarray(skip_cols, dtype=int))
+        px = rgb[np.ix_(keep_r, keep_c)].reshape(-1, 3).astype(np.uint32)
+        packed = (px[:, 0] << 16) | (px[:, 1] << 8) | px[:, 2]
+        vals, counts = np.unique(packed, return_counts=True)
+        top = int(vals[counts.argmax()])
+        return np.array([top >> 16, (top >> 8) & 255, top & 255], dtype=np.int16)
+
+    h, w, _ = rgb.shape
+    patches = [
+        rgb[:probe, :probe], rgb[:probe, w - probe:],
+        rgb[h - probe:, :probe], rgb[h - probe:, w - probe:],
+    ]
+    pixels = np.concatenate([p.reshape(-1, 3) for p in patches])
+    return np.array(Counter(map(tuple, pixels)).most_common(1)[0][0], dtype=np.int16)
+
+
+def foreground_mask(rgb, bg, tol):
+    """True where the pixel is meaningfully different from the sheet background."""
+    return np.abs(rgb.astype(np.int16) - bg).max(axis=2) > tol
+
+
+def outside(free):
+    """Background pixels reachable from the sheet edge, 4-connected.
+
+    A plain colour key is not enough: mid-grey shading on the face and hoodie
+    sits within tolerance of the background, so keying by colour alone punches
+    holes through the character. Only background that connects to the sheet
+    edge is really background.
+
+    Propagation runs a run at a time — every same-colour run in a scanline is
+    reached at once — alternating rows and columns until nothing new is found.
+    """
+    h, w = free.shape
+    reach = np.zeros_like(free)
+    reach[0, :] = reach[-1, :] = reach[:, 0] = reach[:, -1] = True
+    reach &= free
+
+    def sweep(free_ax, reach_ax):
+        # Runs of free pixels along each row share an id, so a single bincount
+        # tells us which runs contain an already-reached pixel — the whole run
+        # is then reached at once.
+        ids = np.cumsum(~free_ax, axis=1)
+        ids = ids + (np.arange(ids.shape[0])[:, None] * (int(ids.max()) + 1))
+        hit = np.bincount(ids[free_ax], weights=reach_ax[free_ax],
+                          minlength=int(ids.max()) + 1) > 0
+        return free_ax & hit[ids]
+
+    for _ in range(64):
+        grown = sweep(free, reach)
+        grown = sweep(free.T, grown.T).T
+        if grown.sum() == reach.sum():
+            break
+        reach = grown
+    return reach
+
+
+def denoise_art(sheet, strength, passes=1, spatial=2, sigma_s=1.6):
+    """Take compression grain off flat areas while keeping every drawn line.
+
+    These sheets arrive as JPEGs, so every flat surface carries mottling that no
+    amount of careful keying removes — it is in the paint. A median filter
+    clears it but cannot tell a speck from a small drawn feature, and on a
+    sprite this size it quietly erases the things that carry the performance:
+    the mouth first, then the eyes and the hood strings.
+
+    A bilateral filter can tell them apart. Each pixel is averaged only with
+    neighbours of similar brightness, so mottling a few levels deep is smoothed
+    while anything that differs by more than `strength` — a mouth line against
+    skin, an outline against a hoodie — is left alone.
+
+    Strength is deliberately low. Pushed hard the filter does clear more grain,
+    but softness is far more noticeable on a sprite than speckle: one pass at 8
+    takes 30 % of the mottling for 2 % of the line work, where three passes at
+    12 take 63 % but cost 10 %. The art stays sharp and keeps a little grain.
+    """
+    if strength < 1:
+        return sheet
+
+    img = np.array(sheet.convert("RGB")).astype(np.float32)
+    for _ in range(max(1, passes)):
+        guide = img.mean(axis=2)
+        acc = np.zeros_like(img)
+        wsum = np.zeros(img.shape[:2], np.float32)
+        for dy in range(-spatial, spatial + 1):
+            for dx in range(-spatial, spatial + 1):
+                near = np.roll(np.roll(img, dy, 0), dx, 1)
+                near_guide = np.roll(np.roll(guide, dy, 0), dx, 1)
+                w = (np.exp(-(dx * dx + dy * dy) / (2 * sigma_s ** 2)) *
+                     np.exp(-((near_guide - guide) ** 2) / (2 * float(strength) ** 2)))
+                acc += near * w[:, :, None]
+                wsum += w
+        img = acc / wsum[:, :, None]
+
+    return Image.fromarray(np.dstack([np.clip(img, 0, 255).astype(np.uint8),
+                                      np.array(sheet)[:, :, 3]]))
+
+
+def _small_blobs(mask, max_blob):
+    """Which of a sparse mask's 4-connected blobs are no larger than max_blob.
+
+    `label_components` would answer this, and it walks the whole image to do
+    it: sixty-four passes of searchsorted over five million pixels, twenty-six
+    seconds a sheet, repeated once per desalt pass. The mask here holds ten or
+    twenty thousand True pixels in total, so the work belongs on the pixels
+    rather than on the picture -- a union-find over the coordinates themselves
+    runs in milliseconds and gives exactly the same answer.
+    """
+    ys, xs = np.nonzero(mask)
+    n = len(ys)
+    if not n:
+        return np.zeros_like(mask)
+
+    at = {(int(y), int(x)): i for i, (y, x) in enumerate(zip(ys, xs))}
+    parent = list(range(n))
+
+    def find(a):
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+
+    for i, (y, x) in enumerate(zip(ys.tolist(), xs.tolist())):
+        for nb in ((y, x - 1), (y - 1, x)):     # west and north is enough
+            j = at.get(nb)
+            if j is not None:
+                ra, rb = find(i), find(j)
+                if ra != rb:
+                    parent[rb] = ra
+
+    size = {}
+    roots = [find(i) for i in range(n)]
+    for r in roots:
+        size[r] = size.get(r, 0) + 1
+
+    small = np.fromiter((size[r] <= max_blob for r in roots), bool, n)
+    out = np.zeros_like(mask)
+    out[ys[small], xs[small]] = True
+    return out
+
+
+def desalt(rgb, inside, tol, max_blob, passes=7):
+    """Take isolated white specks off the character.
+
+    A different fault from the mottling `denoise_art` handles, and the
+    bilateral filter cannot touch it -- it protects anything differing from its
+    neighbours by more than `strength`, which is exactly what a near-white
+    pixel on near-black trousers is. The filter keeps this grain BY DESIGN.
+    `despeckle` cannot reach it either: that works on the alpha channel and
+    drops islands of opacity, and these specks are fully opaque pixels sitting
+    in the middle of her.
+
+    What they are is salt noise: single pixels and pairs, several hundred a
+    frame, brightest where she is darkest, so they read as sparkle on the
+    trousers, gloves and boots and make the whole sprite look low quality.
+
+    Three conditions, and all are needed. A pixel must sit clear of her outline
+    -- see below -- AND be far brighter than the 5x5 median around it, which is
+    what makes it a speck rather than shading, AND belong to a blob no larger
+    than `max_blob` pixels, which is what keeps her eyes, the blade's glyphs,
+    the hood strings and every specular highlight in her hair. Drawn detail at
+    this size is never four pixels of pure white alone in the dark; grain
+    always is.
+
+    Condemned pixels take the 5x5 median colour rather than a blur, so nothing
+    softens: the replacement is a colour already present next to it.
+
+    IT HAS TO REPEAT, and one pass is not close. The median is taken over the
+    dirty neighbourhood, so where two or three specks sit near each other the
+    replacement is itself pulled bright and stays over the threshold. Measured
+    on one frame, a single pass took 538 speck pixels to 224, a second to 114,
+    a third to 73, and seven reached 12. The eighth removed nothing, so seven
+    is where it stops.
+    """
+    if max_blob < 1 or tol < 1:
+        return rgb
+
+    # Only pixels whose whole 5x5 window is inside her are candidates. Without
+    # this the comparison is rigged at her outline: the window there is mostly
+    # transparent, the median of it collapses toward nothing, and every bright
+    # pixel along the edge of the white hoodie measures as a speck. Eroding the
+    # mask by two -- the filter's own reach -- means the median a pixel is
+    # judged against is made only of pixels that are really her.
+    core = inside.copy()
+    for _ in range(2):
+        core &= (np.roll(core, 1, 0) & np.roll(core, -1, 0) &
+                 np.roll(core, 1, 1) & np.roll(core, -1, 1))
+    if not core.any():
+        return rgb
+
+    for _ in range(max(1, passes)):
+        lum = 0.2126 * rgb[:, :, 0] + 0.7152 * rgb[:, :, 1] + 0.0722 * rgb[:, :, 2]
+        guide = Image.fromarray(np.clip(np.where(inside, lum, 0), 0, 255).astype(np.uint8))
+        med_lum = np.asarray(guide.filter(ImageFilter.MedianFilter(5))).astype(np.float32)
+
+        hot = core & (lum - med_lum > tol)
+        if not hot.any():
+            break
+
+        doomed = _small_blobs(hot, max_blob)
+        if not doomed.any():
+            break
+
+        med_rgb = np.asarray(Image.fromarray(np.clip(rgb, 0, 255).astype(np.uint8))
+                             .filter(ImageFilter.MedianFilter(5))).astype(rgb.dtype)
+        rgb = rgb.copy()
+        rgb[doomed] = med_rgb[doomed]
+
+    return rgb
+
+
+def label_components(mask):
+    """Connected-component labels for a boolean mask, 4-connected.
+
+    Same run-at-a-time propagation as the background flood: every run in a
+    scanline takes the highest label it contains, alternating rows and columns
+    until the labels stop changing.
+    """
+    h, w = mask.shape
+    lab = np.where(mask, np.arange(mask.size).reshape(h, w), -1)
+
+    def sweep(lab, mask):
+        flat_m, flat_l = mask.ravel(), lab.ravel()
+        if not flat_m.any():
+            return lab
+        prev = np.concatenate(([False], flat_m[:-1]))
+        row_start = (np.arange(flat_m.size) % mask.shape[1]) == 0
+        starts = np.flatnonzero(flat_m & (~prev | row_start))
+        seg_max = np.maximum.reduceat(flat_l, starts)
+        seg_of = np.searchsorted(starts, np.arange(flat_m.size), "right") - 1
+        return np.where(flat_m, seg_max[np.maximum(seg_of, 0)], -1).reshape(mask.shape)
+
+    for _ in range(64):
+        grown = sweep(lab, mask)
+        grown = sweep(np.ascontiguousarray(grown.T), np.ascontiguousarray(mask.T)).T
+        if np.array_equal(grown, lab):
+            break
+        lab = grown
+    return lab
+
+
+def fill_holes(alpha, radius, max_area=0.02):
+    """Close holes punched through a pose by the background flood.
+
+    A drawing with heavy motion blur shades large parts of itself toward the
+    background colour, and the soft edge gives the flood a path inward, so it
+    walks into the body and hollows it out. Tightening the tolerance does not
+    fix it — those pixels really are background-coloured. Instead the mask is
+    sealed shut (dilated, then eroded back) so the thin channels the flood came
+    through are closed, any transparency that is then cut off from the outside
+    is a hole, and those are filled. The original silhouette is kept: only the
+    holes are added back, so the outline stays exactly as crisp as it was.
+    """
+    if radius < 1:
+        return alpha
+
+    def shift_or(m):
+        return (m | np.roll(m, 1, 0) | np.roll(m, -1, 0) |
+                np.roll(m, 1, 1) | np.roll(m, -1, 1))
+
+    sealed = alpha.copy()
+    for _ in range(radius):
+        sealed = shift_or(sealed)
+    for _ in range(radius):
+        sealed = ~shift_or(~sealed)
+
+    enclosed = ~sealed & ~outside(~sealed)
+
+    # Only small holes. A ring-shaped effect encloses a big disc of sheet
+    # background, and filling that paints the grey backdrop into the middle of
+    # the sprite — which is what put a grey card inside the skill's energy
+    # ring. Blur-pose holes are blotches; an enclosed backdrop is enormous.
+    cap = alpha.size * max_area
+    lab = label_components(enclosed)
+    ids, counts = np.unique(lab[enclosed], return_counts=True)
+    big = ids[counts > cap]
+    if len(big):
+        enclosed &= ~np.isin(lab, big)
+    return alpha | enclosed
+
+
+def unmatte(rgb, bg, alpha, tol, reach, depth, solidity=0.45, cool_solidity=0.12):
+    """Recover the aura's real colour and give it real transparency.
+
+    Her glow is painted *over* the sheet's grey at partial opacity, so grey is
+    baked into every pixel of it: on this sheet the aura averages a muddy tan,
+    and keying it out faithfully keeps the mud. Lifted onto a transparent
+    background it then reads grey-tan rather than gold.
+
+    Each glow pixel is a mix, P = a*C + (1-a)*grey. Its distance from the grey
+    gives the coverage a, and the colour C follows. The result is a glow that is
+    genuinely semi-transparent, coloured as it was painted, and fading out
+    smoothly instead of ending on a keyed edge.
+
+    Only glow is treated, and the limits matter. Her hair sits 54 levels off the
+    background and her skin 74, so a reach that passes either turns the
+    character herself translucent — at 90 the whole figure washes out. Reach
+    stays below the hair, and the band is additionally capped a fixed distance
+    in from the keyed edge, so nothing deep inside her is ever a candidate.
+    """
+    d = np.abs(rgb.astype(np.int16) - bg).max(axis=2)
+
+    # Glow emits, so it is always brighter than the background it was painted
+    # over; her hair is darker than it. That separates the two far better than
+    # distance alone, and lets the band run through a whole flame — which is
+    # where most of the baked-in grey actually is — while her hair still stops
+    # it dead. The white hoodie is brighter still, and too far off to admit.
+    lum = rgb.astype(np.float32).mean(axis=2)
+    brighter = lum > float(bg.mean()) + 4
+    span = np.where(brighter, reach * 2.5, reach)
+    soft = d < span
+
+    near_edge = ~alpha
+    for _ in range(depth):
+        near_edge |= (np.roll(near_edge, 1, 0) | np.roll(near_edge, -1, 0) |
+                      np.roll(near_edge, 1, 1) | np.roll(near_edge, -1, 1))
+    # Warm and cool haze both need the colour back — the soul attack's cyan fire
+    # is painted over the same grey as her gold, and left alone it came out as
+    # washed-out teal against the vivid original. What differs is the alpha they
+    # can afford. Cool ink is mostly the dagger, a hard-edged solid shape, and
+    # making it half-transparent let GIF's one-bit alpha chew its edge into a
+    # stair-stepped crunch. So cool ink is unmatted for colour and then stored
+    # very close to opaque, which is what it was before this ran.
+    warm = rgb[:, :, 0].astype(np.int16) > rgb[:, :, 2].astype(np.int16) + 10
+    band = outside(soft) & alpha & near_edge
+
+    a = np.clip((d.astype(np.float32) - tol) / np.maximum(span - tol, 1), 0, 1)
+
+    # The colour is solved from the true coverage, but the true coverage is not
+    # what gets stored: most of a soft glow sits under half-opacity, and GIF's
+    # one-bit alpha throws every such pixel away — the aura vanished from the
+    # GIFs entirely while surviving in the WebP. A gamma curve lifts the stored
+    # alpha so the glow shows in its solved colour on every format, while the
+    # very fringe still fades out.
+    stored = np.clip(a, 0, 1) ** np.where(warm, solidity, cool_solidity)
+    a_solve = np.where(band, a, 1.0) * alpha
+    a = np.where(band, stored, 1.0) * alpha
+
+    lifted = rgb.astype(np.float32)
+    safe = np.maximum(a_solve, 1e-3)[:, :, None]
+    lifted = (lifted - (1 - a_solve)[:, :, None] * bg.astype(np.float32)) / safe
+    out = np.where((band & (a_solve > 0))[:, :, None], np.clip(lifted, 0, 255), rgb)
+    return out.astype(np.uint8), (a * 255).astype(np.uint8)
+
+
+def despeckle(alpha, min_size):
+    """Drop specks: islands of opaque pixels too small to be drawn detail."""
+    if min_size < 2:
+        return alpha
+    lab = label_components(alpha)
+    ids, counts = np.unique(lab[alpha], return_counts=True)
+    doomed = set(ids[counts < min_size].tolist())
+    if not doomed:
+        return alpha
+    return alpha & ~np.isin(lab, list(doomed))
+
+
+def bands(occupied, min_size, min_gap):
+    """Split a 1-D occupancy profile into runs of True, merging short gaps."""
+    runs, start = [], None
+    for i, v in enumerate(occupied):
+        if v and start is None:
+            start = i
+        elif not v and start is not None:
+            runs.append((start, i))
+            start = None
+    if start is not None:
+        runs.append((start, len(occupied)))
+
+    merged = []
+    for run in runs:
+        if merged and run[0] - merged[-1][1] < min_gap:
+            merged[-1] = (merged[-1][0], run[1])
+        else:
+            merged.append(run)
+    return [r for r in merged if r[1] - r[0] >= min_size]
+
+
+def frames_from_components(mask, min_px, gap=10):
+    """Segment poses by connected ink rather than by gaps in its projection.
+
+    Gap splitting fails as soon as two poses overlap when flattened onto an
+    axis — one pose's hair reaching across into the next one's column is enough,
+    and a whole row collapses into a single frame. The drawings themselves stay
+    separate, so labelling the ink and taking one frame per island is exact
+    where projection is only a guess.
+
+    Detached scraps of drawing — the flame wisps — are folded into the nearest
+    pose rather than becoming frames of their own.
+    """
+    lab = label_components(mask)
+    flat = lab.ravel()
+    sel = np.flatnonzero(flat >= 0)
+    labels = flat[sel]
+    ys, xs = np.divmod(sel, mask.shape[1])
+
+    order = np.argsort(labels, kind="stable")
+    labels, ys, xs = labels[order], ys[order], xs[order]
+    starts = np.flatnonzero(np.concatenate(([True], labels[1:] != labels[:-1])))
+    sizes = np.diff(np.concatenate((starts, [len(labels)])))
+    box = np.stack([np.minimum.reduceat(xs, starts), np.minimum.reduceat(ys, starts),
+                    np.maximum.reduceat(xs, starts) + 1, np.maximum.reduceat(ys, starts) + 1], 1)
+
+    poses = [b.tolist() for b, n in zip(box, sizes) if n >= min_px]
+    if not poses:
+        raise SystemExit("--components found no islands; lower --component-min")
+
+    # A pose drawn with motion blur can come apart into stacked pieces — on the
+    # counter sheet the dash frame's legs separate from her body and arrive as a
+    # thirteenth pose. Pieces of one figure sit almost on top of each other
+    # horizontally, where genuinely neighbouring poses do not overlap at all.
+    # Horizontal overlap alone is not enough to act on, though: poses stacked in
+    # the same column of a grid overlap just as heavily. What separates the two
+    # cases is the size of the result — two pieces of one figure union to about
+    # one pose, two whole poses to twice that.
+    heights = sorted(p[3] - p[1] for p in poses)
+    widths = sorted(p[2] - p[0] for p in poses)
+    tall, wide = heights[len(heights) // 2] * 1.35, widths[len(widths) // 2] * 1.35
+
+    merged = True
+    while merged and len(poses) > 1:
+        merged = False
+        for i in range(len(poses)):
+            for k in range(i + 1, len(poses)):
+                a, b = poses[i], poses[k]
+                span = max(0, min(a[2], b[2]) - max(a[0], b[0]))
+                if span < 0.5 * min(a[2] - a[0], b[2] - b[0]):
+                    continue
+                union = [min(a[0], b[0]), min(a[1], b[1]), max(a[2], b[2]), max(a[3], b[3])]
+                if union[3] - union[1] > tall or union[2] - union[0] > wide:
+                    continue
+                poses[i] = union
+                poses.pop(k)
+                merged = True
+                break
+            if merged:
+                break
+
+    for b, n in zip(box, sizes):
+        if n >= min_px:
+            continue
+        cx, cy = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
+        near = min(poses, key=lambda p: (max(p[0] - cx, 0, cx - p[2]) ** 2 +
+                                         max(p[1] - cy, 0, cy - p[3]) ** 2))
+        near[0] = min(near[0], int(b[0])); near[1] = min(near[1], int(b[1]))
+        near[2] = max(near[2], int(b[2])); near[3] = max(near[3], int(b[3]))
+
+    # Two poses whose hair happens to touch come back as one island twice the
+    # width of its neighbours. A wide effect — a burst overflowing its cell —
+    # looks the same by width alone, so the test is the ink profile across the
+    # island: two figures bridged by a wisp show a deep valley between them,
+    # where a continuous effect never thins out. Split on the valley only.
+    typical = float(np.median([n for n in sizes if n >= min_px]))
+    split = []
+    for x0, y0, x1, y1 in [tuple(p) for p in poses]:
+        prof = mask[y0:y1, x0:x1].sum(axis=0).astype(float)
+        margin = 30
+        nonzero = prof[prof > 0]
+        if len(prof) < 2 * margin + 10 or not len(nonzero):
+            split.append([x0, y0, x1, y1])
+            continue
+        interior = prof[margin:-margin]
+        cut = int(np.argmin(interior)) + margin
+
+        # A valley alone is not enough: a raised arm or a sweep of hair thins
+        # the profile inside a single figure too. Both sides also have to carry
+        # a figure's worth of ink, judged against the typical island on the
+        # sheet, or a pose gets chopped into a pose and a fragment.
+        halves = []
+        for a, b in ((x0, x0 + cut), (x0 + cut, x1)):
+            ys_, xs_ = np.nonzero(mask[y0:y1, a:b])
+            halves.append((len(xs_), a, b, ys_, xs_))
+        if (prof[cut] < np.median(nonzero) * 0.35
+                and all(n > typical * 0.5 for n, *_ in halves)):
+            for n, a, b, ys_, xs_ in halves:
+                split.append([a + int(xs_.min()), y0 + int(ys_.min()),
+                              a + int(xs_.max()) + 1, y0 + int(ys_.max()) + 1])
+        else:
+            split.append([x0, y0, x1, y1])
+    poses = split
+
+    # Reading order: group into rows by vertical position, then left to right.
+    heights = sorted(p[3] - p[1] for p in poses)
+    tol = heights[len(heights) // 2] / 2
+    rows, cur = [], []
+    for p in sorted(poses, key=lambda p: (p[1] + p[3]) / 2):
+        if cur and (p[1] + p[3]) / 2 - (cur[-1][1] + cur[-1][3]) / 2 > tol:
+            rows.append(cur); cur = []
+        cur.append(p)
+    rows.append(cur)
+    ordered = [[tuple(p) for p in sorted(r, key=lambda p: p[0])] for r in rows]
+
+    # Which pose each pixel belongs to. A rect is only a bounding box, so when
+    # one pose's effects overflow into a neighbour's cell the crop picks up part
+    # of that neighbour — and any panel border inside the box comes too.
+    #
+    # Ownership follows the ink, not the boxes. Claiming every unowned pixel
+    # inside a rect just hands overlapping ink to whichever rect is listed
+    # first, which left a neighbour visible in about half the cases. Each
+    # island instead goes to the pose whose rect contains its centre, so a
+    # figure travels with its own effects and nothing else comes along.
+    # Ownership comes from the clustering, not from re-deriving it afterwards.
+    # Testing which rect contains an island's centre looks equivalent and is
+    # not: where a wide pose's box overlaps its neighbour's, the neighbour's
+    # figure lands inside the wrong rect and one frame comes out empty while
+    # another holds two characters.
+    # Each island goes to the *smallest* rect that contains its centre. Simply
+    # taking the first containing rect is not equivalent: where a wide pose's
+    # box overlaps a neighbour's, the neighbour's figure falls inside both, and
+    # the wide one swallowed it — leaving one frame empty and another holding
+    # two characters. The smaller box is always the one the figure belongs to.
+    flat_rects = [r for row in ordered for r in row]
+    owner = np.zeros(mask.shape, np.int32)
+    for lbl, (bx, by, bx1, by1) in zip(np.unique(labels), box):
+        cx, cy = (bx + bx1) / 2, (by + by1) / 2
+        best, best_area = 0, None
+        for n, (x0, y0, x1, y1) in enumerate(flat_rects, 1):
+            if x0 <= cx < x1 and y0 <= cy < y1:
+                area = (x1 - x0) * (y1 - y0)
+                if best_area is None or area < best_area:
+                    best, best_area = n, area
+        if not best:
+            continue
+
+        # Two poses joined by a wisp of hair are one island, and the valley
+        # split above has already given them a rect each. Handing the whole
+        # island to the rect its centre falls in then empties the other frame —
+        # on the dodge sheet her hair bridged the last two poses and the
+        # seventh came out with four pixels in it. An effect spilling into a
+        # neighbour's cell looks identical by box overlap alone, so the test is
+        # how much ink lands on the far side: a spilled effect is a small share
+        # of its island, a second figure is a whole figure's worth. Only then
+        # is the island divided along the rects instead of going whole.
+        here = lab == lbl
+        enough = max(min_px, typical * 0.5)
+        also = [n for n, (x0, y0, x1, y1) in enumerate(flat_rects, 1)
+                if n != best and here[y0:y1, x0:x1].sum() >= enough]
+        if not also:
+            owner[here] = best
+            continue
+        for n in sorted([best] + also,
+                        key=lambda n: ((flat_rects[n - 1][2] - flat_rects[n - 1][0]) *
+                                       (flat_rects[n - 1][3] - flat_rects[n - 1][1]))):
+            x0, y0, x1, y1 = flat_rects[n - 1]
+            mine = here[y0:y1, x0:x1] & (owner[y0:y1, x0:x1] == 0)
+            owner[y0:y1, x0:x1][mine] = n
+        owner[here & (owner == 0)] = best
+    return ordered, owner
+
+
+def find_frames(mask, rows=None, cols=None, min_gap=4, min_size=16, noise=2):
+    """Return [[(x0, y0, x1, y1), ...], ...] — one list of frame rects per row."""
+    h, w = mask.shape
+
+    if rows:
+        edges = [round(i * h / rows) for i in range(rows + 1)]
+        row_bands = list(zip(edges[:-1], edges[1:]))
+    else:
+        row_bands = bands(mask.sum(axis=1) > noise, min_size, min_gap)
+
+    out = []
+    for y0, y1 in row_bands:
+        strip = mask[y0:y1]
+        if cols:
+            edges = [round(x0) for x0 in np.linspace(0, w, cols + 1)]
+            col_bands = list(zip(edges[:-1], edges[1:]))
+        else:
+            col_bands = bands(strip.sum(axis=0) > noise, min_size, min_gap)
+
+        rects = []
+        for x0, x1 in col_bands:
+            cell = strip[:, x0:x1]
+            ys, xs = np.nonzero(cell)
+            if not len(ys):
+                continue
+            # Tighten to the sprite's own ink, not the cell it happened to land in.
+            rects.append((x0 + int(xs.min()), y0 + int(ys.min()),
+                          x0 + int(xs.max()) + 1, y0 + int(ys.min()) + int(ys.max() - ys.min()) + 1))
+        if rects:
+            out.append(rects)
+    return out
+
+
+def feet_anchor(mask, rect):
+    """(x, y) the frame is aligned on: horizontal centre of the lowest 12% of ink."""
+    x0, y0, x1, y1 = rect
+    sub = mask[y0:y1, x0:x1]
+    hgt = sub.shape[0]
+    foot = sub[int(hgt * 0.88):]
+    xs = np.nonzero(foot.any(axis=0))[0]
+    if not len(xs):
+        xs = np.nonzero(sub.any(axis=0))[0]
+    return float(xs.mean()), float(hgt)
+
+
+def cut_frames(sheet, mask, alpha, rects, transparent, pad, soft=None, owner=None, first=1):
+    """Crop each rect onto a shared canvas, registered on the feet anchor."""
+    anchors = [feet_anchor(mask, r) for r in rects]
+    widths = [r[2] - r[0] for r in rects]
+    heights = [r[3] - r[1] for r in rects]
+
+    left = max(a[0] for a in anchors)
+    right = max(w - a[0] for w, a in zip(widths, anchors))
+    cw = int(np.ceil(left + right)) + pad * 2
+    ch = max(heights) + pad * 2
+
+    frames, offsets = [], []
+    for rect, (ax, ay) in zip(rects, anchors):
+        crop = sheet.crop(rect)
+        if transparent:
+            crop = crop.copy()
+            if soft is not None:
+                sub = soft[rect[1]:rect[3], rect[0]:rect[2]].copy()
+            else:
+                sub = (alpha[rect[1]:rect[3], rect[0]:rect[2]] * 255).astype(np.uint8)
+            if owner is not None:
+                mine = owner[rect[1]:rect[3], rect[0]:rect[2]]
+                sub = np.where(mine == first + rects.index(rect), sub, 0)
+            crop.putalpha(Image.fromarray(sub, "L"))
+        dx, dy = int(round(left - ax)) + pad, int(ch - pad - ay)
+        canvas = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+        canvas.paste(crop, (dx, dy), crop)
+        frames.append(canvas)
+        offsets.append((dx, dy))
+    return frames, offsets
+
+
+def refine_alignment(frames, offsets, limit=12):
+    """Fine-register every frame to the first by FFT cross-correlation of alpha.
+
+    The feet anchor gets frames roughly in register, but it moves whenever a
+    boot does, which reads as a one- or two-pixel twitch of the whole body
+    during playback. Matching whole silhouettes instead holds the character
+    still. Everything is registered against frame 0 rather than against its
+    predecessor, so small errors cannot accumulate into a drift over the loop.
+    """
+    ref = np.fft.rfft2(np.array(frames[0])[:, :, 3].astype(np.float32))
+    shifts = [(0, 0)]
+    for frame in frames[1:]:
+        cur = np.array(frame)[:, :, 3].astype(np.float32)
+        corr = np.fft.irfft2(ref * np.conj(np.fft.rfft2(cur)), cur.shape)
+        # Only trust small corrections; a far-off peak means a pose change, not a shift.
+        window = np.full(corr.shape, -np.inf)
+        for sy in range(-limit, limit + 1):
+            for sx in range(-limit, limit + 1):
+                window[sy, sx] = corr[sy, sx]
+        dy, dx = np.unravel_index(np.argmax(window), corr.shape)
+        dy = dy - corr.shape[0] if dy > limit else dy
+        dx = dx - corr.shape[1] if dx > limit else dx
+        shifts.append((int(dx), int(dy)))
+
+    mx = max(abs(d[0]) for d in shifts)
+    my = max(abs(d[1]) for d in shifts)
+    w, h = frames[0].size
+    out, moved = [], []
+    for frame, (ox, oy), (dx, dy) in zip(frames, offsets, shifts):
+        canvas = Image.new("RGBA", (w + 2 * mx, h + 2 * my), (0, 0, 0, 0))
+        canvas.paste(frame, (mx + dx, my + dy))
+        out.append(canvas)
+        # Keep the manifest describing the frames we actually wrote.
+        moved.append((ox + mx + dx, oy + my + dy))
+    return out, moved
+
+
+def save_animation(frames, path, fps, bg=None):
+    dur = max(20, int(round(1000 / fps)))
+    if path.endswith(".gif"):
+        flat = []
+        for f in frames:
+            plate = Image.new("RGBA", f.size, tuple(bg) + (255,) if bg is not None else (0, 0, 0, 0))
+            flat.append(Image.alpha_composite(plate, f).convert("P", palette=Image.ADAPTIVE))
+        flat[0].save(path, save_all=True, append_images=flat[1:], duration=dur, loop=0, disposal=2)
+    else:
+        frames[0].save(path, save_all=True, append_images=frames[1:], duration=dur, loop=0)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("sheet")
+    ap.add_argument("-o", "--outdir", default="out")
+    ap.add_argument("--rows", type=int, help="force N equal rows instead of detecting them")
+    ap.add_argument("--cols", type=int, help="force N equal columns per row instead of detecting them")
+    ap.add_argument("--fps", type=float, default=10.0)
+    ap.add_argument("--names", help="comma-separated name per row, e.g. idle,attack,walk")
+    ap.add_argument("--single", metavar="NAME",
+                    help="treat every frame on the sheet as one animation, in reading order")
+    ap.add_argument("--align", choices=("feet", "silhouette"), default="feet",
+                    help="feet: anchor on the lowest ink. silhouette: also fine-register whole frames")
+    ap.add_argument("--tol", type=int, default=24, help="background colour tolerance (0-255)")
+    ap.add_argument("--glow-tol", type=int, default=0,
+                    help="strip soft haze around the character up to this distance from the background")
+    ap.add_argument("--checker", action="store_true",
+                    help="the sheet's background is a transparency checkerboard baked into the image")
+    ap.add_argument("--erase", action="append", default=[], metavar="X0,Y0,X1,Y1",
+                    help="paint a rectangle of the sheet out to background before keying; "
+                         "repeatable. For a prop one pose has lent across a cell boundary.")
+    ap.add_argument("--strip-captions", action="store_true",
+                    help="blank the text written under each pose on a labelled reference sheet")
+    ap.add_argument("--components", action="store_true",
+                    help="split poses by connected ink instead of by gaps; use when poses overlap")
+    ap.add_argument("--cluster-gap", type=int, default=10,
+                    help="islands within this many pixels belong to the same drawing")
+    ap.add_argument("--component-min", type=int, default=2000,
+                    help="smallest island counted as a pose rather than a stray scrap")
+    ap.add_argument("--panels", action="store_true",
+                    help="the sheet boxes each pose in a drawn frame; paint the grid out first")
+    ap.add_argument("--glow-depth", type=int, default=3,
+                    help="how many pixels in from the silhouette --glow-tol may reach")
+    ap.add_argument("--unmatte", type=int, default=0, metavar="REACH",
+                    help="recover the aura's colour and softness from the grey it was painted over (try 45)")
+    ap.add_argument("--unmatte-depth", type=int, default=24,
+                    help="how far in from the keyed edge --unmatte may reach")
+    ap.add_argument("--denoise-passes", type=int, default=1,
+                    help="repeat the denoise; more clears more grain and costs more sharpness")
+    ap.add_argument("--fill-holes", type=int, default=0, metavar="RADIUS",
+                    help="seal and fill holes the flood punched through blurred poses (try 3)")
+    ap.add_argument("--max-hole", type=float, default=0.0006,
+                    help="largest sealed background region kept as interior, as a fraction of the sheet")
+    ap.add_argument("--denoise", type=int, default=0, metavar="STRENGTH",
+                    help="clear JPEG grain: differences under this many levels are noise (try 12)")
+    ap.add_argument("--despeckle", type=int, default=24,
+                    help="drop opaque islands smaller than this many pixels")
+    ap.add_argument("--desalt", type=int, default=8, metavar="MAX_BLOB",
+                    help="take isolated white specks off the character: bright blobs "
+                         "no larger than this many pixels are replaced with the colour "
+                         "around them. 0 turns it off. Unlike --denoise this targets "
+                         "high-contrast grain, which the bilateral filter protects")
+    ap.add_argument("--desalt-tol", type=int, default=30, metavar="LEVELS",
+                    help="how much brighter than its surroundings a pixel must be "
+                         "before --desalt will consider it a speck")
+    ap.add_argument("--pad", type=int, default=4)
+    ap.add_argument("--min-gap", type=int, default=4, help="smallest background gap that splits frames")
+    ap.add_argument("--min-size", type=int, default=16, help="smallest accepted frame width/height")
+    ap.add_argument("--opaque", action="store_true", help="keep the sheet background instead of cutting it out")
+    ap.add_argument("--keyed", action="store_true",
+                    help="the sheet already carries its own alpha; use it instead of keying a backdrop")
+    ap.add_argument("--keyed-min", type=int, default=8,
+                    help="with --keyed, the alpha level at or below which a pixel counts as empty")
+    args = ap.parse_args()
+
+    if args.keyed and (args.unmatte or args.glow_tol or args.checker):
+        raise SystemExit("--keyed rebuilds nothing: --unmatte, --glow-tol and "
+                         "--checker all reconstruct an alpha channel this sheet "
+                         "already has. Drop them.")
+
+    sheet = load_sheet(args.sheet)
+    rgb = np.array(sheet)[:, :, :3]
+    forced_bg = None
+    if args.checker:
+        rgb, forced_bg = flatten_checker(rgb)
+        print("flattened checkerboard background" if forced_bg is not None
+              else "no checkerboard found; leaving the background as it is")
+
+    for spec in args.erase:
+        # A neighbouring pose can lean a prop across the line between two cells:
+        # on the ranged sheet her gun barrel reaches into the next cell, so the
+        # firing pose came out with a disembodied muzzle floating behind her.
+        # There is no rule that finds it — it is properly drawn artwork that
+        # simply belongs to the pose next door — so the sheet says where it is.
+        x0, y0, x1, y1 = (int(v) for v in spec.split(","))
+        rgb[y0:y1, x0:x1] = forced_bg if forced_bg is not None else background_color(rgb)
+        print(f"erased sheet rectangle {x0},{y0} to {x1},{y1}")
+
+    native_alpha = None
+    if args.keyed:
+        # A sheet exported with real transparency has already answered the
+        # question the whole keying stage exists to answer, and answered it
+        # exactly. Every backdrop rule below — the flood from the sheet edge,
+        # --tol, --glow-tol, --unmatte, the sealed-background test — is
+        # reconstruction of an alpha channel that was thrown away on export.
+        # Where one survived, reconstructing it can only lose: --unmatte solves
+        # the aura's colour out of the grey it was painted over and gets close;
+        # the alpha channel simply has it.
+        native_alpha = np.array(sheet)[:, :, 3]
+        if int(native_alpha.min()) > args.keyed_min:
+            raise SystemExit("--keyed: this sheet is fully opaque — it has no "
+                             "alpha channel to use. Key it with --tol instead.")
+        mask = alpha = native_alpha > args.keyed_min
+        bg = np.zeros(3, dtype=np.int16)
+        soft = int(((native_alpha > args.keyed_min) & (native_alpha < 255)).sum())
+        print(f"keyed sheet: {int(mask.sum())} opaque pixels, {soft} soft-edge, "
+              f"{len(np.unique(native_alpha))} alpha levels")
+    else:
+        if args.panels:
+            # The absolute darkness test only means anything on a sheet lighter than
+            # the ink it is looking for. On a dark navy backdrop the background
+            # itself passes it, and the detector called 623 of 768 rows a grid
+            # line. Where the backdrop is that dark, go straight to the relative
+            # test, which measures against the background instead of a constant.
+            probe = background_color(rgb)
+            if int(np.max(probe)) < 110:
+                rows_, cols_ = panel_border_lines(rgb, bg=probe)
+            else:
+                rows_, cols_ = panel_border_lines(rgb)
+                if not rows_ and not cols_:
+                    # Fall back to a grid ruled in a tone close to the background.
+                    rows_, cols_ = panel_border_lines(rgb, bg=probe)
+            bg = background_color(rgb, skip_rows=rows_, skip_cols=cols_)
+            rgb = rgb.copy()
+            rgb[rows_, :] = bg          # paint the grid out so the gaps come back
+            rgb[:, cols_] = bg
+            # Then again per row of cells, which is the only way to see a divider
+            # that exists in one row and nowhere else on the sheet.
+            banded = banded_column_lines(rgb, rows_, bg) if rows_ else []
+            extra = 0
+            for y0, y1, cols in banded:
+                fresh = [c for c in cols if c not in set(cols_)]
+                rgb[y0:y1, fresh] = bg
+                extra += len(fresh)
+            print(f"panelled sheet: erased {len(rows_)} row and {len(cols_) + extra} "
+                  f"column border lines")
+            if args.strip_captions:
+                rgb, n = strip_captions(rgb, bg, rows_)
+                print(f"stripped captions under {n} row(s) of cells")
+        else:
+            bg = background_color(rgb)
+
+        if forced_bg is not None:
+            bg = forced_bg
+        mask = foreground_mask(rgb, bg, args.tol)
+
+        alpha = ~outside(~mask)
+
+        # Background sealed inside a ring is still background. Keying treats
+        # anything not reachable from the sheet edge as interior, which is what
+        # keeps mid-grey shading on her face — but a ring-shaped effect encloses a
+        # whole disc of backdrop, and that came out as a grey card in the middle of
+        # the sprite. Large enclosed regions that are still background-coloured go;
+        # small ones are real shading and stay.
+        off_bg = np.abs(rgb.astype(np.int16) - bg).max(axis=2)
+        sealed_bg = alpha & (off_bg < args.tol)
+        if sealed_bg.any():
+            lab = label_components(sealed_bg)
+            ids, counts = np.unique(lab[sealed_bg], return_counts=True)
+            big = ids[counts > alpha.size * args.max_hole]
+            if len(big):
+                alpha &= ~np.isin(lab, big)
+
+        if args.glow_tol:
+            # The sheet paints a soft warm aura around the character. It is real
+            # ink, so the keying tolerance leaves it in place, where it reads as a
+            # blurred halo tracing the whole silhouette. A second flood inward at a
+            # much looser tolerance eats haze that shades off into the background
+            # while genuine line work, hair and the blade trail stop it.
+            haze = outside(np.abs(rgb.astype(np.int16) - bg).max(axis=2) < args.glow_tol)
+
+            # Depth matters as much as tolerance. Unbounded, this flood does not
+            # stop at the halo: it pours through the gold swing trail and hollows
+            # it out, and keeps going into the hand holding the dagger. Limiting it
+            # to a band of a few pixels around the existing silhouette trims the
+            # halo and leaves anything with real body to it alone.
+            band = ~alpha
+            for _ in range(args.glow_depth):
+                band |= (np.roll(band, 1, 0) | np.roll(band, -1, 0) |
+                         np.roll(band, 1, 1) | np.roll(band, -1, 1))
+            alpha &= ~(haze & band)
+
+    alpha = despeckle(fill_holes(alpha, args.fill_holes, args.max_hole), args.despeckle)
+
+    if args.desalt:
+        # After the mask is settled, so "inside her" means the pixels that will
+        # actually ship rather than the whole sheet. Before --denoise, so the
+        # bilateral filter smooths a surface with the specks already gone
+        # instead of averaging them into their neighbours.
+        #
+        # SOLID pixels only, not everything the mask keeps. Her aura is a wide
+        # band of low alpha that the mask is right to include and this filter
+        # has no business in: a bright fleck out there is a spark someone drew,
+        # and it sits against a dark surround exactly the way a speck does.
+        # Restricting to alpha over half cut this from 16,276 pixels on the
+        # first slipping sheet to 11,065 -- a third of the hits were out in the
+        # aura, where nothing was wrong.
+        solid = alpha & (np.array(sheet)[:, :, 3] > 128)
+        before = rgb.copy()
+        rgb = desalt(rgb.astype(np.float32), solid,
+                     args.desalt_tol, args.desalt).astype(rgb.dtype)
+        moved = int((before != rgb).any(axis=2).sum())
+        if moved:
+            print(f"  desalt: {moved} speck pixels replaced")
+        sheet = Image.fromarray(np.dstack([rgb, np.array(sheet)[:, :, 3]]))
+
+    if args.denoise:
+        # Masks are decided on the original pixels; only the pixels shipped
+        # get cleaned, so keying is unaffected by the filter.
+        #
+        # It must be the same array everything downstream reads. `rgb` is the
+        # working copy — the one with the panel grid painted out and any
+        # checkerboard flattened — and `--unmatte` solves the aura's colour from
+        # it and then rebuilds the sheet from the result. Denoising a separate
+        # copy of the sheet, as this used to, meant unmatte quietly replaced
+        # every clean pixel with a grainy one and the flag did nothing at all.
+        opacity = np.array(sheet)[:, :, 3]
+        rgb = np.array(denoise_art(Image.fromarray(np.dstack([rgb, opacity])),
+                                   args.denoise, args.denoise_passes))[:, :, :3]
+        sheet = Image.fromarray(np.dstack([rgb, opacity]))
+
+    owner = None
+    if args.components:
+        rows, owner = frames_from_components(mask, args.component_min, args.cluster_gap)
+    else:
+        rows = find_frames(mask, args.rows, args.cols, args.min_gap, args.min_size)
+    if not rows:
+        raise SystemExit("no frames found — try a larger --tol or pass --rows/--cols")
+
+    # Rebuild the directory rather than write into it. A sheet with fewer poses
+    # than last time would otherwise leave the tail of the previous one behind,
+    # and a remade sheet would silently assemble against a mix of both.
+    frame_dir = os.path.join(args.outdir, "frames")
+    shutil.rmtree(frame_dir, ignore_errors=True)
+    os.makedirs(frame_dir, exist_ok=True)
+
+    soft_alpha = None
+    if args.keyed:
+        # `alpha` is a hard mask, and cutting with it would throw away the one
+        # thing this sheet has that the others do not: a real antialiased edge.
+        # So the mask decides which pixels are kept and the sheet's own channel
+        # decides how opaque each of them is.
+        soft_alpha = np.where(alpha, native_alpha, 0).astype(np.uint8)
+    elif args.unmatte:
+        rgb_lifted, soft_alpha = unmatte(rgb, bg, alpha, args.tol, args.unmatte,
+                                         args.unmatte_depth)
+        sheet = Image.fromarray(np.dstack([rgb_lifted, np.array(sheet)[:, :, 3]]))
+
+    keyed = sheet.copy()
+    keyed.putalpha(Image.fromarray(soft_alpha if soft_alpha is not None
+                                   else (alpha * 255).astype(np.uint8), "L"))
+    keyed.save(os.path.join(args.outdir, "sheet_keyed.png"))
+    manifest = {"sheet": os.path.basename(args.sheet), "size": list(sheet.size),
+                "background": [int(c) for c in bg], "fps": args.fps,
+                "keyed_sheet": "sheet_keyed.png", "rows": []}
+
+    if args.single:
+        rows = [[rect for row in rows for rect in row]]
+
+    first_index = 1
+    names = args.names.split(",") if args.names else []
+    names = [args.single] if args.single else names
+    names += [f"row{i}" for i in range(len(names) + 1, len(rows) + 1)]
+
+    for ri, (name, rects) in enumerate(zip(names, rows), 1):
+        frames, offsets = cut_frames(sheet, mask, alpha, rects, not args.opaque, args.pad,
+                                     soft_alpha, owner, first_index)
+        first_index += len(rects)
+        if args.align == "silhouette":
+            frames, offsets = refine_alignment(frames, offsets)
+        for fi, frame in enumerate(frames, 1):
+            frame.save(os.path.join(frame_dir, f"{name}_{fi:02d}.png"))
+        save_animation(frames, os.path.join(args.outdir, f"{name}.gif"), args.fps, bg)
+        save_animation(frames, os.path.join(args.outdir, f"{name}.webp"), args.fps)
+        manifest["rows"].append({
+            "name": name,
+            "canvas": list(frames[0].size),
+            "align": args.align,
+            # dx/dy place the rect inside `canvas` so every frame lands on the same feet anchor.
+            "frames": [{"x": r[0], "y": r[1], "w": r[2] - r[0], "h": r[3] - r[1], "dx": d[0], "dy": d[1]}
+                       for r, d in zip(rects, offsets)],
+        })
+        print(f"{name}: {len(rects)} frames -> {args.outdir}/{name}.gif")
+
+    with open(os.path.join(args.outdir, "frames.json"), "w") as fh:
+        json.dump(manifest, fh, indent=2)
+    print(f"manifest -> {args.outdir}/frames.json")
+
+
+if __name__ == "__main__":
+    main()
